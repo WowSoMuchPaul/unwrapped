@@ -1,6 +1,5 @@
 //import './style.css'
 //import * as THREE from 'three'
-//console.log(THREE.PerspectiveCamera)
 
 var redirect_uri = "http://localhost:8000/";
 var client_id = "b125b5d4ba6f4e619e84880fa7a9a74f"; 
