@@ -8,6 +8,9 @@ import {onPageLoad, authorizationReq} from "./spotify.js";
 
 let sizes, canvas, scene, camera, renderer, controls;
 
+/**cursor */
+const cursor = {};
+
 init();
 animate();
 
@@ -36,12 +39,22 @@ function init() {
     camera.position.z = 500;
     camera.focus = 1000;
     scene.add(camera);
+    
+    /**
+    * Axis Helper 
+    */
+    const axesHelper = new THREE.AxesHelper( 100 );
+    scene.add( axesHelper );
 
     /**
      * Bild
      */
-    
 
+    /**
+     * Cursor auf NULL
+     * */
+    cursor.x = 0;
+    cursor.y = 0;
 
 
     /**
@@ -54,7 +67,10 @@ function init() {
 
     //Orbit Controls
     controls = new OrbitControls( camera, renderer.domElement );
+    controls.enablePan = false;
+    controls.enableRotate = false; 
     controls.update();
+    
 
     //
 
@@ -63,6 +79,11 @@ function init() {
     document.getElementById("change").addEventListener("click", topSongs);
     document.getElementById("artists").addEventListener("click", topArtists);
     document.getElementById("auth").addEventListener("click", authorizationReq);
+    window.addEventListener('mousemove', (event)=>
+    {
+        cursor.x = event.clientX / sizes.width - 0.5;
+        cursor.y = event.clientY / sizes.height - 0.5;
+    })
 
 }
 
@@ -76,14 +97,27 @@ function onWindowResize() {
 }
 
 function animate() {
+const clock = new THREE.Clock();
+let previousTime = 0;
+const tick = () =>{
+    const elapsedTime = clock.getElapsedTime();
+    const deltaTime = elapsedTime - previousTime;
+    previousTime = elapsedTime
 
-    requestAnimationFrame( animate );
+    //Animate camera
+    //camera.position.y = - scrollY / sizes.height * objectsDistance;
 
-	//bildMesh.rotation.x += 0.0005;
-	//bildMesh.rotation.y += 0.0002;
+    const parallaxX = cursor.x;
+    const parallaxY = - cursor.y;
+    camera.position.x = parallaxX  * 5 //;
+    camera.position.y = parallaxY  * 5 //;
+}
 
-    controls.update();
-    renderer.render(scene, camera);
+controls.update();
+renderer.render(scene, camera);
+window.requestAnimationFrame(tick);
+window.requestAnimationFrame( animate);
+    
 
 }
 
