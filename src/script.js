@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { TrackballControls}from 'three/examples/jsm/controls/TrackballControls.js';
 //import typefaceFont from 'three/examples/fonts/helvetiker_regular.typeface.json';
 
 import {onPageLoad, authorizationReq} from "./spotify.js";
@@ -67,6 +68,8 @@ function init() {
 
     //Orbit Controls
     controls = new OrbitControls( camera, renderer.domElement );
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.12;
     controls.enablePan = false;
     controls.enableRotate = false; 
     controls.update();
@@ -109,8 +112,8 @@ const tick = () =>{
 
     const parallaxX = cursor.x;
     const parallaxY = - cursor.y;
-    camera.position.x = parallaxX  * 5 //;
-    camera.position.y = parallaxY  * 5 //;
+    camera.position.x = parallaxX  * 5;
+    camera.position.y = parallaxY  * 5;
 }
 
 controls.update();
@@ -130,7 +133,7 @@ function createTextMesh(text, x, y, z) {
             const textGeometry = new TextGeometry(
                 text, {
                     font: font,
-                    size: 10,
+                    size: 5,
                     height: 1.2,
                     curveSegments: 12,
                     bevelEnabled: true,
@@ -158,7 +161,7 @@ function createTextMeshHeadline(text, x, y, z) {
             const textGeometry = new TextGeometry(
                 text, {
                     font: font,
-                    size: 50,
+                    size: 25,
                     height: 1.2,
                     curveSegments: 12,
                     bevelEnabled: true,
@@ -193,7 +196,7 @@ function createBildMesh(bildUrl, x, y, z, bildGroesse) {
 }
 
 function createInfoField(x, y, z, titel, bildUrl) {
-    createBildMesh(bildUrl, x-50, y, z, 100);
+    createBildMesh(bildUrl, x-50, y, z, 50);
     createTextMesh(titel, x+50, y+40, z);
 }
 
@@ -222,7 +225,7 @@ function topArtists() {
     }else{
         let vector = {x:0, y:0, z:200};
         let topArtists = JSON.parse(localStorage.getItem("topArtists"));
-        createTextMeshHeadline("Top Artists", vector.x, vector.y, vector.z + 250);
+        createTextMeshHeadline("Top Artists", vector.x, vector.y, vector.z + 125);
         createTopArtist(vector.x - 100, vector.y, vector.z + 200, topArtists.items[0]);
         createTopArtist(vector.x, vector.y, vector.z, topArtists.items[1]);
         createTopArtist(vector.x + 100, vector.y, vector.z - 200, topArtists.items[2]);
