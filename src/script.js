@@ -69,9 +69,13 @@ function init() {
     //Orbit Controls
     controls = new OrbitControls( camera, renderer.domElement );
     controls.enableDamping = true;
-    controls.dampingFactor = 0.12;
+    controls.dampingFactor = 0.07;
     controls.enablePan = false;
     controls.enableRotate = false; 
+    
+    controls.zoomDampingFactor = 0.9;
+    
+    controls.zoomSpeed = 1.2;
     controls.update();
     
 
@@ -98,22 +102,21 @@ function onWindowResize() {
     renderer.setSize( window.innerWidth, window.innerHeight );
 
 }
-
-function animate() {
 const clock = new THREE.Clock();
 let previousTime = 0;
-const tick = () =>{
+
+function animate() {
+const tick = () =>
+{
     const elapsedTime = clock.getElapsedTime();
     const deltaTime = elapsedTime - previousTime;
-    previousTime = elapsedTime
-
+    previousTime = elapsedTime;
+    
     //Animate camera
-    //camera.position.y = - scrollY / sizes.height * objectsDistance;
-
-    const parallaxX = cursor.x;
-    const parallaxY = - cursor.y;
-    camera.position.x = parallaxX  * 5;
-    camera.position.y = parallaxY  * 5;
+    const parallaxX = cursor.x * 50;
+    const parallaxY = - cursor.y * 50;
+    camera.position.x += (parallaxX - camera.position.x)  * 5 * deltaTime;
+    camera.position.y += (parallaxY - camera.position.y)  * 5 * deltaTime;
 }
 
 controls.update();
