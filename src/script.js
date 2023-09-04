@@ -4,7 +4,7 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 //import typefaceFont from 'three/examples/fonts/helvetiker_regular.typeface.json';
 
-import {onPageLoad, authorizationReq} from "./spotify.js";
+import {onPageLoad, authorizationReq, setFestivalPlaylist, setTimeRangeLong, setTimeRangeMid, setTimeRangeShort} from "./spotify.js";
 
 let sizes, canvas, scene, camera, renderer, controls;
 
@@ -63,6 +63,18 @@ function init() {
     document.getElementById("change").addEventListener("click", topSongs);
     document.getElementById("artists").addEventListener("click", topArtists);
     document.getElementById("auth").addEventListener("click", authorizationReq);
+    document.getElementById("playlist").addEventListener("click", setFestivalPlaylist);
+    document.getElementById("timeRange").addEventListener("change", function() {
+        if (this.value == "long_term") {
+            setTimeRangeLong();
+        }
+        if (this.value == "medium_term") {
+            setTimeRangeMid();
+        }
+        if (this.value == "short_term") {
+            setTimeRangeShort();
+        }
+    });
 
 }
 
@@ -150,7 +162,7 @@ function createBildMesh(bildUrl, x, y, z, bildGroesse) {
     //Plane Geometry erstellen
     const geometry = new THREE.PlaneGeometry( bildGroesse, bildGroesse );
     const material = new THREE.MeshBasicMaterial( { map: texture } );
-    //Geometry und Matiral vereinen und der Scene hinzufühen
+    //Geometry und Material vereinen und der Scene hinzufühen
     let bildMesh = new THREE.Mesh( geometry, material );
     scene.add( bildMesh );
     bildMesh.position.x = x;
@@ -169,14 +181,14 @@ function topSongs() {
     }else{
         let vector = {x:0, y:0, z:200};
         let topSongs = JSON.parse(localStorage.getItem("topSongs"));
-        createTopSong(vector.x, vector.y + 50, vector.z + 150, topSongs.items[0]);
-        createTopSong(vector.x + 150, vector.y, vector.z, topSongs.items[1]);
-        createTopSong(vector.x - 150, vector.y - 50, vector.z - 150, topSongs.items[2]);
+        createTopSong(vector.x, vector.y + 50, vector.z + 150, topSongs[0]);
+        createTopSong(vector.x + 150, vector.y, vector.z, topSongs[1]);
+        createTopSong(vector.x - 150, vector.y - 50, vector.z - 150, topSongs[2]);
     }
 }
 
 function createTopSong(x, y, z, song) {
-    let topCover = song.album.images[1].url;
+    let topCover = song.imageUrl;
     let topArtist = song.artists[0].name;
     createInfoField(x, y, z, song.name, topCover);
     createTextMesh("By " + topArtist,x + 50, y + 20, z);
@@ -189,13 +201,13 @@ function topArtists() {
         let vector = {x:0, y:0, z:200};
         let topArtists = JSON.parse(localStorage.getItem("topArtists"));
         createTextMeshHeadline("Top Artists", vector.x, vector.y, vector.z + 250);
-        createTopArtist(vector.x - 100, vector.y, vector.z + 200, topArtists.items[0]);
-        createTopArtist(vector.x, vector.y, vector.z, topArtists.items[1]);
-        createTopArtist(vector.x + 100, vector.y, vector.z - 200, topArtists.items[2]);
+        createTopArtist(vector.x - 100, vector.y, vector.z + 200, topArtists[0]);
+        createTopArtist(vector.x, vector.y, vector.z, topArtists[1]);
+        createTopArtist(vector.x + 100, vector.y, vector.z - 200, topArtists[2]);
     }
 }
 
 function createTopArtist(x, y, z, artist) {
-    let artistBild = artist.images[1].url;
+    let artistBild = artist.imageUrl;
     createInfoField(x, y, z, artist.name, artistBild);
 }
