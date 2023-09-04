@@ -7,7 +7,7 @@ import { TrackballControls}from 'three/examples/jsm/controls/TrackballControls.j
 
 import {onPageLoad, authorizationReq} from "./spotify.js";
 
-let sizes, canvas, scene, camera, renderer, controls;
+let sizes, canvas, scene, camera, renderer, controls, trackControls;
 
 /**cursor */
 const cursor = {};
@@ -67,19 +67,28 @@ function init() {
     document.body.appendChild( renderer.domElement );
 
     //Orbit Controls
+
     controls = new OrbitControls( camera, renderer.domElement );
     controls.enableDamping = true;
-    controls.dampingFactor = 0.07;
+    controls.dampingFactor = 0.2;
     controls.enablePan = false;
-    controls.enableRotate = false; 
-    
-    controls.zoomDampingFactor = 0.9;
-    
-    controls.zoomSpeed = 1.2;
-    controls.update();
+    controls.enableRotate = false;
+    controls.enableZoom = true;
+
+    //Track Controls
+    trackControls = new TrackballControls(camera, renderer.domElement); 
+    trackControls.noRotate = true;
+	trackControls.noPan = true;
+	trackControls.noZoom = false;
+	trackControls.zoomSpeed = 0.8;
+	trackControls.dynamicDampingFactor = 0.06;
     
 
-    //
+    // let target = controls.target;
+    // trackControls.target.set(target.x, target.y,target.z);
+    // trackControls.update();
+
+    
 
     //Listener setzen
     window.addEventListener( 'resize', onWindowResize );
@@ -120,6 +129,7 @@ const tick = () =>
 }
 
 controls.update();
+trackControls.update();
 renderer.render(scene, camera);
 window.requestAnimationFrame(tick);
 window.requestAnimationFrame( animate);
