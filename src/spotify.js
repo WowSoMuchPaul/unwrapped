@@ -541,13 +541,13 @@ export function setFestivalPlaylist(){
     let playlistName = JSON.parse(localStorage.getItem("myProfil")).name + "s Spotify Festival 2023";
     let zeitInfo = "deiner Spotify Erfahrung";
     if(timeRange == "long_term") {
-        zeitInfo = "deiner gesamten Spotify Erfahrung"
+        zeitInfo = "deiner gesamten Spotify Erfahrung";
     }
     if(timeRange == "medium_term") {
-        zeitInfo = "den letzten 6 Monaten deiner Spotify Erfahrung"
+        zeitInfo = "den letzten 6 Monaten deiner Spotify Erfahrung";
     }
     if(timeRange == "short_term") {
-        zeitInfo = "den letzten 4 Wochen deiner Spotify Erfahrung"
+        zeitInfo = "den letzten 4 Wochen deiner Spotify Erfahrung";
     }
     let body = {
         "name": playlistName, 
