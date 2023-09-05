@@ -149,7 +149,7 @@ const tick = () =>
 
 controls.update();
 trackControls.update();
-console.log(camera.position.z);
+//console.log(camera.position.z);
 renderer.render(scene, camera);
 window.requestAnimationFrame(tick);
 window.requestAnimationFrame( animate);
@@ -236,9 +236,9 @@ function topSongs() {
     }else{
         let vector = {x:0, y:0, z:200};
         let topSongs = JSON.parse(localStorage.getItem("topSongs"));
-        createTopSong(vector.x, vector.y + 50, vector.z + 1050, topSongs.items[0]);
-        createTopSong(vector.x + 150, vector.y, vector.z + 1000, topSongs.items[1]);
-        createTopSong(vector.x - 150, vector.y - 50, vector.z + 950, topSongs.items[2]);
+        createTopSong(vector.x, vector.y + 50, vector.z + 1050, topSongs[0]);
+        createTopSong(vector.x + 150, vector.y, vector.z + 1000, topSongs[1]);
+        createTopSong(vector.x - 150, vector.y - 50, vector.z + 950, topSongs[2]);
     }
 }
 
@@ -256,13 +256,13 @@ function topArtists() {
         let vector = {x:0, y:0, z:200};
         let topArtists = JSON.parse(localStorage.getItem("topArtists"));
         createTextMeshHeadline("Top Artists", vector.x, vector.y, vector.z + 125);
-        createTopArtist(vector.x - 100, vector.y, vector.z + 200, topArtists.items[0]);
-        createTopArtist(vector.x, vector.y, vector.z, topArtists.items[1]);
-        createTopArtist(vector.x + 100, vector.y, vector.z - 200, topArtists.items[2]);
+        createTopArtist(vector.x - 100, vector.y, vector.z + 200, topArtists[0]);
+        createTopArtist(vector.x, vector.y, vector.z, topArtists[1]);
+        createTopArtist(vector.x + 100, vector.y, vector.z - 200, topArtists[2]);
     }
 }
 
 function createTopArtist(x, y, z, artist) {
     let artistBild = artist.imageUrl;
-    createInfoField(x, y, z, artist.name, artistBild);
+    createInfoField(x, y, z, artist.name, artist.imageUrl);
 }
