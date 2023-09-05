@@ -7,7 +7,7 @@ import { TrackballControls}from 'three/examples/jsm/controls/TrackballControls.j
 
 import {onPageLoad, authorizationReq} from "./spotify.js";
 
-let sizes, canvas, scene, camera, renderer, controls, trackControls;
+let sizes, canvas, scene, camera, helper, renderer, controls, trackControls;
 
 /**cursor */
 const cursor = {};
@@ -37,9 +37,14 @@ function init() {
      * Camera
      */
     camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height)
-    camera.position.z = 500;
-    camera.focus = 1000;
+    camera.position.z = 3000;
+    camera.focus = 500;
     scene.add(camera);
+    console.log(camera.position);
+
+    // helper = new THREE.CameraHelper(camera);
+    // scene.add(helper);
+
     
     /**
     * Axis Helper 
@@ -47,16 +52,18 @@ function init() {
     const axesHelper = new THREE.AxesHelper( 100 );
     scene.add( axesHelper );
 
-    /**
-     * Bild
-     */
-
+    // Seiten Target
+    let targetPoints = {};
+        targetPoints.profil = camera.position.z - 500;
+        targetPoints.topArtist = camera.position.z - 1000;
+        targetPoints.topSong = camera.position.z - 1500;
+        targetPoints.onRepeat = camera.position.z - 2000;
+        targetPoints.playlist = camera.position.z - 2500;
     /**
      * Cursor auf NULL
      * */
     cursor.x = 0;
     cursor.y = 0;
-
 
     /**
      * Renderer
@@ -81,12 +88,12 @@ function init() {
 	trackControls.noPan = true;
 	trackControls.noZoom = false;
 	trackControls.zoomSpeed = 0.8;
-	trackControls.dynamicDampingFactor = 0.06;
+    trackControls.staticMoving = false;
+	trackControls.dynamicDampingFactor = 0.04;
     
 
-    // let target = controls.target;
-    // trackControls.target.set(target.x, target.y,target.z);
-    // trackControls.update();
+
+  
 
     
 
@@ -100,16 +107,12 @@ function init() {
         cursor.x = event.clientX / sizes.width - 0.5;
         cursor.y = event.clientY / sizes.height - 0.5;
     })
-
 }
 
 function onWindowResize() {
-
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-
     renderer.setSize( window.innerWidth, window.innerHeight );
-
 }
 const clock = new THREE.Clock();
 let previousTime = 0;
@@ -128,15 +131,16 @@ const tick = () =>
     camera.position.y += (parallaxY - camera.position.y)  * 5 * deltaTime;
 }
 
+// let target = controls.target;
+// trackControls.target.set(target.x, target.y,target.z);
+
 controls.update();
 trackControls.update();
+console.log(camera.position.z);
 renderer.render(scene, camera);
 window.requestAnimationFrame(tick);
 window.requestAnimationFrame( animate);
-    
-
 }
-
 
 function createTextMesh(text, x, y, z) {
     const fontLoader = new FontLoader()
@@ -209,8 +213,8 @@ function createBildMesh(bildUrl, x, y, z, bildGroesse) {
 }
 
 function createInfoField(x, y, z, titel, bildUrl) {
-    createBildMesh(bildUrl, x-50, y, z, 50);
-    createTextMesh(titel, x+50, y+40, z);
+    createBildMesh(bildUrl, x - 50, y, z, 50);
+    createTextMesh(titel, x + 50, y + 40, z,);
 }
 
 function topSongs() {
@@ -219,9 +223,9 @@ function topSongs() {
     }else{
         let vector = {x:0, y:0, z:200};
         let topSongs = JSON.parse(localStorage.getItem("topSongs"));
-        createTopSong(vector.x, vector.y + 50, vector.z + 150, topSongs.items[0]);
-        createTopSong(vector.x + 150, vector.y, vector.z, topSongs.items[1]);
-        createTopSong(vector.x - 150, vector.y - 50, vector.z - 150, topSongs.items[2]);
+        createTopSong(vector.x, vector.y + 50, vector.z + 1050, topSongs.items[0]);
+        createTopSong(vector.x + 150, vector.y, vector.z + 1000, topSongs.items[1]);
+        createTopSong(vector.x - 150, vector.y - 50, vector.z + 950, topSongs.items[2]);
     }
 }
 
