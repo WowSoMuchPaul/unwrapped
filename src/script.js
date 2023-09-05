@@ -2,11 +2,15 @@ import * as THREE from 'three';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { TrackballControls}from 'three/examples/jsm/controls/TrackballControls.js';
 //import typefaceFont from 'three/examples/fonts/helvetiker_regular.typeface.json';
 
 import {onPageLoad, authorizationReq, setFestivalPlaylist, setTimeRangeLong, setTimeRangeMid, setTimeRangeShort} from "./spotify.js";
 
-let sizes, canvas, scene, camera, renderer, controls;
+let sizes, canvas, scene, camera, helper, renderer, controls, trackControls;
+
+/**cursor */
+const cursor = {};
 
 init();
 animate();
@@ -33,16 +37,33 @@ function init() {
      * Camera
      */
     camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height)
-    camera.position.z = 500;
-    camera.focus = 1000;
+    camera.position.z = 3000;
+    camera.focus = 500;
     scene.add(camera);
+    console.log(camera.position);
 
-    /**
-     * Bild
-     */
+    // helper = new THREE.CameraHelper(camera);
+    // scene.add(helper);
+
     
+    /**
+    * Axis Helper 
+    */
+    const axesHelper = new THREE.AxesHelper( 100 );
+    scene.add( axesHelper );
 
-
+    // Seiten Target
+    let targetPoints = {};
+        targetPoints.profil = camera.position.z - 500;
+        targetPoints.topArtist = camera.position.z - 1000;
+        targetPoints.topSong = camera.position.z - 1500;
+        targetPoints.onRepeat = camera.position.z - 2000;
+        targetPoints.playlist = camera.position.z - 2500;
+    /**
+     * Cursor auf NULL
+     * */
+    cursor.x = 0;
+    cursor.y = 0;
 
     /**
      * Renderer
@@ -53,10 +74,28 @@ function init() {
     document.body.appendChild( renderer.domElement );
 
     //Orbit Controls
-    controls = new OrbitControls( camera, renderer.domElement );
-    controls.update();
 
-    //
+    controls = new OrbitControls( camera, renderer.domElement );
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.2;
+    controls.enablePan = false;
+    controls.enableRotate = false;
+    controls.enableZoom = true;
+
+    //Track Controls
+    trackControls = new TrackballControls(camera, renderer.domElement); 
+    trackControls.noRotate = true;
+	trackControls.noPan = true;
+	trackControls.noZoom = false;
+	trackControls.zoomSpeed = 0.8;
+    trackControls.staticMoving = false;
+	trackControls.dynamicDampingFactor = 0.04;
+    
+
+
+  
+
+    
 
     //Listener setzen
     window.addEventListener( 'resize', onWindowResize );
@@ -76,29 +115,45 @@ function init() {
         }
     });
 
+    window.addEventListener('mousemove', (event)=>
+    {
+        cursor.x = event.clientX / sizes.width - 0.5;
+        cursor.y = event.clientY / sizes.height - 0.5;
+    })
 }
 
 function onWindowResize() {
-
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-
     renderer.setSize( window.innerWidth, window.innerHeight );
-
 }
+const clock = new THREE.Clock();
+let previousTime = 0;
 
 function animate() {
-
-    requestAnimationFrame( animate );
-
-	//bildMesh.rotation.x += 0.0005;
-	//bildMesh.rotation.y += 0.0002;
-
-    controls.update();
-    renderer.render(scene, camera);
-
+const tick = () =>
+{
+    const elapsedTime = clock.getElapsedTime();
+    const deltaTime = elapsedTime - previousTime;
+    previousTime = elapsedTime;
+    
+    //Animate camera
+    const parallaxX = cursor.x * 50;
+    const parallaxY = - cursor.y * 50;
+    camera.position.x += (parallaxX - camera.position.x)  * 5 * deltaTime;
+    camera.position.y += (parallaxY - camera.position.y)  * 5 * deltaTime;
 }
 
+// let target = controls.target;
+// trackControls.target.set(target.x, target.y,target.z);
+
+controls.update();
+trackControls.update();
+console.log(camera.position.z);
+renderer.render(scene, camera);
+window.requestAnimationFrame(tick);
+window.requestAnimationFrame( animate);
+}
 
 function createTextMesh(text, x, y, z) {
     const fontLoader = new FontLoader()
@@ -108,7 +163,7 @@ function createTextMesh(text, x, y, z) {
             const textGeometry = new TextGeometry(
                 text, {
                     font: font,
-                    size: 10,
+                    size: 5,
                     height: 1.2,
                     curveSegments: 12,
                     bevelEnabled: true,
@@ -136,7 +191,7 @@ function createTextMeshHeadline(text, x, y, z) {
             const textGeometry = new TextGeometry(
                 text, {
                     font: font,
-                    size: 50,
+                    size: 25,
                     height: 1.2,
                     curveSegments: 12,
                     bevelEnabled: true,
@@ -171,8 +226,8 @@ function createBildMesh(bildUrl, x, y, z, bildGroesse) {
 }
 
 function createInfoField(x, y, z, titel, bildUrl) {
-    createBildMesh(bildUrl, x-50, y, z, 100);
-    createTextMesh(titel, x+50, y+40, z);
+    createBildMesh(bildUrl, x - 50, y, z, 50);
+    createTextMesh(titel, x + 50, y + 40, z,);
 }
 
 function topSongs() {
@@ -181,9 +236,9 @@ function topSongs() {
     }else{
         let vector = {x:0, y:0, z:200};
         let topSongs = JSON.parse(localStorage.getItem("topSongs"));
-        createTopSong(vector.x, vector.y + 50, vector.z + 150, topSongs[0]);
-        createTopSong(vector.x + 150, vector.y, vector.z, topSongs[1]);
-        createTopSong(vector.x - 150, vector.y - 50, vector.z - 150, topSongs[2]);
+        createTopSong(vector.x, vector.y + 50, vector.z + 1050, topSongs.items[0]);
+        createTopSong(vector.x + 150, vector.y, vector.z + 1000, topSongs.items[1]);
+        createTopSong(vector.x - 150, vector.y - 50, vector.z + 950, topSongs.items[2]);
     }
 }
 
@@ -200,10 +255,10 @@ function topArtists() {
     }else{
         let vector = {x:0, y:0, z:200};
         let topArtists = JSON.parse(localStorage.getItem("topArtists"));
-        createTextMeshHeadline("Top Artists", vector.x, vector.y, vector.z + 250);
-        createTopArtist(vector.x - 100, vector.y, vector.z + 200, topArtists[0]);
-        createTopArtist(vector.x, vector.y, vector.z, topArtists[1]);
-        createTopArtist(vector.x + 100, vector.y, vector.z - 200, topArtists[2]);
+        createTextMeshHeadline("Top Artists", vector.x, vector.y, vector.z + 125);
+        createTopArtist(vector.x - 100, vector.y, vector.z + 200, topArtists.items[0]);
+        createTopArtist(vector.x, vector.y, vector.z, topArtists.items[1]);
+        createTopArtist(vector.x + 100, vector.y, vector.z - 200, topArtists.items[2]);
     }
 }
 
