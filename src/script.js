@@ -31,7 +31,9 @@ function init() {
     canvas = document.querySelector('canvas.webgl')
 
     // Scene
-    scene = new THREE.Scene()
+    scene = new THREE.Scene();
+    let backgroundColor = new THREE.Color('skyblue');
+    scene.background = backgroundColor;
 
     /**
      * Camera
@@ -99,6 +101,7 @@ function init() {
 
     //Listener setzen
     window.addEventListener( 'resize', onWindowResize );
+    document.getElementById("closebtn").addEventListener("click", closeOverlay);
     document.getElementById("change").addEventListener("click", topSongs);
     document.getElementById("artists").addEventListener("click", topArtists);
     document.getElementById("auth").addEventListener("click", authorizationReq);
@@ -120,6 +123,10 @@ function init() {
         cursor.x = event.clientX / sizes.width - 0.5;
         cursor.y = event.clientY / sizes.height - 0.5;
     })
+}
+
+function closeOverlay() {
+    document.getElementById("overlay").style.height = "0%";
 }
 
 function onWindowResize() {
