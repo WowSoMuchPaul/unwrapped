@@ -3,17 +3,28 @@ import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TrackballControls}from 'three/examples/jsm/controls/TrackballControls.js';
+import TWEEN from '@tweenjs/tween.js';
 //import typefaceFont from 'three/examples/fonts/helvetiker_regular.typeface.json';
 
 import {onPageLoad, authorizationReq, setFestivalPlaylist, setTimeRangeLong, setTimeRangeMid, setTimeRangeShort} from "./spotify.js";
 
-let sizes, canvas, scene, camera, helper, renderer, controls, trackControls;
+let sizes, canvas, scene, camera, helper, renderer, controls, trackControls,lastCamPosition;
+var inEinemBereich = false;
+var tweenAktiviert = false;
+const targetPoints = {};
+const bereichOffsetVorne = 400;
+const bereichDampingVorne = bereichOffsetVorne/2;
+const bereichOffsetHinten = 100;
+const bereichDampingHinten = bereichOffsetHinten/1.2;
+const zoomSpeedNorm = 0.3;
+const zoomSpeedBereich = 0.02;
+const tweenStartDistance = 10;
+const cameraTargetDistance = 40;
 
 /**cursor */
 const cursor = {};
 
 init();
-animate();
 
 function init() {
 
@@ -38,9 +49,11 @@ function init() {
      */
     camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height)
     camera.position.z = 3000;
-    camera.focus = 500;
+    camera.far = 100000;
+    camera.focus = 1000;
     scene.add(camera);
-    console.log(camera.position);
+    lastCamPosition = camera.position.z;
+    
 
     // helper = new THREE.CameraHelper(camera);
     // scene.add(helper);
@@ -53,12 +66,11 @@ function init() {
     scene.add( axesHelper );
 
     // Seiten Target
-    let targetPoints = {};
-        targetPoints.profil = camera.position.z - 500;
-        targetPoints.topArtist = camera.position.z - 1000;
-        targetPoints.topSong = camera.position.z - 1500;
-        targetPoints.onRepeat = camera.position.z - 2000;
-        targetPoints.playlist = camera.position.z - 2500;
+        targetPoints.profil = camera.position.z - (camera.position.z / 6);
+        targetPoints.topArtist = camera.position.z - (2 *(camera.position.z / 6));
+        targetPoints.topSong = camera.position.z - (3 * (camera.position.z / 6));
+        targetPoints.onRepeat = camera.position.z - (4 * (camera.position.z / 6));
+        targetPoints.playlist = camera.position.z - (5 * (camera.position.z / 6));
     /**
      * Cursor auf NULL
      * */
@@ -73,30 +85,23 @@ function init() {
     renderer.setSize( sizes.width, sizes.height );
     document.body.appendChild( renderer.domElement );
 
-    //Orbit Controls
-
-    controls = new OrbitControls( camera, renderer.domElement );
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.2;
-    controls.enablePan = false;
-    controls.enableRotate = false;
-    controls.enableZoom = true;
+    // //Orbit Controls
+    // controls = new OrbitControls( camera, renderer.domElement );
+    // controls.enableDamping = true;
+    // controls.dampingFactor = 0.8;
+    // controls.enablePan = false;
+    // controls.enableRotate = false;
+    // controls.enableZoom = false;
 
     //Track Controls
     trackControls = new TrackballControls(camera, renderer.domElement); 
     trackControls.noRotate = true;
 	trackControls.noPan = true;
 	trackControls.noZoom = false;
-	trackControls.zoomSpeed = 0.8;
+	trackControls.zoomSpeed = zoomSpeedNorm;
     trackControls.staticMoving = false;
 	trackControls.dynamicDampingFactor = 0.04;
     
-
-
-  
-
-    
-
     //Listener setzen
     window.addEventListener( 'resize', onWindowResize );
     document.getElementById("change").addEventListener("click", topSongs);
@@ -127,33 +132,102 @@ function onWindowResize() {
     camera.updateProjectionMatrix();
     renderer.setSize( window.innerWidth, window.innerHeight );
 }
+
+function checkCamPosition(){
+    //Aktuelle Kamera Position
+    const pos = Math.round(camera.position.z);
+
+    //Bereich Playlist
+    if((pos <= (targetPoints.playlist + bereichOffsetVorne)) && (pos >= (targetPoints.playlist - bereichOffsetHinten)))
+    {
+        handleBereich(pos, targetPoints.playlist);
+    }
+}
+
+function handleBereich(pos, tp) {
+
+    //Kamera ist im Eintritts-Damping
+    if((pos <= (tp + bereichOffsetVorne)) && (pos >= (tp + bereichOffsetVorne - bereichDampingVorne)))
+    {
+        trackControls.zoomSpeed = zoomSpeedBereich + (pos - ((tp + bereichOffsetVorne) - bereichDampingVorne)) * ((zoomSpeedBereich - zoomSpeedNorm) / (-bereichDampingVorne));
+        console.log("Damping. ZoomSpeed: " + trackControls.zoomSpeed);
+    }
+
+    //Kamera ist im Bereich Playlist
+    if((pos <= (tp + bereichOffsetVorne - bereichDampingVorne)) && (pos >= (tp - bereichOffsetHinten + bereichDampingHinten)))
+    {
+        //Kamera betritt Bereich Playlist
+        if (!inEinemBereich) 
+        {
+            inEinemBereich = true;
+            //trackControls.zoomSpeed = zoomSpeedBereich;
+            console.log("BEREICH BETRETEN " + pos);
+        }
+        //TWEEN zur Camera Target Position
+        if((pos <= (tp + bereichOffsetVorne - bereichDampingVorne - tweenStartDistance)) && (pos >= (tp - bereichOffsetHinten + bereichDampingHinten + tweenStartDistance)) && (!tweenAktiviert))
+        {
+            tweenAktiviert = true;
+            TrackballControls.noZoom = true;
+            new TWEEN.Tween(camera.position).to(
+                {
+                    z: tp + cameraTargetDistance
+                },5000
+            )
+            .easing(TWEEN.Easing.Exponential.Out)
+            .start().onComplete(() => 
+            {
+                TrackballControls.noZoom = false;
+
+            });
+        }
+    }
+    //Kamera verlaesst Bereich Playlist
+    if(((pos > (tp + bereichOffsetVorne - bereichDampingVorne)) || (pos < (tp - bereichOffsetHinten + bereichDampingHinten))) && inEinemBereich)
+    {
+        inEinemBereich = false;
+        tweenAktiviert = false;
+        //trackControls.zoomSpeed = zoomSpeedNorm;
+        console.log("BEREICH VERLASSEN " + pos);
+    }
+
+    //Kamera ist im Austritts-Damping
+    if((pos >= (tp - bereichOffsetHinten)) && (pos <= (tp - bereichOffsetHinten + bereichDampingHinten)))
+    {
+        trackControls.zoomSpeed = zoomSpeedBereich - (pos - ((tp - bereichOffsetHinten) + bereichDampingHinten)) * ((zoomSpeedBereich - zoomSpeedNorm) / (-bereichDampingHinten));
+        console.log("Damping Hinten. ZoomSpeed: " + trackControls.zoomSpeed);
+    }
+}
+
 const clock = new THREE.Clock();
 let previousTime = 0;
 
-function animate() {
 const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime();
     const deltaTime = elapsedTime - previousTime;
     previousTime = elapsedTime;
-    
+
     //Animate camera
     const parallaxX = cursor.x * 50;
     const parallaxY = - cursor.y * 50;
     camera.position.x += (parallaxX - camera.position.x)  * 5 * deltaTime;
     camera.position.y += (parallaxY - camera.position.y)  * 5 * deltaTime;
+
+    if(lastCamPosition != Math.round(camera.position.z)){
+        checkCamPosition();
+        console.log("Es bewegt sich. " + Math.round(camera.position.z));
+    }
+    lastCamPosition = Math.round(camera.position.z);
+    
+    // let target = controls.target;
+    // trackControls.target.set(target.x, target.y,target.z);
+    //controls.update();
+    trackControls.update();
+    TWEEN.update();
+    renderer.render(scene, camera);
+    window.requestAnimationFrame(tick);
 }
 
-// let target = controls.target;
-// trackControls.target.set(target.x, target.y,target.z);
-
-controls.update();
-trackControls.update();
-//console.log(camera.position.z);
-renderer.render(scene, camera);
-window.requestAnimationFrame(tick);
-window.requestAnimationFrame( animate);
-}
 
 function createTextMesh(text, x, y, z) {
     const fontLoader = new FontLoader()
@@ -266,3 +340,4 @@ function createTopArtist(x, y, z, artist) {
     let artistBild = artist.imageUrl;
     createInfoField(x, y, z, artist.name, artist.imageUrl);
 }
+tick();
