@@ -10,22 +10,26 @@
     <!--canvas class="webgl"></canvas-->
     <script type="module" src="./script.js"></script>
 
-    <div id="overlay" class="overlay">
-      <a href="javascript:void(0)" id="closebtn" class="closebtn">&times;</a>
+    <button id="help">?</button>
+
+    <div id="overlay" class="overlay"> 
+      <div class="overlaybar">
+        Welcome
+        <a id="closebtn" class="closebtn">&times;</a>
+      </div>
       <div class="overlay-content">
-        <a>Hola</a>
+        <button id="change">Top Track</button>
+        <button id="artists">Top Artists</button>
+        <button id="auth">Spotify Authorisieren</button>
+        <button id="playlist">Playlist erstellen</button>
+        <label for="timeRange">Time Range</label>
+        <select name="timeRange" id="timeRange">
+          <option value="long_term">Long Term</option>
+          <option value="medium_term">Medium Term</option>
+          <option value="short_term">Short Term</option>
+        </select> 
       </div>
     </div>
 
-    <button id="change">Top Track</button>
-    <button id="artists">Top Artists</button>
-    <button id="auth">Spotify Authorisieren</button>
-    <button id="playlist">Playlist erstellen</button>
-    <label for="timeRange">Time Range</label>
-    <select name="timeRange" id="timeRange">
-      <option value="long_term">Long Term</option>
-      <option value="medium_term">Medium Term</option>
-      <option value="short_term">Short Term</option>
-    </select> 
 </body>
 </html>

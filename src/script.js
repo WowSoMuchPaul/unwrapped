@@ -43,7 +43,7 @@ function init() {
 
     // Scene
     scene = new THREE.Scene();
-    let backgroundColor = new THREE.Color('skyblue');
+    //let backgroundColor = new THREE.Color('skyblue');
     //scene.background = new THREE.Color( 0xff0000 );
 
     /**
@@ -83,6 +83,7 @@ function init() {
      * Renderer
      */
     renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
+    renderer.setClearColor( 0xffffff, 0);
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( sizes.width, sizes.height );
     document.body.appendChild( renderer.domElement );
@@ -107,6 +108,7 @@ function init() {
     //Listener setzen
     window.addEventListener( 'resize', onWindowResize );
     document.getElementById("closebtn").addEventListener("click", closeOverlay);
+    document.getElementById("help").addEventListener("click", openOverlay);
     document.getElementById("change").addEventListener("click", topSongs);
     document.getElementById("artists").addEventListener("click", topArtists);
     document.getElementById("auth").addEventListener("click", authorizationReq);
@@ -131,7 +133,11 @@ function init() {
 }
 
 function closeOverlay() {
-    document.getElementById("overlay").style.height = "0%";
+    document.getElementById("overlay").style.display = "none";
+}
+
+function openOverlay() {
+    document.getElementById("overlay").style.display = "block";
 }
 
 function onWindowResize() {
