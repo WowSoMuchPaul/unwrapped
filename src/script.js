@@ -44,7 +44,7 @@ function init() {
     // Scene
     scene = new THREE.Scene();
     let backgroundColor = new THREE.Color('skyblue');
-    scene.background = backgroundColor;
+    //scene.background = new THREE.Color( 0xff0000 );
 
     /**
      * Camera
@@ -82,7 +82,7 @@ function init() {
     /**
      * Renderer
      */
-    renderer = new THREE.WebGLRenderer( { antialias: true } );
+    renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( sizes.width, sizes.height );
     document.body.appendChild( renderer.domElement );
