@@ -109,8 +109,8 @@ function init() {
     window.addEventListener( 'resize', onWindowResize );
     document.getElementById("closebtn").addEventListener("click", closeOverlay);
     document.getElementById("help").addEventListener("click", openOverlay);
-    document.getElementById("change").addEventListener("click", topSongs);
-    document.getElementById("artists").addEventListener("click", topArtists);
+    //document.getElementById("change").addEventListener("click", topSongs);
+    //document.getElementById("artists").addEventListener("click", topArtists);
     document.getElementById("auth").addEventListener("click", authorizationReq);
     document.getElementById("playlist").addEventListener("click", setFestivalPlaylist);
     document.getElementById("timeRange").addEventListener("change", function() {
@@ -130,6 +130,11 @@ function init() {
         cursor.x = event.clientX / sizes.width - 0.5;
         cursor.y = event.clientY / sizes.height - 0.5;
     })
+
+    //Alle Geometrien mit den Spotify Daten erstellen
+    if(localStorage.getItem("access_token") != undefined) {
+        createAll();
+    }
 }
 
 function closeOverlay() {
@@ -150,6 +155,12 @@ function checkCamPosition(){
     //Aktuelle Kamera Position
     const pos = Math.round(camera.position.z);
 
+    //Bereich Profil
+    if((pos <= (targetPoints.profil + bereichOffsetVorne)) && (pos >= (targetPoints.profil - bereichOffsetHinten)))
+    {
+        handleBereich(pos, targetPoints.profil);
+    }
+
     //Bereich Playlist
     if((pos <= (targetPoints.playlist + bereichOffsetVorne)) && (pos >= (targetPoints.playlist - bereichOffsetHinten)))
     {
@@ -163,7 +174,7 @@ function handleBereich(pos, tp) {
     if((pos <= (tp + bereichOffsetVorne)) && (pos >= (tp + bereichOffsetVorne - bereichDampingVorne)))
     {
         trackControls.zoomSpeed = zoomSpeedBereich + (pos - ((tp + bereichOffsetVorne) - bereichDampingVorne)) * ((zoomSpeedBereich - zoomSpeedNorm) / (-bereichDampingVorne));
-        console.log("Damping. ZoomSpeed: " + trackControls.zoomSpeed);
+        //console.log("Damping. ZoomSpeed: " + trackControls.zoomSpeed);
     }
 
     //Kamera ist im Bereich Playlist
@@ -174,7 +185,7 @@ function handleBereich(pos, tp) {
         {
             inEinemBereich = true;
             //trackControls.zoomSpeed = zoomSpeedBereich;
-            console.log("BEREICH BETRETEN " + pos);
+            //console.log("BEREICH BETRETEN " + pos);
         }
         //TWEEN zur Camera Target Position
         if((pos <= (tp + bereichOffsetVorne - bereichDampingVorne - tweenStartDistance)) && (pos >= (tp - bereichOffsetHinten + bereichDampingHinten + tweenStartDistance)) && (!tweenAktiviert))
@@ -200,14 +211,14 @@ function handleBereich(pos, tp) {
         inEinemBereich = false;
         tweenAktiviert = false;
         //trackControls.zoomSpeed = zoomSpeedNorm;
-        console.log("BEREICH VERLASSEN " + pos);
+        //console.log("BEREICH VERLASSEN " + pos);
     }
 
     //Kamera ist im Austritts-Damping
     if((pos >= (tp - bereichOffsetHinten)) && (pos <= (tp - bereichOffsetHinten + bereichDampingHinten)))
     {
         trackControls.zoomSpeed = zoomSpeedBereich - (pos - ((tp - bereichOffsetHinten) + bereichDampingHinten)) * ((zoomSpeedBereich - zoomSpeedNorm) / (-bereichDampingHinten));
-        console.log("Damping Hinten. ZoomSpeed: " + trackControls.zoomSpeed);
+        //console.log("Damping Hinten. ZoomSpeed: " + trackControls.zoomSpeed);
     }
 }
 
@@ -228,7 +239,7 @@ const tick = () =>
 
     if(lastCamPosition != Math.round(camera.position.z)){
         checkCamPosition();
-        console.log("Es bewegt sich. " + Math.round(camera.position.z));
+        //console.log("Es bewegt sich. " + Math.round(camera.position.z));
     }
     lastCamPosition = Math.round(camera.position.z);
     
@@ -242,7 +253,7 @@ const tick = () =>
 }
 
 
-function createTextMesh(text, x, y, z) {
+function createTextMesh(text, fontsize, x, y, z) {
     const fontLoader = new FontLoader()
     fontLoader.load(
         '/fonts/Gotham_Bold.typeface.json',
@@ -250,7 +261,7 @@ function createTextMesh(text, x, y, z) {
             const textGeometry = new TextGeometry(
                 text, {
                     font: font,
-                    size: 5,
+                    size: fontsize,
                     height: 1.2,
                     curveSegments: 12,
                     bevelEnabled: true,
@@ -270,6 +281,7 @@ function createTextMesh(text, x, y, z) {
     )
 }
 
+/**
 function createTextMeshHeadline(text, x, y, z) {
     const fontLoader = new FontLoader()
     fontLoader.load(
@@ -297,8 +309,9 @@ function createTextMeshHeadline(text, x, y, z) {
         }
     )
 }
+*/
 
-function createBildMesh(bildUrl, x, y, z, bildGroesse) {
+function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
     //Bildtextur
     const texture = new THREE.TextureLoader().load(bildUrl);//'https://3.bp.blogspot.com/-Ol0cP_dxq7U/VWjIWBW2QpI/AAAAAAAAJxg/8ackwAwAYIE/s1600/JPx7R.jpg' );
     //Plane Geometry erstellen
@@ -310,8 +323,26 @@ function createBildMesh(bildUrl, x, y, z, bildGroesse) {
     bildMesh.position.x = x;
     bildMesh.position.y = y;
     bildMesh.position.z = z;
+    bildMesh.rotateY(rotationY * (Math.PI / 180));
 }
 
+function createProfil() {
+    let profil;
+    if (localStorage.getItem("myProfil") == undefined) {
+        console.log("Profil noch nicht ermittelt.");
+    }else{
+        profil = JSON.parse(localStorage.getItem("myProfil"));
+    }
+    let winkel = 10;
+    createBildMesh(profil.imageUrl, -50, 0, targetPoints.profil, winkel, 50);
+    createTextMesh("Hey " + profil.name + "!", 10, 0, 0, targetPoints.profil);
+}
+
+function createAll() {
+    createProfil();
+}
+
+/**
 function createInfoField(x, y, z, titel, bildUrl) {
     createBildMesh(bildUrl, x - 50, y, z, 50);
     createTextMesh(titel, x + 50, y + 40, z,);
@@ -353,4 +384,5 @@ function createTopArtist(x, y, z, artist) {
     let artistBild = artist.imageUrl;
     createInfoField(x, y, z, artist.name, artist.imageUrl);
 }
+*/
 tick();
