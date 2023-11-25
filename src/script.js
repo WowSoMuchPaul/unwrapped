@@ -8,9 +8,10 @@ import TWEEN from '@tweenjs/tween.js';
 
 import {onPageLoad, authorizationReq, setFestivalPlaylist, setTimeRangeLong, setTimeRangeMid, setTimeRangeShort} from "./spotify.js";
 
-let sizes, canvas, scene, camera, helper, renderer, controls, trackControls,lastCamPosition;
+let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, lastCamPosition, inhaltGroup;
 var inEinemBereich = false;
 var tweenAktiviert = false;
+var freeMovement = true;
 const targetPoints = {};
 const bereichOffsetVorne = 400;
 const bereichDampingVorne = bereichOffsetVorne/2;
@@ -20,6 +21,7 @@ const zoomSpeedNorm = 0.3;
 const zoomSpeedBereich = 0.02;
 const tweenStartDistance = 10;
 const cameraTargetDistance = 40;
+
 
 /**cursor */
 const cursor = {};
@@ -68,11 +70,12 @@ function init() {
     scene.add( axesHelper );
 
     // Seiten Target
-        targetPoints.profil = camera.position.z - (camera.position.z / 6);
-        targetPoints.topArtist = camera.position.z - (2 *(camera.position.z / 6));
-        targetPoints.topSong = camera.position.z - (3 * (camera.position.z / 6));
-        targetPoints.onRepeat = camera.position.z - (4 * (camera.position.z / 6));
-        targetPoints.playlist = camera.position.z - (5 * (camera.position.z / 6));
+    targetPoints.profil = camera.position.z - (camera.position.z / 6);
+    targetPoints.topArtist = camera.position.z - (2 *(camera.position.z / 6));
+    targetPoints.topSong = camera.position.z - (3 * (camera.position.z / 6));
+    targetPoints.onRepeat = camera.position.z - (4 * (camera.position.z / 6));
+    targetPoints.playlist = camera.position.z - (5 * (camera.position.z / 6));
+
     /**
      * Cursor auf NULL
      * */
@@ -109,11 +112,12 @@ function init() {
     window.addEventListener( 'resize', onWindowResize );
     document.getElementById("closebtn").addEventListener("click", closeOverlay);
     document.getElementById("help").addEventListener("click", openOverlay);
-    //document.getElementById("change").addEventListener("click", topSongs);
-    //document.getElementById("artists").addEventListener("click", topArtists);
+    document.getElementById("delete").addEventListener("click", deleteGroup);
+    document.getElementById("create").addEventListener("click", createAll);
     document.getElementById("auth").addEventListener("click", authorizationReq);
     document.getElementById("playlist").addEventListener("click", setFestivalPlaylist);
     document.getElementById("timeRange").addEventListener("change", function() {
+        deleteGroup();
         if (this.value == "long_term") {
             setTimeRangeLong();
         }
@@ -123,6 +127,10 @@ function init() {
         if (this.value == "short_term") {
             setTimeRangeShort();
         }
+        //Das ist vielleicht nicht die eleganteste Lösung, aber das Ding muss halt auf die aktualisierten Werte warten, da die ja neu von spotify abgerufen werden.
+        setTimeout(function(){
+            createAll();
+        }, 250);
     });
 
     window.addEventListener('mousemove', (event)=>
@@ -159,6 +167,12 @@ function checkCamPosition(){
     if((pos <= (targetPoints.profil + bereichOffsetVorne)) && (pos >= (targetPoints.profil - bereichOffsetHinten)))
     {
         handleBereich(pos, targetPoints.profil);
+    }
+
+    //Bereich Artists
+    if((pos <= (targetPoints.topArtist + bereichOffsetVorne)) && (pos >= (targetPoints.topArtist - bereichOffsetHinten)))
+    {
+        handleBereich(pos, targetPoints.topArtist);
     }
 
     //Bereich Playlist
@@ -222,6 +236,24 @@ function handleBereich(pos, tp) {
     }
 }
 
+function bringeZumBereich(target) {
+
+    freeMovement = false;
+    TrackballControls.noZoom = true;
+
+    new TWEEN.Tween(camera.position).to(
+        {
+            z: target
+        },5000
+    )
+    .easing(TWEEN.Easing.Exponential.Out)
+    .start().onComplete(() => 
+    {
+        TrackballControls.noZoom = false;
+        freeMovement = true;
+    });
+}
+
 const clock = new THREE.Clock();
 let previousTime = 0;
 
@@ -237,7 +269,7 @@ const tick = () =>
     camera.position.x += (parallaxX - camera.position.x)  * 5 * deltaTime;
     camera.position.y += (parallaxY - camera.position.y)  * 5 * deltaTime;
 
-    if(lastCamPosition != Math.round(camera.position.z)){
+    if(lastCamPosition != Math.round(camera.position.z) && freeMovement){
         checkCamPosition();
         //console.log("Es bewegt sich. " + Math.round(camera.position.z));
     }
@@ -273,7 +305,7 @@ function createTextMesh(text, fontsize, x, y, z) {
             )
             const textMaterial = new THREE.MeshBasicMaterial();
             let textMesh = new THREE.Mesh(textGeometry, textMaterial);
-            scene.add(textMesh);
+            inhaltGroup.add(textMesh);
             textMesh.position.x = x;
             textMesh.position.y = y;
             textMesh.position.z = z;
@@ -319,7 +351,7 @@ function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
     const material = new THREE.MeshBasicMaterial( { map: texture } );
     //Geometry und Material vereinen und der Scene hinzufühen
     let bildMesh = new THREE.Mesh( geometry, material );
-    scene.add( bildMesh );
+    inhaltGroup.add( bildMesh );
     bildMesh.position.x = x;
     bildMesh.position.y = y;
     bildMesh.position.z = z;
@@ -335,12 +367,50 @@ function createProfil() {
     }
     let winkel = 10;
     createBildMesh(profil.imageUrl, -50, 0, targetPoints.profil, winkel, 50);
-    createTextMesh("Hey " + profil.name + "!", 10, 0, 0, targetPoints.profil);
+    createTextMesh("Hey " + profil.name + "!", 5, 0, 0, targetPoints.profil);
+}
+
+function createTopArtist() {
+    let artists;
+    if (localStorage.getItem("topArtists") == undefined) {
+        console.log("Profil noch nicht ermittelt.");
+    }else{
+        artists = JSON.parse(localStorage.getItem("topArtists"));
+    }
+    //console.log(artists);
+    createBildMesh(artists[0].imageUrl, 0, 0, targetPoints.topArtist, 0, 50);
 }
 
 function createAll() {
+    inhaltGroup = new THREE.Group();
+    inhaltGroup.name = "inhaltGroup";
     createProfil();
+    createTopArtist();
+    scene.add(inhaltGroup);
 }
+
+function deleteGroup() {
+    clearThree(inhaltGroup);
+}
+
+function clearThree(obj){
+    while(obj.children.length > 0){ 
+      clearThree(obj.children[0]);
+      obj.remove(obj.children[0]);
+    }
+    if(obj.geometry) obj.geometry.dispose();
+  
+    if(obj.material){ 
+      //in case of map, bumpMap, normalMap, envMap ...
+      Object.keys(obj.material).forEach(prop => {
+        if(!obj.material[prop])
+          return;
+        if(obj.material[prop] !== null && typeof obj.material[prop].dispose === 'function')                                  
+          obj.material[prop].dispose();                                                      
+      })
+      obj.material.dispose();
+    }
+} 
 
 /**
 function createInfoField(x, y, z, titel, bildUrl) {
