@@ -175,6 +175,12 @@ function checkCamPosition(){
         handleBereich(pos, targetPoints.topArtist);
     }
 
+    //Bereich Songs
+    if((pos <= (targetPoints.topSong + bereichOffsetVorne)) && (pos >= (targetPoints.topSong - bereichOffsetHinten)))
+    {
+        handleBereich(pos, targetPoints.topSong);
+    }
+
     //Bereich Playlist
     if((pos <= (targetPoints.playlist + bereichOffsetVorne)) && (pos >= (targetPoints.playlist - bereichOffsetHinten)))
     {
@@ -362,6 +368,7 @@ function createProfil() {
     let profil;
     if (localStorage.getItem("myProfil") == undefined) {
         console.log("Profil noch nicht ermittelt.");
+        return;
     }else{
         profil = JSON.parse(localStorage.getItem("myProfil"));
     }
@@ -373,7 +380,8 @@ function createProfil() {
 function createTopArtist() {
     let artists;
     if (localStorage.getItem("topArtists") == undefined) {
-        console.log("Profil noch nicht ermittelt.");
+        console.log("Top Artists noch nicht ermittelt.");
+        return;
     }else{
         artists = JSON.parse(localStorage.getItem("topArtists"));
     }
@@ -381,11 +389,24 @@ function createTopArtist() {
     createBildMesh(artists[0].imageUrl, 0, 0, targetPoints.topArtist, 0, 50);
 }
 
+function createTopSongs() {
+    let songs;
+    if (localStorage.getItem("topSongs") == undefined) {
+        console.log("Top Songs noch nicht ermittelt.");
+        return;
+    }else{
+        songs = JSON.parse(localStorage.getItem("topSongs"));
+    }
+    //console.log(songs);
+    createBildMesh(songs[0].imageUrl, 20, 0, targetPoints.topSong, 0, 50);
+}
+
 function createAll() {
     inhaltGroup = new THREE.Group();
     inhaltGroup.name = "inhaltGroup";
     createProfil();
     createTopArtist();
+    createTopSongs();
     scene.add(inhaltGroup);
 }
 

@@ -20,9 +20,17 @@
     100%{background-position:0% 28%}
 }
 
+html {
+    min-height: 100%;
+    margin: 0;
+}
+
 body {
     font-family: Gotham;
     font-weight: bold;
+
+    min-height: 100%;
+    margin: 0;
 
     background: linear-gradient(144deg, #43ccb4, #3373ae, #bf61dd, #67e3a1);
     background-size: 800% 800%;
@@ -62,5 +70,34 @@ body {
     line-height: 0.6;
     letter-spacing: auto;
     
+}
+
+.navBarElement {
+    float: both;
+    color: #999;
+    border-radius: 50%;
+    height: 50px;
+    width: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px;
+    border-color: #999;
+}
+
+#help {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    height: 40px;
+    width: 40px;
+}
+
+#navBar {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    -ms-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
 }
 
