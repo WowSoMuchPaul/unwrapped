@@ -1,14 +1,13 @@
 import * as THREE from 'three';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TrackballControls}from 'three/examples/jsm/controls/TrackballControls.js';
 import TWEEN from '@tweenjs/tween.js';
 //import typefaceFont from 'three/examples/fonts/helvetiker_regular.typeface.json';
 
 import {onPageLoad, authorizationReq, setFestivalPlaylist, setTimeRangeLong, setTimeRangeMid, setTimeRangeShort} from "./spotify.js";
 
-let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, lastCamPosition, inhaltGroup;
+let sizes, canvas, scene, camera, helper, renderer, controls, trackControls,hemiLightHelper, lastCamPosition, inhaltGroup;
 var inEinemBereich = false;
 var tweenAktiviert = false;
 var freeMovement = true;
@@ -20,7 +19,7 @@ const bereichDampingHinten = bereichOffsetHinten/1.2;
 const zoomSpeedNorm = 0.3;
 const zoomSpeedBereich = 0.02;
 const tweenStartDistance = 10;
-const cameraTargetDistance = 40;
+const cameraTargetDistance = 100;
 
 
 /**cursor */
@@ -52,8 +51,8 @@ function init() {
      * Camera
      */
     camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height)
-    camera.position.z = 3000;
-    camera.far = 100000;
+    camera.position.z = 3500;
+    camera.far = 0.1;
     camera.focus = 1000;
     scene.add(camera);
     lastCamPosition = camera.position.z;
@@ -66,8 +65,8 @@ function init() {
     /**
     * Axis Helper 
     */
-    const axesHelper = new THREE.AxesHelper( 100 );
-    scene.add( axesHelper );
+    // const axesHelper = new THREE.AxesHelper( 100 );
+    // scene.add( axesHelper );
 
     // Seiten Target
     targetPoints.profil = camera.position.z - (camera.position.z / 6);
@@ -83,6 +82,44 @@ function init() {
     cursor.y = 0;
 
     /**
+    * Lights
+    */
+
+    const hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 2 );
+    hemiLight.color.setHSL( 0.6, 1, 0.6 );
+    hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
+    hemiLight.position.set( 0, 50, 0 );
+    scene.add( hemiLight );
+
+    const hemiLightHelper = new THREE.HemisphereLightHelper( hemiLight, 10 );
+    scene.add( hemiLightHelper );
+
+    // const dirLight = new THREE.DirectionalLight( 0xffffff, 3 );
+    // dirLight.color.setHSL( 0.1, 1, 0.95 );
+    // dirLight.position.set( - 1, 1.75, 1 );
+    // dirLight.position.multiplyScalar( 30 );
+    // scene.add( dirLight );
+
+    // dirLight.castShadow = true;
+
+    // dirLight.shadow.mapSize.width = 2048;
+    // dirLight.shadow.mapSize.height = 2048;
+
+    // const d = 50;
+
+    // dirLight.shadow.camera.left = - d;
+    // dirLight.shadow.camera.right = d;
+    // dirLight.shadow.camera.top = d;
+    // dirLight.shadow.camera.bottom = - d;
+
+    // dirLight.shadow.camera.far = 3500;
+    // dirLight.shadow.bias = - 0.0001;
+    
+    // const dirLightHelper = new THREE.DirectionalLightHelper( dirLight, 10 );
+	// 			scene.add( dirLightHelper );
+
+
+    /**
      * Renderer
      */
     renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
@@ -90,14 +127,6 @@ function init() {
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( sizes.width, sizes.height );
     document.body.appendChild( renderer.domElement );
-
-    // //Orbit Controls
-    // controls = new OrbitControls( camera, renderer.domElement );
-    // controls.enableDamping = true;
-    // controls.dampingFactor = 0.8;
-    // controls.enablePan = false;
-    // controls.enableRotate = false;
-    // controls.enableZoom = false;
 
     //Track Controls
     trackControls = new TrackballControls(camera, renderer.domElement); 
@@ -285,7 +314,7 @@ const tick = () =>
 }
 
 
-function createTextMesh(text, fontsize, x, y, z) {
+function createTextMesh(text, fontsize, x, y, z, rotationY) {
     const fontLoader = new FontLoader()
     fontLoader.load(
         '/fonts/Gotham_Bold.typeface.json',
@@ -294,7 +323,7 @@ function createTextMesh(text, fontsize, x, y, z) {
                 text, {
                     font: font,
                     size: fontsize,
-                    height: 1.2,
+                    height: 0.2,
                     curveSegments: 12,
                     bevelEnabled: true,
                     bevelThickness: 0.03,
@@ -305,10 +334,12 @@ function createTextMesh(text, fontsize, x, y, z) {
             )
             const textMaterial = new THREE.MeshBasicMaterial();
             let textMesh = new THREE.Mesh(textGeometry, textMaterial);
+            //textMesh.receiveShadow = true;
             inhaltGroup.add(textMesh);
             textMesh.position.x = x;
             textMesh.position.y = y;
             textMesh.position.z = z;
+            textMesh.rotateY(rotationY * (Math.PI / 180))
         }
     )
 }
@@ -360,14 +391,37 @@ function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
 
 function createProfil() {
     let profil;
+    let recentlyPlayed;
     if (localStorage.getItem("myProfil") == undefined) {
         console.log("Profil noch nicht ermittelt.");
     }else{
         profil = JSON.parse(localStorage.getItem("myProfil"));
+        recentlyPlayed = JSON.parse(localStorage.getItem("recentlyPlayed"));
+    let winkel = 0;
+    createBildMesh(profil.imageUrl, + 80, 0, targetPoints.profil, winkel, 50);
+    createTextMesh("Hey \n " + profil.name + " !", 10, -80, 30, targetPoints.profil, 0);
+    createTextMesh( "Followers: " + profil.follower.toString() , 3, 55, -30, targetPoints.profil, winkel);
+
+    let recGroupX = -80;
+    let recGroupY = -17;
+    let recText = 2;
+    let recBildG = 25;
+    let recBildRot = 0; 
+
+    createTextMesh("Recently Played Songs", 5, recGroupX, recGroupY, targetPoints.profil , recBildRot);
+    
+    createBildMesh(recentlyPlayed[0].image, recGroupX + 13 , recGroupY - 18, targetPoints.profil , recBildRot, recBildG);
+    createTextMesh(recentlyPlayed[0].name, recText, recGroupX + 1, recGroupY - 34, targetPoints.profil ,recBildRot);
+
+    createBildMesh(recentlyPlayed[1].image, recGroupX + 43, recGroupY - 18, targetPoints.profil , recBildRot, recBildG);
+    createTextMesh(recentlyPlayed[1].name, recText, recGroupX + 31, recGroupY  -34, targetPoints.profil, recBildRot);
+
+    createBildMesh(recentlyPlayed[2].image, recGroupX + 13, recGroupY - 48, targetPoints.profil , recBildRot, recBildG);
+    createTextMesh(recentlyPlayed[2].name, recText, recGroupX + 1, recGroupY - 64, targetPoints.profil,recBildRot);
+
+    createBildMesh(recentlyPlayed[3].image, recGroupX + 43, recGroupY - 48, targetPoints.profil , recBildRot, recBildG);
+    createTextMesh(recentlyPlayed[3].name, recText, recGroupX + 31, recGroupY - 64, targetPoints.profil, recBildRot);
     }
-    let winkel = 10;
-    createBildMesh(profil.imageUrl, -50, 0, targetPoints.profil, winkel, 50);
-    createTextMesh("Hey " + profil.name + "!", 5, 0, 0, targetPoints.profil);
 }
 
 function createTopArtist() {
