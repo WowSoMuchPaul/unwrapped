@@ -20,7 +20,7 @@ const bereichDampingHinten = bereichOffsetHinten/1.2;
 const zoomSpeedNorm = 0.3;
 const zoomSpeedBereich = 0.02;
 const tweenStartDistance = 10;
-const cameraTargetDistance = 40;
+const cameraTargetDistance = 100;
 
 
 /**cursor */
@@ -53,8 +53,9 @@ function init() {
      */
     camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height)
     camera.position.z = 3000;
-    camera.far = 100000;
-    camera.focus = 1000;
+    camera.far = 2000;
+    camera.near = 0.1;
+    camera.focus = 10;
     scene.add(camera);
     lastCamPosition = camera.position.z;
     
@@ -283,8 +284,7 @@ const tick = () =>
     renderer.render(scene, camera);
     window.requestAnimationFrame(tick);
 }
-
-
+    
 function createTextMesh(text, fontsize, x, y, z) {
     const fontLoader = new FontLoader()
     fontLoader.load(
@@ -294,7 +294,7 @@ function createTextMesh(text, fontsize, x, y, z) {
                 text, {
                     font: font,
                     size: fontsize,
-                    height: 1.2,
+                    height: 0.2,
                     curveSegments: 12,
                     bevelEnabled: true,
                     bevelThickness: 0.03,
@@ -356,6 +356,7 @@ function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
     bildMesh.position.y = y;
     bildMesh.position.z = z;
     bildMesh.rotateY(rotationY * (Math.PI / 180));
+    return bildMesh;
 }
 
 function createProfil() {
@@ -371,15 +372,70 @@ function createProfil() {
 }
 
 function createTopArtist() {
+    let profil;
     let artists;
+    let i = 0;
+    // holt sich die Spotify Profil Daten aus dem Local Storage
+    if (localStorage.getItem("myProfil") == undefined) {
+        console.log("Profil noch nicht ermittelt.");
+    }else{
+        profil = JSON.parse(localStorage.getItem("myProfil"));
+    }
+    // holt sich die top Artist Daten aus dem Local Storage
     if (localStorage.getItem("topArtists") == undefined) {
         console.log("Profil noch nicht ermittelt.");
     }else{
         artists = JSON.parse(localStorage.getItem("topArtists"));
     }
-    //console.log(artists);
-    createBildMesh(artists[0].imageUrl, 0, 0, targetPoints.topArtist, 0, 50);
+    
+    createTextMesh(profil.name + "'s", 20, -300, 110, targetPoints.topArtist - 200)
+    createTextMesh("\nTop Artists", 40, -300, 110, targetPoints.topArtist - 200)
+    while(i < artists.length){
+        let x = 100 + i * -15;
+        let y = -60 + i * 25;
+        let z = targetPoints.topArtist - (100 + i * 55);
+        let BildMesh = createBildMesh(artists[i].imageUrl, x, y, z, 0, 65);
+        artists[i].mesh = BildMesh;//zwischenspeichern des Meshes im Array
+        createTextMesh(artists[i].name, 5, x + 45, y + 17, z);
+        i++;
+    }
+    // setTimeout(function() {
+    //     artists[1].mesh.position.x += 10;
+    //     artists[1].mesh.position.y += 10;
+    //     artists[1].mesh.position.z += 10;
+    // }, 5000); // 2000 Millisekunden Verzögerung
 }
+
+// function createTopArtist() {
+//     let artists;
+//     let i = 0;
+//     let profil;
+//     if (localStorage.getItem("myProfil") == undefined) {
+//         console.log("Profil noch nicht ermittelt.");
+//     }else{
+//         profil = JSON.parse(localStorage.getItem("myProfil"));
+//     }
+//     if (localStorage.getItem("topArtists") == undefined) {
+//         console.log("Profil noch nicht ermittelt.");
+//     }else{
+//         artists = JSON.parse(localStorage.getItem("topArtists"));
+//     }
+//     // console.log(artists);
+//     // console.log(artists[0].name);
+//     createTextMesh(profil.name + "'s", 20, -300, 70, targetPoints.topArtist - 200)
+//     createTextMesh("\nTop Artists", 40, -300, 70, targetPoints.topArtist - 200)
+//     while(i < artists.length){
+
+//         let x = -20 + i * 40;
+//         let y = -60 + i * 25;
+//         let z = targetPoints.topArtist - (100 + i * 40);
+
+//         console.log(artists[i].name);
+//         createBildMesh(artists[i].imageUrl, x, y, z, 0, 60 - i * 2);
+//         createTextMesh(artists[i].name, 5, x + 35, y - 20, z);
+//         i++;
+//     }
+// }
 
 function createAll() {
     inhaltGroup = new THREE.Group();
@@ -436,7 +492,8 @@ function createTopSong(x, y, z, song) {
     createInfoField(x, y, z, song.name, topCover);
     createTextMesh("By " + topArtist,x + 50, y + 20, z);
 }
-
+**/
+/** 
 function topArtists() {
     if (localStorage.getItem("topArtists") == undefined) {
         console.log("Top Artists noch nicht ermittelt.");
@@ -455,4 +512,5 @@ function createTopArtist(x, y, z, artist) {
     createInfoField(x, y, z, artist.name, artist.imageUrl);
 }
 */
+
 tick();
