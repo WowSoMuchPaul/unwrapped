@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TrackballControls}from 'three/examples/jsm/controls/TrackballControls.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import TWEEN from '@tweenjs/tween.js';
 //import typefaceFont from 'three/examples/fonts/helvetiker_regular.typeface.json';
 
 import {onPageLoad, authorizationReq, setFestivalPlaylist, setTimeRangeLong, setTimeRangeMid, setTimeRangeShort} from "./spotify.js";
 
-let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, lastCamPosition, inhaltGroup;
+let sizes, canvas, scene, camera, helper, renderer, controls, trackControls,hemiLightHelper, lastCamPosition, inhaltGroup;
 var inEinemBereich = false;
 var tweenAktiviert = false;
 var freeMovement = true;
@@ -52,10 +52,9 @@ function init() {
      * Camera
      */
     camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height)
-    camera.position.z = 3000;
-    camera.far = 2000;
-    camera.near = 0.1;
-    camera.focus = 10;
+    camera.position.z = 3500;
+    camera.far = 0.1;
+    camera.focus = 1000;
     scene.add(camera);
     lastCamPosition = camera.position.z;
     
@@ -67,8 +66,8 @@ function init() {
     /**
     * Axis Helper 
     */
-    const axesHelper = new THREE.AxesHelper( 100 );
-    scene.add( axesHelper );
+    // const axesHelper = new THREE.AxesHelper( 100 );
+    // scene.add( axesHelper );
 
     // Seiten Target
     targetPoints.profil = camera.position.z - (camera.position.z / 6);
@@ -84,6 +83,44 @@ function init() {
     cursor.y = 0;
 
     /**
+    * Lights
+    */
+
+    const hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 2 );
+    hemiLight.color.setHSL( 0.6, 1, 0.6 );
+    hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
+    hemiLight.position.set( 0, 50, 0 );
+    scene.add( hemiLight );
+
+    const hemiLightHelper = new THREE.HemisphereLightHelper( hemiLight, 10 );
+    scene.add( hemiLightHelper );
+
+    // const dirLight = new THREE.DirectionalLight( 0xffffff, 3 );
+    // dirLight.color.setHSL( 0.1, 1, 0.95 );
+    // dirLight.position.set( - 1, 1.75, 1 );
+    // dirLight.position.multiplyScalar( 30 );
+    // scene.add( dirLight );
+
+    // dirLight.castShadow = true;
+
+    // dirLight.shadow.mapSize.width = 2048;
+    // dirLight.shadow.mapSize.height = 2048;
+
+    // const d = 50;
+
+    // dirLight.shadow.camera.left = - d;
+    // dirLight.shadow.camera.right = d;
+    // dirLight.shadow.camera.top = d;
+    // dirLight.shadow.camera.bottom = - d;
+
+    // dirLight.shadow.camera.far = 3500;
+    // dirLight.shadow.bias = - 0.0001;
+    
+    // const dirLightHelper = new THREE.DirectionalLightHelper( dirLight, 10 );
+	// 			scene.add( dirLightHelper );
+
+
+    /**
      * Renderer
      */
     renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
@@ -91,14 +128,6 @@ function init() {
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( sizes.width, sizes.height );
     document.body.appendChild( renderer.domElement );
-
-    // //Orbit Controls
-    // controls = new OrbitControls( camera, renderer.domElement );
-    // controls.enableDamping = true;
-    // controls.dampingFactor = 0.8;
-    // controls.enablePan = false;
-    // controls.enableRotate = false;
-    // controls.enableZoom = false;
 
     //Track Controls
     trackControls = new TrackballControls(camera, renderer.domElement); 
@@ -284,8 +313,9 @@ const tick = () =>
     renderer.render(scene, camera);
     window.requestAnimationFrame(tick);
 }
-    
-function createTextMesh(text, fontsize, x, y, z) {
+
+
+function createTextMesh(text, fontsize, x, y, z, rotationY) {
     const fontLoader = new FontLoader()
     fontLoader.load(
         '/fonts/Gotham_Bold.typeface.json',
@@ -305,10 +335,12 @@ function createTextMesh(text, fontsize, x, y, z) {
             )
             const textMaterial = new THREE.MeshBasicMaterial();
             let textMesh = new THREE.Mesh(textGeometry, textMaterial);
+            //textMesh.receiveShadow = true;
             inhaltGroup.add(textMesh);
             textMesh.position.x = x;
             textMesh.position.y = y;
             textMesh.position.z = z;
+            textMesh.rotateY(rotationY * (Math.PI / 180))
         }
     )
 }
@@ -348,7 +380,7 @@ function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
     const texture = new THREE.TextureLoader().load(bildUrl);//'https://3.bp.blogspot.com/-Ol0cP_dxq7U/VWjIWBW2QpI/AAAAAAAAJxg/8ackwAwAYIE/s1600/JPx7R.jpg' );
     //Plane Geometry erstellen
     const geometry = new THREE.PlaneGeometry( bildGroesse, bildGroesse );
-    const material = new THREE.MeshBasicMaterial( { map: texture } );
+    const material = new THREE.MeshBasicMaterial( { map: texture, side : THREE.DoubleSide} ); 
     //Geometry und Material vereinen und der Scene hinzufühen
     let bildMesh = new THREE.Mesh( geometry, material );
     inhaltGroup.add( bildMesh );
@@ -361,14 +393,37 @@ function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
 
 function createProfil() {
     let profil;
+    let recentlyPlayed;
     if (localStorage.getItem("myProfil") == undefined) {
         console.log("Profil noch nicht ermittelt.");
     }else{
         profil = JSON.parse(localStorage.getItem("myProfil"));
+        recentlyPlayed = JSON.parse(localStorage.getItem("recentlyPlayed"));
+    let winkel = 0;
+    createBildMesh(profil.imageUrl, + 80, 0, targetPoints.profil, winkel, 50);
+    createTextMesh("Hey \n " + profil.name + " !", 10, -80, 30, targetPoints.profil, 0);
+    createTextMesh( "Followers: " + profil.follower.toString() , 3, 55, -30, targetPoints.profil, winkel);
+
+    let recGroupX = -80;
+    let recGroupY = -17;
+    let recText = 2;
+    let recBildG = 25;
+    let recBildRot = 0; 
+
+    createTextMesh("Recently Played Songs", 5, recGroupX, recGroupY, targetPoints.profil , recBildRot);
+    
+    createBildMesh(recentlyPlayed[0].image, recGroupX + 13 , recGroupY - 18, targetPoints.profil , recBildRot, recBildG);
+    createTextMesh(recentlyPlayed[0].name, recText, recGroupX + 1, recGroupY - 34, targetPoints.profil ,recBildRot);
+
+    createBildMesh(recentlyPlayed[1].image, recGroupX + 43, recGroupY - 18, targetPoints.profil , recBildRot, recBildG);
+    createTextMesh(recentlyPlayed[1].name, recText, recGroupX + 31, recGroupY  -34, targetPoints.profil, recBildRot);
+
+    createBildMesh(recentlyPlayed[2].image, recGroupX + 13, recGroupY - 48, targetPoints.profil , recBildRot, recBildG);
+    createTextMesh(recentlyPlayed[2].name, recText, recGroupX + 1, recGroupY - 64, targetPoints.profil,recBildRot);
+
+    createBildMesh(recentlyPlayed[3].image, recGroupX + 43, recGroupY - 48, targetPoints.profil , recBildRot, recBildG);
+    createTextMesh(recentlyPlayed[3].name, recText, recGroupX + 31, recGroupY - 64, targetPoints.profil, recBildRot);
     }
-    let winkel = 10;
-    createBildMesh(profil.imageUrl, -50, 0, targetPoints.profil, winkel, 50);
-    createTextMesh("Hey " + profil.name + "!", 5, 0, 0, targetPoints.profil);
 }
 
 function createTopArtist() {
@@ -406,42 +461,70 @@ function createTopArtist() {
     // }, 5000); // 2000 Millisekunden Verzögerung
 }
 
-// function createTopArtist() {
-//     let artists;
-//     let i = 0;
-//     let profil;
-//     if (localStorage.getItem("myProfil") == undefined) {
-//         console.log("Profil noch nicht ermittelt.");
-//     }else{
-//         profil = JSON.parse(localStorage.getItem("myProfil"));
-//     }
-//     if (localStorage.getItem("topArtists") == undefined) {
-//         console.log("Profil noch nicht ermittelt.");
-//     }else{
-//         artists = JSON.parse(localStorage.getItem("topArtists"));
-//     }
-//     // console.log(artists);
-//     // console.log(artists[0].name);
-//     createTextMesh(profil.name + "'s", 20, -300, 70, targetPoints.topArtist - 200)
-//     createTextMesh("\nTop Artists", 40, -300, 70, targetPoints.topArtist - 200)
-//     while(i < artists.length){
+function createHeavyRotation() {
+    let heavyRotation;
+    if (localStorage.getItem("onRepeat") == undefined) {
+        console.log("Profil noch nicht ermittelt.");
+    }else{
+        heavyRotation = JSON.parse(localStorage.getItem("onRepeat"));
+    }
+    // console.log(heavyRotation);
 
-//         let x = -20 + i * 40;
-//         let y = -60 + i * 25;
-//         let z = targetPoints.topArtist - (100 + i * 40);
+    const heavyRotGroup = new THREE.Group();
+    scene.add(heavyRotGroup);
+    heavyRotGroup.position.z = targetPoints.onRepeat;
+    inhaltGroup.add(heavyRotGroup);
+    // console.log(heavyRotGroup.position);
 
-//         console.log(artists[i].name);
-//         createBildMesh(artists[i].imageUrl, x, y, z, 0, 60 - i * 2);
-//         createTextMesh(artists[i].name, 5, x + 35, y - 20, z);
-//         i++;
-//     }
-// }
+
+    const anzahlElemente = heavyRotation.length;
+    let radius = 250;
+    let vektor = {x:0, y:0, z: 0};
+    console.log(vektor, anzahlElemente, radius);
+
+    const objektPositionen = [];
+
+    for (let e = 0; e < anzahlElemente; e++) {
+        let theta = (2 * Math.PI / anzahlElemente) * e;
+        let x = vektor.x + radius * Math.cos(theta);
+        let y = vektor.y + radius * Math.sin(theta);
+        let z = vektor.z;
+
+        const objektPosition = {x: x, y: y, z: z};
+        objektPositionen.push(objektPosition);
+        
+    }
+    console.log(objektPositionen);
+
+    let i = 0;
+    while ( i  < anzahlElemente) {
+        let cordX = objektPositionen[i].x;
+        let cordY = objektPositionen[i].y; 
+        let cordZ = objektPositionen[i].z;
+        console.log(cordX, cordY, cordZ);
+
+        let bildMesh = createBildMesh(heavyRotation[i].image,cordX, cordY,cordZ, 20, 100);
+        console.log(bildMesh);
+        heavyRotation[i].mesh = bildMesh;
+        // console.log(heavyRotation[i].mesh.position.z);
+        heavyRotGroup.add(bildMesh);
+        //bildMesh.lookAt(0, 0, 1166);
+        i++;
+        console.log("bildmesh erstellt!");
+    }
+    
+    createTextMesh("Your \nHeavy Rotation", 40, -200, 0, targetPoints.onRepeat -300, 0);
+    console.log(targetPoints.onRepeat);
+}
+
+
 
 function createAll() {
     inhaltGroup = new THREE.Group();
     inhaltGroup.name = "inhaltGroup";
     createProfil();
     createTopArtist();
+    createHeavyRotation();
     scene.add(inhaltGroup);
 }
 
