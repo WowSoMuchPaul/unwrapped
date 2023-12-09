@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { TrackballControls}from 'three/examples/jsm/controls/TrackballControls.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import TWEEN from '@tweenjs/tween.js';
 //import typefaceFont from 'three/examples/fonts/helvetiker_regular.typeface.json';
 
@@ -69,8 +70,8 @@ function init() {
     // scene.add( axesHelper );
 
     // Seiten Target
-    targetPoints.profil = camera.position.z - (camera.position.z / 6);
-    targetPoints.topArtist = camera.position.z - (2 *(camera.position.z / 6));
+    // targetPoints.profil = camera.position.z - (camera.position.z / 6);
+    // targetPoints.topArtist = camera.position.z - (2 *(camera.position.z / 6));
     targetPoints.topSong = camera.position.z - (3 * (camera.position.z / 6));
     targetPoints.onRepeat = camera.position.z - (4 * (camera.position.z / 6));
     targetPoints.playlist = camera.position.z - (5 * (camera.position.z / 6));
@@ -379,7 +380,7 @@ function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
     const texture = new THREE.TextureLoader().load(bildUrl);//'https://3.bp.blogspot.com/-Ol0cP_dxq7U/VWjIWBW2QpI/AAAAAAAAJxg/8ackwAwAYIE/s1600/JPx7R.jpg' );
     //Plane Geometry erstellen
     const geometry = new THREE.PlaneGeometry( bildGroesse, bildGroesse );
-    const material = new THREE.MeshBasicMaterial( { map: texture } );
+    const material = new THREE.MeshBasicMaterial( { map: texture, side : THREE.DoubleSide} ); 
     //Geometry und Material vereinen und der Scene hinzufühen
     let bildMesh = new THREE.Mesh( geometry, material );
     inhaltGroup.add( bildMesh );
@@ -387,6 +388,7 @@ function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
     bildMesh.position.y = y;
     bildMesh.position.z = z;
     bildMesh.rotateY(rotationY * (Math.PI / 180));
+    return bildMesh;
 }
 
 function createProfil() {
@@ -435,11 +437,70 @@ function createTopArtist() {
     createBildMesh(artists[0].imageUrl, 0, 0, targetPoints.topArtist, 0, 50);
 }
 
+function createHeavyRotation() {
+    let heavyRotation;
+    if (localStorage.getItem("onRepeat") == undefined) {
+        console.log("Profil noch nicht ermittelt.");
+    }else{
+        heavyRotation = JSON.parse(localStorage.getItem("onRepeat"));
+    }
+    // console.log(heavyRotation);
+
+    const heavyRotGroup = new THREE.Group();
+    scene.add(heavyRotGroup);
+    heavyRotGroup.position.z = targetPoints.onRepeat;
+    inhaltGroup.add(heavyRotGroup);
+    // console.log(heavyRotGroup.position);
+
+
+    const anzahlElemente = heavyRotation.length;
+    let radius = 250;
+    let vektor = {x:0, y:0, z: 0};
+    console.log(vektor, anzahlElemente, radius);
+
+    const objektPositionen = [];
+
+    for (let e = 0; e < anzahlElemente; e++) {
+        let theta = (2 * Math.PI / anzahlElemente) * e;
+        let x = vektor.x + radius * Math.cos(theta);
+        let y = vektor.y + radius * Math.sin(theta);
+        let z = vektor.z;
+
+        const objektPosition = {x: x, y: y, z: z};
+        objektPositionen.push(objektPosition);
+        
+    }
+    console.log(objektPositionen);
+
+    let i = 0;
+    while ( i  < anzahlElemente) {
+        let cordX = objektPositionen[i].x;
+        let cordY = objektPositionen[i].y; 
+        let cordZ = objektPositionen[i].z;
+        console.log(cordX, cordY, cordZ);
+
+        let bildMesh = createBildMesh(heavyRotation[i].image,cordX, cordY,cordZ, 20, 100);
+        console.log(bildMesh);
+        heavyRotation[i].mesh = bildMesh;
+        // console.log(heavyRotation[i].mesh.position.z);
+        heavyRotGroup.add(bildMesh);
+        //bildMesh.lookAt(0, 0, 1166);
+        i++;
+        console.log("bildmesh erstellt!");
+    }
+    
+    createTextMesh("Your \nHeavy Rotation", 40, -200, 0, targetPoints.onRepeat -300, 0);
+    console.log(targetPoints.onRepeat);
+}
+
+
+
 function createAll() {
     inhaltGroup = new THREE.Group();
     inhaltGroup.name = "inhaltGroup";
-    createProfil();
-    createTopArtist();
+    // createProfil();
+    // createTopArtist();
+    createHeavyRotation();
     scene.add(inhaltGroup);
 }
 
