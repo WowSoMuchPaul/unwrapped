@@ -62,6 +62,7 @@ function getCode(){
  * Gibt Code zurück
  */
 export function authorizationReq() {
+    console.log("Req gestartet");
     let url = AUTHORIZE;
     url += "?client_id=" + client_id;
     url += "&response_type=code";
