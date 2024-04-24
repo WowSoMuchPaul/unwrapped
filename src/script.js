@@ -64,10 +64,10 @@ function init() {
     /**
      * Camera
      */
-    camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 1, 1000)
-    camera.position.z = 3500;
-    // camera.far = 0.1;
-    camera.focus = 10;
+    camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height)
+    camera.position.z = 3000;
+    camera.far = 1000;
+    camera.focus = 1000;
     scene.add(camera);
     lastCamPosition = camera.position.z;
 
@@ -121,7 +121,25 @@ function init() {
     document.getElementById("create").addEventListener("click", createAll);
     document.getElementById("auth").addEventListener("click", authorizationReq);
     document.getElementById("playlist").addEventListener("click", setFestivalPlaylist);
-    document.getElementById("timeRange").addEventListener("change", function () {
+    
+    //Nav Bar Listener
+    document.getElementById("navPlaylist").addEventListener("click", e => {
+        bringeZumBereich(e.target);
+    });
+    document.getElementById("navOnRepeat").addEventListener("click", e => {
+        bringeZumBereich(e.target);
+    });
+    document.getElementById("navSongs").addEventListener("click", e => {
+        bringeZumBereich(e.target);
+    });
+    document.getElementById("navArtists").addEventListener("click", e => {
+        bringeZumBereich(e.target);
+    });
+    document.getElementById("navProfil").addEventListener("click", e => {
+        bringeZumBereich(e.target);
+    });
+
+    document.getElementById("timeRange").addEventListener("change", function() {
         deleteGroup();
         if (this.value == "long_term") {
             setTimeRangeLong();
@@ -218,6 +236,12 @@ function checkCamPosition() {
         handleBereich(pos, targetPoints.topArtist);
     }
 
+    //Bereich Songs
+    if((pos <= (targetPoints.topSong + bereichOffsetVorne)) && (pos >= (targetPoints.topSong - bereichOffsetHinten)))
+    {
+        handleBereich(pos, targetPoints.topSong);
+    }
+
     //Bereich Playlist
     if ((pos <= (targetPoints.playlist + bereichOffsetVorne)) && (pos >= (targetPoints.playlist - bereichOffsetHinten))) {
         handleBereich(pos, targetPoints.playlist);
@@ -271,7 +295,20 @@ function handleBereich(pos, tp) {
     }
 }
 
-function bringeZumBereich(target) {
+function bringeZumBereich(origin) {
+    let target;
+    if(origin.id == "navPlaylist") {
+        target = targetPoints.playlist;
+    } else if (origin.id == "navOnRepeat") {
+        target = targetPoints.onRepeat;
+    } else if (origin.id == "navSongs") {
+        target = targetPoints.topSong;
+    } else if (origin.id == "navArtists") {
+        target = targetPoints.topArtist;
+    } else if (origin.id == "navProfil") {
+        target = targetPoints.profil;
+    }
+    target += cameraTargetDistance;
 
     freeMovement = false;
     TrackballControls.noZoom = true;
@@ -369,14 +406,13 @@ const tick = () => {
 }
 
 
-function createTextMesh(text, fontsize, x, y, z, rotationY) {
-    return new Promise((resolve, reject) => {
-        const fontLoader = new FontLoader()
-        fontLoader.load(
-            '/fonts/Gotham_Bold.typeface.json',
-            (font) => {
-                const textGeometry = new TextGeometry(
-                    text, {
+function createTextMesh(text, fontsize, x, y, z) {
+    const fontLoader = new FontLoader()
+    fontLoader.load(
+        '/fonts/W95FA_Regular.typeface.json',
+        (font) => {
+            const textGeometry = new TextGeometry(
+                text, {
                     font: font,
                     size: fontsize,
                     height: 0.2,
@@ -401,9 +437,8 @@ function createTextMesh(text, fontsize, x, y, z, rotationY) {
             undefined, // onProgress callback not needed
             (error) => reject(error) // Reject the Promise on error
         )
-    });
+    };
     stats.end();
-}
 
 function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
     //Bildtextur
@@ -507,6 +542,24 @@ function createHeavyRotation() {
 }
 
 // Funktion zu Erstellen aller Hauptgruppen der Szene
+function createTopSongs() {
+    let songs;
+    if (localStorage.getItem("topSongs") == undefined) {
+        console.log("Top Songs noch nicht ermittelt.");
+        return;
+    }else{
+        songs = JSON.parse(localStorage.getItem("topSongs"));
+    }
+    //console.log(songs);
+    createTextMesh("Deine Top 3 Songs", 5, -55, 15, targetPoints.topSong);
+    createBildMesh(songs[0].imageUrl, 0, 0, targetPoints.topSong, 0, 20);
+    createTextMesh("1: " + songs[0].name, 2, -10, -15, targetPoints.topSong);
+    createBildMesh(songs[1].imageUrl, -30, -5, targetPoints.topSong, 0, 20);
+    createTextMesh("2: " + songs[1].name, 2, -40, -20, targetPoints.topSong);
+    createBildMesh(songs[2].imageUrl, 30, -10, targetPoints.topSong, 0, 20);
+    createTextMesh("3: " + songs[2].name, 2, 20, -25, targetPoints.topSong);
+}
+
 function createAll() {
     inhaltGroup = new THREE.Group();
     inhaltGroup.name = "inhaltGroup";
@@ -514,6 +567,7 @@ function createAll() {
     createTopArtist();
     createHeavyRotation();
     // Hinzufügen der "inhaltGroup" zur Haupt-Szene
+    createTopSongs();
     scene.add(inhaltGroup);
 }
 
