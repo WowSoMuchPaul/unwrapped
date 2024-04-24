@@ -66,7 +66,7 @@ function init() {
      */
     camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height)
     camera.position.z = 3000;
-    camera.far = 1000;
+    camera.far = 10;
     camera.focus = 1000;
     scene.add(camera);
     lastCamPosition = camera.position.z;
@@ -83,8 +83,8 @@ function init() {
     // scene.add( axesHelper );
 
     // Seiten Target
-    // targetPoints.profil = camera.position.z - (camera.position.z / 6);
-    // targetPoints.topArtist = camera.position.z - (2 * (camera.position.z / 6));
+    targetPoints.profil = camera.position.z - (camera.position.z / 6);
+    targetPoints.topArtist = camera.position.z - (2 * (camera.position.z / 6));
     targetPoints.topSong = camera.position.z - (3 * (camera.position.z / 6));
     targetPoints.onRepeat = camera.position.z - (4 * (camera.position.z / 6));
     targetPoints.playlist = camera.position.z - (5 * (camera.position.z / 6));
@@ -431,11 +431,11 @@ function createTextMesh(text, fontsize, x, y, z) {
                 textMesh.position.x = x;
                 textMesh.position.y = y;
                 textMesh.position.z = z;
-                textMesh.rotateY(rotationY * (Math.PI / 180))
-                resolve(textMesh); // Lösen Sie die Promise mit textMesh
+                //textMesh.rotateY(rotationY * (Math.PI / 180))
+                //resolve(textMesh); // Lösen Sie die Promise mit textMesh
             },
-            undefined, // onProgress callback not needed
-            (error) => reject(error) // Reject the Promise on error
+            // undefined, // onProgress callback not needed
+            // (error) => reject(error) // Reject the Promise on error
         )
     };
     stats.end();
