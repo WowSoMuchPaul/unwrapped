@@ -53,7 +53,7 @@ function init() {
      */
     camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height)
     camera.position.z = 3000;
-    camera.far = 100000;
+    camera.far = 1000;
     camera.focus = 1000;
     scene.add(camera);
     lastCamPosition = camera.position.z;
@@ -116,6 +116,24 @@ function init() {
     document.getElementById("create").addEventListener("click", createAll);
     document.getElementById("auth").addEventListener("click", authorizationReq);
     document.getElementById("playlist").addEventListener("click", setFestivalPlaylist);
+    
+    //Nav Bar Listener
+    document.getElementById("navPlaylist").addEventListener("click", e => {
+        bringeZumBereich(e.target);
+    });
+    document.getElementById("navOnRepeat").addEventListener("click", e => {
+        bringeZumBereich(e.target);
+    });
+    document.getElementById("navSongs").addEventListener("click", e => {
+        bringeZumBereich(e.target);
+    });
+    document.getElementById("navArtists").addEventListener("click", e => {
+        bringeZumBereich(e.target);
+    });
+    document.getElementById("navProfil").addEventListener("click", e => {
+        bringeZumBereich(e.target);
+    });
+
     document.getElementById("timeRange").addEventListener("change", function() {
         deleteGroup();
         if (this.value == "long_term") {
@@ -242,7 +260,20 @@ function handleBereich(pos, tp) {
     }
 }
 
-function bringeZumBereich(target) {
+function bringeZumBereich(origin) {
+    let target;
+    if(origin.id == "navPlaylist") {
+        target = targetPoints.playlist;
+    } else if (origin.id == "navOnRepeat") {
+        target = targetPoints.onRepeat;
+    } else if (origin.id == "navSongs") {
+        target = targetPoints.topSong;
+    } else if (origin.id == "navArtists") {
+        target = targetPoints.topArtist;
+    } else if (origin.id == "navProfil") {
+        target = targetPoints.profil;
+    }
+    target += cameraTargetDistance;
 
     freeMovement = false;
     TrackballControls.noZoom = true;
@@ -294,13 +325,13 @@ const tick = () =>
 function createTextMesh(text, fontsize, x, y, z) {
     const fontLoader = new FontLoader()
     fontLoader.load(
-        '/fonts/Gotham_Bold.typeface.json',
+        '/fonts/W95FA_Regular.typeface.json',
         (font) => {
             const textGeometry = new TextGeometry(
                 text, {
                     font: font,
                     size: fontsize,
-                    height: 1.2,
+                    height: 0.2,
                     curveSegments: 12,
                     bevelEnabled: true,
                     bevelThickness: 0.03,
@@ -398,7 +429,13 @@ function createTopSongs() {
         songs = JSON.parse(localStorage.getItem("topSongs"));
     }
     //console.log(songs);
-    createBildMesh(songs[0].imageUrl, 20, 0, targetPoints.topSong, 0, 50);
+    createTextMesh("Deine Top 3 Songs", 5, -55, 15, targetPoints.topSong);
+    createBildMesh(songs[0].imageUrl, 0, 0, targetPoints.topSong, 0, 20);
+    createTextMesh("1: " + songs[0].name, 2, -10, -15, targetPoints.topSong);
+    createBildMesh(songs[1].imageUrl, -30, -5, targetPoints.topSong, 0, 20);
+    createTextMesh("2: " + songs[1].name, 2, -40, -20, targetPoints.topSong);
+    createBildMesh(songs[2].imageUrl, 30, -10, targetPoints.topSong, 0, 20);
+    createTextMesh("3: " + songs[2].name, 2, 20, -25, targetPoints.topSong);
 }
 
 function createAll() {
