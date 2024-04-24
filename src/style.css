@@ -1,3 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+
 @font-face {
   font-family: Gotham;
   src: url("../static/fonts/GothamBold.ttf") format("truetype");
@@ -45,9 +51,11 @@ body {
   left: 50%;
   -ms-transform: translate(-50%, -50%);
   transform: translate(-50%, -50%);
-  background-color: #c4c4c4;
+  background-color: #c0c0c0;
   overflow-x: hidden;
   transition: 0.5s;
+  border-width: 2px;
+  border-color: #FFFFFF #808080 #808080 #FFFFFF;
   border-style: outset;
 }
 
@@ -59,57 +67,86 @@ body {
   top: 25%;
   width: 100%;
   text-align: center;
-  margin-top: 30px;
+  align-items: center;
+  margin-top: 50px;
+}
+div.overlaybar {
+  background-color: #1926e1;
+  color: #ffffff;
+  border-width: 1px;
+  border-color: #000000 #808080 #808080 #FFFFFF;
+  border-style: outset;
+  height: 25px;
+  display:flexbox;
 }
 
 .overlaybar {
   background-color: #1926e1;
   color: #ffffff;
   height: 25px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
 }
 
 .closebtn {
-  color: hsl(0, 0%, 0%);
-  background-color: #c4c4c4;
-  font-size: 25px;
-  position: absolute;
-  right: 5px;
-  top: 5px;
+  justify-self: end;
+  background-color: #c0c0c0;
+  margin: 2px 2px 2px px;
+  position : relative;
+  border-width: 1px;
+  border-color: #FFFFFF #808080 #808080 #FFFFFF;
+  border-style: outset;
+  padding: 2px 2px 2px 2px;
+  /* display: flex; */
+  /* float: left;  */
+  font-size: 12px;
+  font-weight: bold;
+  font-family: Tahoma;
+  text-align: center;
   cursor: pointer;
-  line-height: 0.6;
-  letter-spacing: auto;
+  color: #000000;
+  
 }
 
-#xGround {
-  display: flex;
-  position: absolute;
-  width: 25px;
-  height: 25px;
-  background-color: gray;
-  border: 1px solid black;
+
+.closebtn:hover {
+  background-color: #808080;
+  color: #000000;
 }
 
-.xGround {
-  width: 2px;
-  height: 25px;
-  margin-left: 12px;
-  background-color: black;
-  transform: rotate(45deg);
-  z-index: 1;
-}
-
-.x {
-  width: 2px;
-  height: 25px;
-  background-color: black;
-  transform: rotate(90deg);
-  z-index: 2;
-}
 
 h1 {
   font-size: 20px;
   color: #ffffff;
   margin-left: 10px;
   margin-top: 2px;
+}
+
+
+#spotifyConnect-btn {
+  justify-self: center;
+  background-color: #c0c0c0;
+  position: relative;
+
+  display: grid;
+  align-items: center;
+  border-width: 2px;
+  border-color: #000000 #808080 #808080 #FFFFFF;
+  border-style: outset;
+  /* padding: 2px 2px 2px 2px; */
+  font-size: 12px;
+  font-weight: bold;
+  font-family: Tahoma;
+  text-align: center;
+  cursor: pointer;
+  color: #000000;
+  margin: 2px 2px 2px 2px;
+
+}
+
+
+#spotifyConnect-btn:hover {
+  background-color: #808080;
+  color: #000000;
 }
