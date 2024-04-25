@@ -560,12 +560,22 @@ function createTopSongs() {
     createTextMesh("3: " + songs[2].name, 2, 20, -25, targetPoints.topSong);
 }
 
+// Funktion zum Erstellen der Playlist
+function createPlaylist() {
+    let playlist = getPlaylist();
+    let i = 0;
+    createTextMesh("Your \nunwrapped \nPlaylist", 10, -85, 20, targetPoints.playlist);
+    //createButton 
+    
+}
+
 function createAll() {
     inhaltGroup = new THREE.Group();
     inhaltGroup.name = "inhaltGroup";
     createProfil();
     createTopArtist();
     createHeavyRotation();
+    createPlaylist();
     // Hinzufügen der "inhaltGroup" zur Haupt-Szene
     createTopSongs();
     scene.add(inhaltGroup);
