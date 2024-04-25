@@ -1,0 +1,57 @@
+<!-- <!DOCTYPE html> -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spotify Festival</title>
+    
+    <link rel="icon" href="" />
+    <script type="module" crossorigin src="/assets/index-4ac02102.js"></script>
+    <link rel="stylesheet" href="/assets/index-338fd0b9.css">
+  </head>
+  <body>
+    <!--canvas class="webgl"></canvas-->
+    
+
+    <button id="help">?</button>
+
+    <div id="navBar">
+      <div id="navProgress"> </div>
+      <div id="navPlaylist" class="navBarElement">Playlist</div>
+      <div id="navOnRepeat" class="navBarElement">onRepeat</div>
+      <div id="navSongs" class="navBarElement">Songs</div>
+      <div id="navArtists" class="navBarElement">Artists</div>
+      <div id="navProfil" class="navBarElement">Profil</div>
+    </div>
+
+    <div id="overlay" class="overlay"> 
+      <div class="overlaybar">
+        Welcome
+        <div id="xGround">
+          <a id="closebtn" class="closebtn">&times;</a>
+          <!-- <div class="xGround">
+            <div class="x"></div>
+          </div> -->
+        </div>
+      </div>
+      <div>
+        <h1>Welcome to the Spotify Festival!</h1>
+        <button id="delete">delete</button>
+        <button id="create">create</button>
+        <button id="auth">Spotify Authorisieren</button>
+        <button id="playlist">Playlist erstellen</button>
+        <label for="timeRange">Time Range</label>
+        <select name="timeRange" id="timeRange">
+          <option value="long_term">Long Term</option>
+          <option value="medium_term">Medium Term</option>
+          <option value="short_term">Short Term</option>
+        </select>
+      </div>
+      <div class="overlay-content">
+        <button id="spotifyConnect-btn">
+          Connect with you Spotify Account
+        </button>
+      </div>
+    </div>
+  </body>
+</html>

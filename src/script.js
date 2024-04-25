@@ -64,10 +64,10 @@ function init() {
     /**
      * Camera
      */
-    camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height)
+    camera = new THREE.PerspectiveCamera( 75, sizes.width / sizes.height, 1, 550 );
     camera.position.z = 3000;
-    camera.far = 10;
-    camera.focus = 1000;
+    // camera.far = 500;
+    // camera.focus = 1000;
     scene.add(camera);
     lastCamPosition = camera.position.z;
 
@@ -466,7 +466,7 @@ function createProfil() {
     createTextMesh("Followers: " + profil.follower.toString(), 3, 55, -30, targetPoints.profil, winkel);
 
     let recGroupX = -80;
-    let recGroupY = -17;
+    let recGroupY = 0;
     let recText = 2;
     let recBildG = 25;
     let recBildRot = 0;
