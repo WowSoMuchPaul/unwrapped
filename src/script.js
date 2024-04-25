@@ -152,17 +152,9 @@ function init() {
             setTimeRangeShort();
         }
         //Das ist vielleicht nicht die eleganteste Lösung, aber das Ding muss halt auf die aktualisierten Werte warten, da die ja neu von spotify abgerufen werden.
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-        setTimeout(function(){
-=======
+
         setTimeout(function () {
->>>>>>> main
             createAll();
-=======
-        setTimeout(function () {
-            //createAll();
->>>>>>> Stashed changes
         }, 250);
     });
 
