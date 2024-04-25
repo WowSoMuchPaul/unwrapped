@@ -1,7 +1,7 @@
 
 var redirect_uri = "http://localhost:8000/";
-var client_id = "b125b5d4ba6f4e619e84880fa7a9a74f"; 
-var client_secret = "72f1c662c0644873a7622402af1b59fd";
+var client_id = import.meta.env.VITE_client_id; 
+var client_secret = import.meta.env.VITE_client_secret;
 var access_token = null;
 var refresh_token = null;
 var timeRange = "long_term";
