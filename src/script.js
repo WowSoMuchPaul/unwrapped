@@ -409,7 +409,7 @@ const tick = () => {
 function createTextMesh(text, fontsize, x, y, z) {
     const fontLoader = new FontLoader()
     fontLoader.load(
-        '/fonts/W95FA_Regular.typeface.json',
+        '../fonts/W95FA_Regular.typeface.json',
         (font) => {
             const textGeometry = new TextGeometry(
                 text, {
