@@ -517,6 +517,8 @@ function sammleArtistTopTracks() {
 
 export function setTimeRangeLong() {
     timeRange = "long_term";
+    localStorage.removeItem("topArtists");
+    localStorage.removeItem("topSongs");
     getTopArtists();
     getTopSongs();
     console.log("time range: Long");
@@ -524,6 +526,8 @@ export function setTimeRangeLong() {
 
 export function setTimeRangeMid() {
     timeRange = "medium_term";
+    localStorage.removeItem("topArtists");
+    localStorage.removeItem("topSongs");
     getTopArtists();
     getTopSongs();
     console.log("time range: Medium");
@@ -531,6 +535,8 @@ export function setTimeRangeMid() {
 
 export function setTimeRangeShort() {
     timeRange = "short_term";
+    localStorage.removeItem("topArtists");
+    localStorage.removeItem("topSongs");
     getTopArtists();
     getTopSongs();
     console.log("time range: Short");

@@ -136,6 +136,7 @@ function init() {
 
     document.getElementById("timeRange").addEventListener("change", function() {
         deleteGroup();
+        console.log(this.value);
         if (this.value == "long_term") {
             setTimeRangeLong();
         }
@@ -146,8 +147,13 @@ function init() {
             setTimeRangeShort();
         }
         //Das ist vielleicht nicht die eleganteste Lösung, aber das Ding muss halt auf die aktualisierten Werte warten, da die ja neu von spotify abgerufen werden.
+<<<<<<< Updated upstream
         setTimeout(function(){
             createAll();
+=======
+        setTimeout(function () {
+            //createAll();
+>>>>>>> Stashed changes
         }, 250);
     });
 
