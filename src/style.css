@@ -1,17 +1,19 @@
+
+
 @font-face {
-    font-family: Gotham;
-    src: url('../static/fonts/GothamBold.ttf') format('truetype');
-    font-weight: bold;
+  font-family: Gotham;
+  src: url("../static/fonts/GothamBold.ttf") format("truetype");
+  font-weight: bold;
 }
 @font-face {
-    font-family: Gotham;
-    src: url('../static/fonts/GothamBook.ttf') format('truetype');
-    font-weight: book;
+  font-family: Gotham;
+  src: url("../static/fonts/GothamBook.ttf") format("truetype");
+  font-weight: book;
 }
 @font-face {
-    font-family: Gotham;
-    src: url('../static/fonts/GothamLight.ttf') format('truetype');
-    font-weight: light;
+  font-family: Gotham;
+  src: url("../static/fonts/GothamLight.ttf") format("truetype");
+  font-weight: light;
 }
 
 @font-face {
@@ -21,9 +23,15 @@
 }
 
 @keyframes WindowsBlurr {
-    0%{background-position:0% 28%}
-    50%{background-position:100% 73%}
-    100%{background-position:0% 28%}
+  0% {
+    background-position: 0% 28%;
+  }
+  50% {
+    background-position: 100% 73%;
+  }
+  100% {
+    background-position: 0% 28%;
+  }
 }
 
 html {
@@ -38,46 +46,120 @@ body {
     min-height: 100%;
     margin: 0;
 
-    background: linear-gradient(144deg, #43ccb4, #3373ae, #bf61dd, #67e3a1);
-    background-size: 800% 800%;
+  background: linear-gradient(144deg, #43ccb4, #3373ae, #bf61dd, #67e3a1);
+  background-size: 800% 800%;
 
-    animation: WindowsBlurr 30s ease infinite;
+  animation: WindowsBlurr 30s ease infinite;
 }
 
 .overlay {
-    height: 50%;
-    width: 50%;
-    position: fixed;
-    z-index: 1;
-    top: 50%;
-    left: 50%;
-    -ms-transform: translate(-50%, -50%);
-    transform: translate(-50%, -50%);
-    background-color: #c4c4c4;
-    overflow-x: hidden;
-    transition: 0.5s;
-    border-style: outset;
+  height: 50%;
+  width: 50%;
+  position: fixed;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  background-color: #c0c0c0;
+  overflow-x: hidden;
+  transition: 0.5s;
+  border-width: 2px;
+  border-color: #FFFFFF #808080 #808080 #FFFFFF;
+  border-style: outset;
+}
+
+.overlay-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  position: relative;
+  top: 25%;
+  width: 100%;
+  text-align: center;
+  align-items: center;
+  margin-top: 50px;
+}
+div.overlaybar {
+  background-color: #1926e1;
+  color: #ffffff;
+  border-width: 1px;
+  border-color: #000000 #808080 #808080 #FFFFFF;
+  border-style: outset;
+  height: 25px;
+  display:flexbox;
 }
 
 .overlaybar {
-    background-color: #1926e1;
-    color: #ffffff;
-    height: 25px;
+  background-color: #1926e1;
+  color: #ffffff;
+  height: 25px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
 }
 
 .closebtn {
-    color: hsl(0, 0%, 0%);
-    background-color: #c4c4c4;
-    font-size: 25px;
-    position: absolute;
-    right: 5px;
-    top: 5px;
-    cursor: pointer;
-    line-height: 0.6;
-    letter-spacing: auto;
-    
+  justify-self: end;
+  background-color: #c0c0c0;
+  margin: 2px 2px 2px px;
+  position : relative;
+  border-width: 1px;
+  border-color: #FFFFFF #808080 #808080 #FFFFFF;
+  border-style: outset;
+  padding: 2px 2px 2px 2px;
+  /* display: flex; */
+  /* float: left;  */
+  font-size: 12px;
+  font-weight: bold;
+  font-family: Tahoma;
+  text-align: center;
+  cursor: pointer;
+  color: #000000;
+  
 }
 
+
+.closebtn:hover {
+  background-color: #808080;
+  color: #000000;
+}
+
+
+h1 {
+  font-size: 20px;
+  color: #ffffff;
+  margin-left: 10px;
+  margin-top: 2px;
+}
+
+
+#spotifyConnect-btn {
+  justify-self: center;
+  background-color: #c0c0c0;
+  position: relative;
+
+  display: grid;
+  align-items: center;
+  border-width: 2px;
+  border-color: #000000 #808080 #808080 #FFFFFF;
+  border-style: outset;
+  /* padding: 2px 2px 2px 2px; */
+  font-size: 12px;
+  font-weight: bold;
+  font-family: Tahoma;
+  text-align: center;
+  cursor: pointer;
+  color: #000000;
+  margin: 2px 2px 2px 2px;
+
+}
+
+
+#spotifyConnect-btn:hover {
+  background-color: #808080;
+  color: #000000;
+}
 .navBarElement {
     float: both;
     color: #ffffff;

@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Spotify Festival</title>
-    <link rel="stylesheet" href="./style.css">
-</head>
-<body>
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="icon" href="" />
+  </head>
+  <body>
     <!--canvas class="webgl"></canvas-->
     <script type="module" src="./script.js"></script>
 
@@ -24,14 +25,24 @@
     <div id="overlay" class="overlay"> 
       <div class="overlaybar">
         Welcome
-        <a id="closebtn" class="closebtn">&times;</a>
+        <div id="xGround">
+          <a id="closebtn" class="closebtn">&times;</a>
+          <!-- <div class="xGround">
+            <div class="x"></div>
+          </div> -->
+        </div>
       </div>
+<<<<<<< HEAD
 <<<<<<< Updated upstream
       <div class="overlay-content">
 =======
       <div>
         <h1>Welcome  to the Spotify Festival!</h1>
 >>>>>>> Stashed changes
+=======
+      <div>
+        <h1>Welcome to the Spotify Festival!</h1>
+>>>>>>> main
         <button id="delete">delete</button>
         <button id="create">create</button>
         <button id="auth">Spotify Authorisieren</button>
@@ -41,9 +52,13 @@
           <option value="long_term">Long Term</option>
           <option value="medium_term">Medium Term</option>
           <option value="short_term">Short Term</option>
-        </select> 
+        </select>
+      </div>
+      <div class="overlay-content">
+        <button id="spotifyConnect-btn">
+          Connect with you Spotify Account
+        </button>
       </div>
     </div>
-
-</body>
+  </body>
 </html>
