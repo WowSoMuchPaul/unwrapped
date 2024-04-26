@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@tweenjs/tween.js": "^21.0.0",
-    "serve": "^14.2.2",
     "stats.js": "^0.17.0",
     "three": "^0.148.0",
     "three-addons": "^1.2.0"

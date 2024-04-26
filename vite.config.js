@@ -9,7 +9,7 @@ export default defineConfig({
     server:
     {
         host: true,
-        open: true // Open if it's not a CodeSandbox
+        open: true // Open if it's not a CodeSandbo
     },
     build:
     {

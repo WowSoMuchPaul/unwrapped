@@ -155,6 +155,7 @@ function init() {
 
         setTimeout(function () {
             createAll();
+            console.log("hallo");
         }, 250);
     });
 
