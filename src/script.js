@@ -8,6 +8,7 @@ import Stats from 'stats.js';
 //import typefaceFont from 'three/examples/fonts/helvetiker_regular.typeface.json';
 
 import { onPageLoad, authorizationReq, setFestivalPlaylist, setTimeRangeLong, setTimeRangeMid, setTimeRangeShort } from "./spotify.js";
+import { log } from 'three/examples/jsm/nodes/Nodes.js';
 
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotGroup, lastIntersected;
 var inEinemBereich = false;
@@ -141,6 +142,7 @@ function init() {
 
     document.getElementById("timeRange").addEventListener("change", function() {
         deleteGroup();
+        console.log(this.value);
         if (this.value == "long_term") {
             setTimeRangeLong();
         }
@@ -151,8 +153,10 @@ function init() {
             setTimeRangeShort();
         }
         //Das ist vielleicht nicht die eleganteste Lösung, aber das Ding muss halt auf die aktualisierten Werte warten, da die ja neu von spotify abgerufen werden.
+
         setTimeout(function () {
             createAll();
+            console.log("halllllo");
         }, 250);
     });
 
@@ -163,6 +167,7 @@ function init() {
 
     //Alle Geometrien mit den Spotify Daten erstellen
     if (localStorage.getItem("access_token") != undefined) {
+        console.log("access token ist am start, create all.")
         createAll();
     }
 }
@@ -381,6 +386,7 @@ const tick = () => {
     lastCamPosition = Math.round(camera.position.z);
 
     // Raycaster-Update
+    /*
     raycaster.setFromCamera(mouse, camera);
     let intersects = raycaster.intersectObjects(heavyRotGroup.children);
 
@@ -395,6 +401,7 @@ const tick = () => {
         resetIntersectedObject(lastIntersected);
         lastIntersected = null;
     }
+    */
 
     // aktualiseren der TrackballControls und der TWEEN-Animationen
     trackControls.update();
@@ -491,8 +498,8 @@ function createTopArtist() {
     let profil = getProfil();
     let topArtists = getTopArtists();
     let i = 0;
-    console.log("createTopArtists, hier sind sie: " + topArtists);
-    console.log("Diese Profil gehört: " + profil.name);
+    //console.log("createTopArtists, hier sind sie: " + topArtists);
+    //console.log("Diese Profil gehört: " + profil.name);
     createTextMesh(profil.name + "'s", 20, -300, 110, targetPoints.topArtist - 200, 0);
     let headlineTwo = createTextMesh("\nTop Artists", 40, -300, 110, targetPoints.topArtist - 200, 0);
     while (i < topArtists.length) {
@@ -570,6 +577,7 @@ function createPlaylist() {
 }
 
 function createAll() {
+    console.log("createAll aufgerufen");
     inhaltGroup = new THREE.Group();
     inhaltGroup.name = "inhaltGroup";
     createProfil();

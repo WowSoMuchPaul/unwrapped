@@ -1,7 +1,7 @@
 
 var redirect_uri = "http://localhost:8000/";
-var client_id = import.meta.env.VITE_client_id; 
-var client_secret = import.meta.env.VITE_client_secret;
+var client_id = "b125b5d4ba6f4e619e84880fa7a9a74f";//import.meta.env.VITE_client_id; 
+var client_secret = "72f1c662c0644873a7622402af1b59fd";//import.meta.env.VITE_client_secret;
 var access_token = null;
 var refresh_token = null;
 var timeRange = "long_term";
@@ -518,6 +518,8 @@ function sammleArtistTopTracks() {
 
 export function setTimeRangeLong() {
     timeRange = "long_term";
+    localStorage.removeItem("topArtists");
+    localStorage.removeItem("topSongs");
     getTopArtists();
     getTopSongs();
     console.log("time range: Long");
@@ -525,6 +527,8 @@ export function setTimeRangeLong() {
 
 export function setTimeRangeMid() {
     timeRange = "medium_term";
+    localStorage.removeItem("topArtists");
+    localStorage.removeItem("topSongs");
     getTopArtists();
     getTopSongs();
     console.log("time range: Medium");
@@ -532,6 +536,8 @@ export function setTimeRangeMid() {
 
 export function setTimeRangeShort() {
     timeRange = "short_term";
+    localStorage.removeItem("topArtists");
+    localStorage.removeItem("topSongs");
     getTopArtists();
     getTopSongs();
     console.log("time range: Short");

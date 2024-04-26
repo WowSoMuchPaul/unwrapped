@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host --port 8000 --no-open"
+    "dev": "vite",
+    "build": "vite build"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.16",
@@ -13,7 +14,6 @@
   },
   "dependencies": {
     "@tweenjs/tween.js": "^21.0.0",
-    "serve": "^14.2.2",
     "stats.js": "^0.17.0",
     "three": "^0.148.0",
     "three-addons": "^1.2.0"
