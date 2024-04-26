@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host --port 8000 --no-open"
+    "dev": "vite",
+    "build": "vite build"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.16",
