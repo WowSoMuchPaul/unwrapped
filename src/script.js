@@ -13,7 +13,7 @@ import { log } from 'three/examples/jsm/nodes/Nodes.js';
 
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotGroup, lastIntersected;
 export {heavyRotGroup, inhaltGroup, scene};
-export const minCameraZ = 500;
+export const minCameraZ = 1000;
 export const maxCameraZ = 1500;
 var inEinemBereich = false;
 var tweenAktiviert = false;
@@ -71,7 +71,7 @@ function init() {
     /**
      * Camera
      */
-    camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 1, 550 );
+    camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 75, 700 );
     camera.position.z = 3000;
     // camera.far = 500;
     // camera.focus = 1000;
@@ -484,50 +484,43 @@ function createTopArtist() {
     }
 }
 
-// Funktion zum erstellen der Heavy Rotation
+// Funktion zum Erstellen der Heavy Rotation
 function createHeavyRotation() {
-    // Heavy Rotation aus dem Local Storage holen
     const heavyRotation = getOnRepeat();
-
-    // Heavy Rotation Group erstellen
     heavyRotGroup = new THREE.Group();
-
-    // Heavy Rotation Group positionieren
-    heavyRotGroup.position.x += 90;
-    heavyRotGroup.position.y -= 30;
-    heavyRotGroup.position.z = targetPoints.onRepeat - 50;
-    // heavyRotGroup der Scene & inhaltGroup hinzufügen
+    heavyRotGroup.position.set(90, -30, targetPoints.onRepeat - 50);
     scene.add(heavyRotGroup);
     inhaltGroup.add(heavyRotGroup);
 
-    // Anzahl der Elemente in der Heavy Rotation, basierend auf der Anzahl der Songs
-    const anzahlElemente = heavyRotation.length;
-    let radius = 160;
-    let vektor = { x: 0, y: 0, z: 0 };
+    const baseRadius = 150;
+    const radialOffset = 30; // Zusätzliche Radialverschiebung für jedes zweite Element
+    const numElements = heavyRotation.length;
 
-    // Array für die Positionen der einzelnen Elemente
-    const objektPositionen = [];
+    for (let e = 0; e < numElements; e++) {
+        let theta = (2 * Math.PI / numElements) * e;
+        let effectiveRadius = baseRadius + ((e % 2 === 0) ? radialOffset : 0); // Erhöhe Radius für jedes zweite Element
+        let x = effectiveRadius * Math.cos(theta);
+        let y = effectiveRadius * Math.sin(theta);
+        // Berechnet z-Position basierend auf der Position des Elements
+        let z = - 5; // Standardwert
+        if (e % 3 === 1) {
+            z = 20; // Zweites Element, 20 Einheiten nach vorne
+        } else if (e % 3 === 2) {
+            z = 10; // Drittes Element, 10 Einheiten nach vorne
+        }
 
-    // Positionen der einzelnen Elemente berechnen
-    for (let e = 0; e < anzahlElemente; e++) {
-        let theta = (2* Math.PI / anzahlElemente) * e;
-        let x = vektor.x + radius * Math.cos(theta);
-        let y = vektor.y + radius * Math.sin(theta);
-        let z = vektor.z;
-        // Positionen in Array speichern
-        const objektPosition = { x: x, y: y, z: z };
-        objektPositionen.push(objektPosition);
-        // BildMesh erstellen und der Heavy Rotation Group hinzufügen, dabei die Positionen aus dem Array verwenden
-        let bildMesh = createBildMesh(heavyRotation[e].image, objektPositionen[e].x, objektPositionen[e].y, objektPositionen[e].z, 15, 60);
+        // Erstelle BildMesh und füge der Heavy Rotation Group hinzu
+        let bildMesh = createBildMesh(heavyRotation[e].image, x, y, z, 0, 60);
         heavyRotation[e].mesh = bildMesh;
         bildMesh.userData.name = heavyRotation[e].name;
         bildMesh.userData.artists = heavyRotation[e].artists;
-        bildMesh.userData.originalZ = objektPositionen[e].z;
+        bildMesh.userData.originalZ = z;
         heavyRotGroup.add(bildMesh);
     }
-    //Headline für Heavy Rotation erstellen
-    createTextMesh("Your Heavy \nRotation", 40, -300, 170, targetPoints.onRepeat - 20, 30);
+
+    createTextMesh("Your Heavy \nRotation", 40, -300, 170, targetPoints.onRepeat - 20, 45);
 }
+
 
 // Funktion zu Erstellen aller Hauptgruppen der Szene
 function createTopSongs() {

@@ -1,14 +1,14 @@
 import TWEEN from '@tweenjs/tween.js';
 import * as THREE from 'three';
-import { createTextMesh, heavyRotGroup, inhaltGroup, minCameraZ, maxCameraZ, scene } from './script.js';
+import { createTextMesh, heavyRotGroup, inhaltGroup, minCameraZ, maxCameraZ } from './script.js';
 
 const textMeshMap = new Map();
 
 // Funktion zum Aktualisieren der Raycaster-Interaktion von Objekten + export für Verwendung in anderen scripten
 export function updateRaycasterInteraction(raycaster, mouse, camera, objectsGroup, lastIntersected) {
-    // Überprüfung, ob die Kamera innerhalb des festgelegten Z-Bereichs liegt
+    // Überprüfung, ob die Kamera innerhalb des festgelegten Z-Bereichs liegt, in script.js definiert
     if (camera.position.z < minCameraZ || camera.position.z > maxCameraZ) {
-        return lastIntersected; // Frühe Rückkehr, führe keine Interaktion durch
+        return lastIntersected;
     }
 
     raycaster.setFromCamera(mouse, camera);
@@ -21,7 +21,7 @@ export function updateRaycasterInteraction(raycaster, mouse, camera, objectsGrou
                 resetObject(lastIntersected);
             }
             if (!intersected.userData.isHovered && !intersected.userData.animationActive) {
-                moveObject(intersected, intersected.position.z + 30, 200);
+                moveObject(intersected, intersected.position.z + 50, 200);
             }
             lastIntersected = intersected;
         }
@@ -39,11 +39,10 @@ async function moveObject(obj, targetZ, duration) {
             obj.userData.isHovered = true;
             obj.userData.animationActive = true;
             
-            let songArtistText = await createTextMesh(obj.userData.name, 5, heavyRotGroup.position.x, heavyRotGroup.position.y, heavyRotGroup.position.z, 0);
-            console.log(songArtistText);
-
-            // Speichere das TextMesh in der Map
-            textMeshMap.set(obj, songArtistText);
+            let songName = await displaySongName(obj);
+            centerTextMesh(songName, heavyRotGroup.position.x, heavyRotGroup.position.y, heavyRotGroup.position.z);
+            let songArtists = await displaySongArtist(obj);
+            centerTextMesh(songArtists, heavyRotGroup.position.x, heavyRotGroup.position.y - 15, heavyRotGroup.position.z);
 
             new TWEEN.Tween(obj.position)
                 .to({ z: targetZ }, duration)
@@ -54,9 +53,47 @@ async function moveObject(obj, targetZ, duration) {
                 .start();
         }
     } catch (error) {
-        console.error('Fehler bei der Bewegung des Objekts:', error);
+        console.error('Fehler beim animieren des Objekts:', error);
     }
 }
+
+async function displaySongName(obj) {
+    let songNameTextMesh = await createTextMesh(obj.userData.name, 10, heavyRotGroup.position.x, heavyRotGroup.position.y, heavyRotGroup.position.z, 0);
+    if (!textMeshMap.has(obj)) {
+        textMeshMap.set(obj, []);
+    }
+    textMeshMap.get(obj).push(songNameTextMesh);
+    return songNameTextMesh;
+}
+
+async function displaySongArtist(obj) {
+    const artistsArray = obj.userData.artists;
+    const artistsNames = artistsArray.map(artist => artist.name).join(", ");
+    let songArtistTextMesh = await createTextMesh(artistsNames, 8, heavyRotGroup.position.x, heavyRotGroup.position.y - 15, heavyRotGroup.position.z, 0);
+    if (!textMeshMap.has(obj)) {
+        textMeshMap.set(obj, []);
+    }
+    textMeshMap.get(obj).push(songArtistTextMesh);
+    return songArtistTextMesh;
+}
+
+
+
+function centerTextMesh(textMesh, x, y, z) {
+    // Stelle sicher, dass die Bounding Box berechnet ist
+    textMesh.geometry.computeBoundingBox();
+  
+    // Hole die Größe der Bounding Box
+    const size = new THREE.Vector3();
+    textMesh.geometry.boundingBox.getSize(size);
+  
+    // Zentriere den TextMesh an der gewünschten Position
+    textMesh.position.x = x - size.x / 2;
+    textMesh.position.y = y - size.y / 2;
+    textMesh.position.z = z;
+  }
+  
+  
 
 // Funktion zum Zurücksetzen von Objekten
 function resetObject(obj) {
@@ -64,15 +101,17 @@ function resetObject(obj) {
         obj.userData.isHovered = false;
         obj.userData.animationActive = true;
 
-        // Hole und entferne das TextMesh aus der Map
-        const textMesh = textMeshMap.get(obj);
-        if (textMesh) {
-            inhaltGroup.remove(textMesh);
-            textMesh.geometry.dispose();
-            textMesh.material.dispose();
+        // Holt die TextMeshes des Objekts aus der Map und entfernt sie aus der Szene
+        const textMeshes = textMeshMap.get(obj);
+        if (textMeshes) {
+            textMeshes.forEach(textMesh => {
+                inhaltGroup.remove(textMesh);
+                textMesh.geometry.dispose();
+                textMesh.material.dispose();
+            });
             textMeshMap.delete(obj);
         }
-
+        // Setzt die Position des Objekts auf die ursprüngliche Position zurück
         let originalZ = obj.userData.originalZ;
         new TWEEN.Tween(obj.position)
             .to({ z: originalZ }, 300)
