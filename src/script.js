@@ -1,9 +1,10 @@
 import * as THREE from 'three';
+import { updateRaycasterInteraction } from './interaction.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import TWEEN, { remove } from '@tweenjs/tween.js';
+import TWEEN from '@tweenjs/tween.js';
 import Stats from 'stats.js';
 //import typefaceFont from 'three/examples/fonts/helvetiker_regular.typeface.json';
 
@@ -11,10 +12,13 @@ import { onPageLoad, authorizationReq, setFestivalPlaylist, setTimeRangeLong, se
 import { log } from 'three/examples/jsm/nodes/Nodes.js';
 
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotGroup, lastIntersected;
+export {heavyRotGroup, inhaltGroup, scene};
+export const minCameraZ = 500;
+export const maxCameraZ = 1500;
 var inEinemBereich = false;
 var tweenAktiviert = false;
 var freeMovement = true;
-const targetPoints = {};
+export const targetPoints = {};
 const bereichOffsetVorne = 400;
 const bereichDampingVorne = bereichOffsetVorne / 2;
 const bereichOffsetHinten = 100;
@@ -22,7 +26,9 @@ const bereichDampingHinten = bereichOffsetHinten / 1.2;
 const zoomSpeedNorm = 0.3;
 const zoomSpeedBereich = 0.02;
 const tweenStartDistance = 10;
-const cameraTargetDistance = 100;
+const cameraTargetDistance = 300;
+// let lastIntersected = null;
+
 
 const stats = new Stats();
 // stats.showPanel(0);
@@ -65,7 +71,7 @@ function init() {
     /**
      * Camera
      */
-    camera = new THREE.PerspectiveCamera( 75, sizes.width / sizes.height, 1, 550 );
+    camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 1, 550 );
     camera.position.z = 3000;
     // camera.far = 500;
     // camera.focus = 1000;
@@ -333,39 +339,6 @@ function bringeZumBereich(origin) {
 const clock = new THREE.Clock();
 let previousTime = 0;
 
-// Funktion zum bewegen des aktuell getroffenen Objekts
-function handleIntersectedObject(intersectedObject) {
-    // Überprüfen, ob das aktuell getroffene Objekt nicht gehovert ist
-    if (!intersectedObject.isHovered) {
-        // Erstellen einer Tween-Animation, um das aktuell getroffene Objekt nach vorne zu bewegen
-        new TWEEN.Tween(intersectedObject.position)
-            .to({ z: intersectedObject.position.z + 40 }, 300)
-            .easing(TWEEN.Easing.Exponential.Out)
-            .start();
-        // aktuelles Objekt als gehovert setzen
-        intersectedObject.isHovered = true;
-        // Erstellen von Künstler:innen Name neben den Bildern 
-        // console.log(intersectedObject.userData.name);
-        // const rotText = createTextMesh( intersectedObject.userData.name, 10, intersectedObject.position.x, intersectedObject.position.y -50, targetPoints.onRepeat , 0);
-        // console.log(rotText);
-    }
-    // aktualisieren des letzten getroffenen Objekts
-    lastIntersected = intersectedObject;
-
-}
-
-// Funktion zum zurücksetzen des letzten getroffenen Objekts
-function resetIntersectedObject(intersectedObject) {
-    // Erstellen einer Tween-Animation, um das letzte getroffene Objekt zurück zu seiner ursprünglichen Position zu bewegen
-    new TWEEN.Tween(intersectedObject.position)
-        .to({ z: intersectedObject.position.z - 40 }, 300)
-        .easing(TWEEN.Easing.Exponential.Out)
-        .start();
-    // letztes Objekt als nicht mehr gehovert setzen
-    intersectedObject.isHovered = false;
-    //clearThree(rotText);
-}
-
 // Funktion zum animieren der Szene
 const tick = () => {
     stats.begin();
@@ -385,24 +358,8 @@ const tick = () => {
     }
     lastCamPosition = Math.round(camera.position.z);
 
-    // Raycaster-Update
-    /*
-    raycaster.setFromCamera(mouse, camera);
-    let intersects = raycaster.intersectObjects(heavyRotGroup.children);
-
-    // Überprüfen, ob ein Objekt getroffen wurde
-    if (intersects.length > 0) {
-        if (lastIntersected && lastIntersected !== intersects[0].object) {
-            resetIntersectedObject(lastIntersected);
-        }
-        handleIntersectedObject(intersects[0].object);
-    }
-    else if (lastIntersected) {
-        resetIntersectedObject(lastIntersected);
-        lastIntersected = null;
-    }
-    */
-
+    lastIntersected = updateRaycasterInteraction(raycaster, mouse, camera, heavyRotGroup, lastIntersected);
+    
     // aktualiseren der TrackballControls und der TWEEN-Animationen
     trackControls.update();
     TWEEN.update();
@@ -413,7 +370,10 @@ const tick = () => {
 }
 
 
-function createTextMesh(text, fontsize, x, y, z) {
+
+// Funktion zum erstellen von TextMeshes
+export function createTextMesh(text, fontsize, x, y, z, rotationY) {
+    return new Promise((resolve, reject) => {
     const fontLoader = new FontLoader()
     fontLoader.load(
         '../fonts/W95FA_Regular.typeface.json',
@@ -430,22 +390,33 @@ function createTextMesh(text, fontsize, x, y, z) {
                     bevelOffset: 0,
                     bevelSegments: 5
                 }
-                )
-                const textMaterial = new THREE.MeshBasicMaterial();
-                let textMesh = new THREE.Mesh(textGeometry, textMaterial);
-                //textMesh.receiveShadow = true;
-                inhaltGroup.add(textMesh);
-                textMesh.position.x = x;
-                textMesh.position.y = y;
-                textMesh.position.z = z;
-                //textMesh.rotateY(rotationY * (Math.PI / 180))
-                //resolve(textMesh); // Lösen Sie die Promise mit textMesh
-            },
-            // undefined, // onProgress callback not needed
-            // (error) => reject(error) // Reject the Promise on error
-        )
-    };
-    stats.end();
+            )
+            const textMaterial = new THREE.MeshBasicMaterial();
+            let textMesh = new THREE.Mesh(textGeometry, textMaterial);
+            inhaltGroup.add(textMesh);
+            // Positionierung des TextMeshes
+            textMesh.position.x = x;
+            textMesh.position.y = y;
+            textMesh.position.z = z;
+            //Rotation um Y-Achse bei angebenem Winkel
+            if (rotationY) {
+                textMesh.rotateY(rotationY * Math.PI / 180);
+            }
+
+            // Fügt das TextMesh der inhaltGroup hinzu
+            inhaltGroup.add(textMesh);
+
+            // Auflösen des Promises mit dem erstellten TextMesh
+            resolve(textMesh);
+        },
+        undefined,
+        (error) => {  // onError Handler
+            reject(error);
+        }
+    );
+});
+}
+
 
 function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
     //Bildtextur
@@ -517,22 +488,29 @@ function createTopArtist() {
 function createHeavyRotation() {
     // Heavy Rotation aus dem Local Storage holen
     const heavyRotation = getOnRepeat();
+
     // Heavy Rotation Group erstellen
     heavyRotGroup = new THREE.Group();
+
     // Heavy Rotation Group positionieren
-    heavyRotGroup.position.z = targetPoints.onRepeat;
+    heavyRotGroup.position.x += 90;
+    heavyRotGroup.position.y -= 30;
+    heavyRotGroup.position.z = targetPoints.onRepeat - 50;
     // heavyRotGroup der Scene & inhaltGroup hinzufügen
     scene.add(heavyRotGroup);
     inhaltGroup.add(heavyRotGroup);
+
     // Anzahl der Elemente in der Heavy Rotation, basierend auf der Anzahl der Songs
     const anzahlElemente = heavyRotation.length;
-    let radius = 250;
+    let radius = 160;
     let vektor = { x: 0, y: 0, z: 0 };
 
+    // Array für die Positionen der einzelnen Elemente
     const objektPositionen = [];
+
     // Positionen der einzelnen Elemente berechnen
     for (let e = 0; e < anzahlElemente; e++) {
-        let theta = (2 * Math.PI / anzahlElemente) * e;
+        let theta = (2* Math.PI / anzahlElemente) * e;
         let x = vektor.x + radius * Math.cos(theta);
         let y = vektor.y + radius * Math.sin(theta);
         let z = vektor.z;
@@ -540,12 +518,15 @@ function createHeavyRotation() {
         const objektPosition = { x: x, y: y, z: z };
         objektPositionen.push(objektPosition);
         // BildMesh erstellen und der Heavy Rotation Group hinzufügen, dabei die Positionen aus dem Array verwenden
-        let bildMesh = createBildMesh(heavyRotation[e].image, objektPositionen[e].x, objektPositionen[e].y, objektPositionen[e].z, 25, 100);
+        let bildMesh = createBildMesh(heavyRotation[e].image, objektPositionen[e].x, objektPositionen[e].y, objektPositionen[e].z, 15, 60);
         heavyRotation[e].mesh = bildMesh;
         bildMesh.userData.name = heavyRotation[e].name;
+        bildMesh.userData.artists = heavyRotation[e].artists;
+        bildMesh.userData.originalZ = objektPositionen[e].z;
         heavyRotGroup.add(bildMesh);
     }
-    createTextMesh("Your \nHeavy Rotation", 40, -200, 0, targetPoints.onRepeat - 300, 0);
+    //Headline für Heavy Rotation erstellen
+    createTextMesh("Your Heavy \nRotation", 40, -300, 170, targetPoints.onRepeat - 20, 30);
 }
 
 // Funktion zu Erstellen aller Hauptgruppen der Szene
