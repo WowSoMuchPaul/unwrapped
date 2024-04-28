@@ -8,7 +8,7 @@ import Stats from 'stats.js';
 //import typefaceFont from 'three/examples/fonts/helvetiker_regular.typeface.json';
 
 import { onPageLoad, authorizationReq, setFestivalPlaylist, setTimeRangeLong, setTimeRangeMid, setTimeRangeShort } from "./spotify.js";
-import { log } from 'three/examples/jsm/nodes/Nodes.js';
+import { color, log, tangentGeometry } from 'three/examples/jsm/nodes/Nodes.js';
 
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotGroup, lastIntersected;
 var inEinemBereich = false;
@@ -71,6 +71,7 @@ function init() {
     camera.focus = 1000;
     scene.add(camera);
     lastCamPosition = camera.position.z;
+    
 
 
     // helper = new THREE.CameraHelper(camera);
@@ -384,6 +385,13 @@ const tick = () => {
         //console.log("Es bewegt sich. " + Math.round(camera.position.z));
     }
     lastCamPosition = Math.round(camera.position.z);
+     //console.log("Checking position:", lastCamPosition, "vs", targetPoints.onRepeat);
+    //  if(lastCamPosition <= targetPoints.)
+    //  createPlaylistButton();
+    
+
+    //console.log(lastCamPosition);
+   
 
     // Raycaster-Update
     /*
@@ -447,6 +455,42 @@ function createTextMesh(text, fontsize, x, y, z) {
     };
     stats.end();
 
+    function createIconMesh(text, fontsize, x, y, z, rotationX, rotationY, color, opacity) {
+        const fontLoader = new FontLoader()
+        fontLoader.load(
+            '../fonts/Yarndings 12_Regular.json',
+            (font) => {
+                const iconGeometry = new TextGeometry(
+                    text, {
+                        font: font,
+                        size: fontsize,
+                        height: 0.2,
+                        curveSegments: 12,
+                        bevelEnabled: true,
+                        bevelThickness: 0.03,
+                        bevelSize: 0.02,
+                        bevelOffset: 0,
+                        bevelSegments: 5
+                    }
+                    )
+                    const iconMaterial = new THREE.MeshBasicMaterial();
+                    let iconMesh = new THREE.Mesh(iconGeometry, iconMaterial);
+                    //iconMesh.receiveShadow = true;
+                    inhaltGroup.add(iconMesh);
+                    iconMesh.position.x = x;
+                    iconMesh.position.y = y;
+                    iconMesh.position.z = z;
+                    iconMaterial.color = color;
+                    iconMaterial.opacity = opacity;
+                    
+                    iconMesh.rotateX(rotationY * (Math.PI / 180));
+                    iconMesh.rotateY(rotationY * (Math.PI / 180));
+                    //resolve(iconMesh); // Lösen Sie die Promise mit textMesh
+                },
+                // undefined, // onProgress callback not needed
+                // (error) => reject(error) // Reject the Promise on error
+            )
+        };
 function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
     //Bildtextur
     const texture = new THREE.TextureLoader().load(bildUrl);//'https://3.bp.blogspot.com/-Ol0cP_dxq7U/VWjIWBW2QpI/AAAAAAAAJxg/8ackwAwAYIE/s1600/JPx7R.jpg' );
@@ -462,6 +506,76 @@ function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
     bildMesh.rotateY(rotationY * (Math.PI / 180));
     bildMesh.isHovered = false;
     return bildMesh;
+}
+
+function createRingMesh(x,y,z,rotationY,rotationX, farbe, inRad, outRad ){
+
+    const geometry = new THREE.RingGeometry( inRad, outRad, 90 ); 
+    const material = new THREE.MeshBasicMaterial( { color: 0xffffff, side: THREE.DoubleSide });
+    const ringMesh = new THREE.Mesh( geometry, material );
+    inhaltGroup.add(ringMesh);
+    ringMesh.position.x = x;
+    ringMesh.position.y = y;
+    ringMesh.position.z = z;
+    ringMesh.rotateY(rotationY * (Math.PI/180));
+    ringMesh.rotateX(rotationX * (Math.PI/180));
+    material.color = farbe;
+
+    return ringMesh;
+}
+
+function createQuaderMesh(x,y,z,rotationX, rotationY, size, color){
+   // Square frame geometry
+   const frameGeometry = new THREE.BufferGeometry();
+    let outSqu = size;
+    let inSqu = outSqu-(outSqu/10);
+   // Define vertices for an outer and inner square (counter-clockwise winding)
+   const vertices = new Float32Array([
+
+       // Outer square vertices
+       -outSqu, -outSqu, 0.0,  // bottom left
+       outSqu, -outSqu, 0.0,   // bottom right
+       outSqu, outSqu, 0.0,    // top right
+       -outSqu, outSqu, 0.0,   // top left
+       // Inner square vertices
+       -inSqu, -inSqu, 0.0,  // bottom left
+       inSqu, -inSqu, 0.0,   // bottom right
+       inSqu, inSqu, 0.0,    // top right
+       -inSqu, inSqu, 0.0    // top left
+   ]);
+
+   // Define the indices that make up the two square faces (two triangles per face)
+   const indices = new Uint16Array([
+       // Outer square triangle 1
+       0, 1, 4,
+       1, 5, 4,
+       // Outer square triangle 2
+       1, 2, 5,
+       2, 6, 5,
+       // Outer square triangle 3
+       2, 3, 6,
+       3, 7, 6,
+       // Outer square triangle 4
+       3, 0, 7,
+       0, 4, 7
+   ]);
+
+   // Create attribute and set geometry indices
+   frameGeometry.setIndex(new THREE.BufferAttribute(indices, 1));
+   frameGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+
+   const material = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide, wireframe: false });
+   const frameMesh = new THREE.Mesh(frameGeometry, material);
+   inhaltGroup.add(frameMesh);
+
+   frameMesh.position.x = x;
+   frameMesh.position.y = y;
+   frameMesh.position.z = z;
+   frameMesh.rotateY(rotationY * (Math.PI/180));
+   frameMesh.rotateX(rotationX * (Math.PI/180));
+    frameMesh.material.color = color;
+
+   return frameMesh;
 }
 
 function createProfil() {
@@ -567,15 +681,46 @@ function createTopSongs() {
     createTextMesh("3: " + songs[2].name, 2, 20, -25, targetPoints.topSong);
 }
 
+function createPlaylist(){
+    createTextMesh("Deine \nunwrapped \nPlaylist", 5, -55, 15, targetPoints.playlist);
+    
+}
+
+// function createPlaylistButton(){
+//     console.log('bin drinn')
+//     const button  = document.createElement('button');
+//     button.id = 'createPlaylist-btn';
+//     button.textContent = 'Create Playlist'
+//     button.style.display = 'grid';
+//     playlistBttnContainer.appendChild(button);
+//document.getElementById("createPlaylist-btn").addEventListener("click",setFestivalPlaylist);
+// }
+
+// function playlistBtn(){
+//     if(lastCamPosition < 1000){
+//         console.log("bin drinn");
+//         console.log(button.name)
+// }
+// }
+
+function createEND(){
+    createTextMesh("THE END", 8, 0, 0, targetPoints.playlist-500);
+    createRingMesh(15,0,targetPoints.playlist-500,-55,25,0xffffff,150,160);
+    
+    createQuaderMesh(0,0,targetPoints.playlist-500,20,10, 120, 0x8043E2);
+}
+
 function createAll() {
     console.log("createAll aufgerufen");
     inhaltGroup = new THREE.Group();
     inhaltGroup.name = "inhaltGroup";
     createProfil();
     createTopArtist();
-    createHeavyRotation();
-    // Hinzufügen der "inhaltGroup" zur Haupt-Szene
+    createHeavyRotation()
     createTopSongs();
+    createPlaylist()
+    createEND();
+    // Hinzufügen der "inhaltGroup" zur Haupt-Szene
     scene.add(inhaltGroup);
 }
 

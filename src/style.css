@@ -46,7 +46,7 @@ body {
     min-height: 100%;
     margin: 0;
 
-  background: linear-gradient(144deg, #43ccb4, #3373ae, #bf61dd, #67e3a1);
+  background: linear-gradient(144deg, #6209BD, #8043E2, #720098, #0207AA);
   background-size: 800% 800%;
 
   animation: WindowsBlurr 30s ease infinite;
@@ -154,9 +154,32 @@ h1 {
   margin: 2px 2px 2px 2px;
 
 }
-
-
 #spotifyConnect-btn:hover {
+  background-color: #808080;
+  border-color: #000000 #808080 #808080 #FFFFFF;
+}
+
+#createPlaylist-btn{
+  justify-self: center;
+  background-color: #c0c0c0;
+  position: absolute;
+  display: grid;
+  align-items: center;
+  border-width: 5px;
+  border-color: #000000 #808080 #808080 #ffffff;
+  border-style: outset;
+  /* padding: 2px 2px 2px 2px; */
+  font-size: 24px;
+  font-weight: bold;
+  font-family: w95fa;
+  text-align: center;
+  cursor: pointer;
+  margin: 3px 3px 3px 3px;
+  color: #000000;
+  opacity: 0.8;
+}
+
+#createPlaylist-btn:hover {
   background-color: #808080;
   color: #000000;
 }
