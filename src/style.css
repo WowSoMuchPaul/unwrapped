@@ -42,7 +42,7 @@ html {
 body {
     font-family: W95FA;
     font-weight: regular;
-
+    /* overflow: hidden; */
     min-height: 100%;
     margin: 0;
 
@@ -159,29 +159,38 @@ h1 {
   border-color: #000000 #808080 #808080 #FFFFFF;
 }
 
+#playlistBttnContainer{
+    position: fixed;      
+    left: 50%;
+    bottom: 30%;
+    transform: translateX(-50%);
+    z-index: 100;
+} 
+
 #createPlaylist-btn{
-  justify-self: center;
+  /* justify-self: center; */
   background-color: #c0c0c0;
   position: absolute;
-  display: grid;
-  align-items: center;
+  /* align-items: center; */
   border-width: 5px;
   border-color: #000000 #808080 #808080 #ffffff;
   border-style: outset;
-  /* padding: 2px 2px 2px 2px; */
-  font-size: 24px;
+  padding: 5px 50px;
+  font-size: 30px;
   font-weight: bold;
   font-family: w95fa;
-  text-align: center;
+  /* text-align: center; */
   cursor: pointer;
   margin: 3px 3px 3px 3px;
   color: #000000;
   opacity: 0.8;
 }
 
+
+
 #createPlaylist-btn:hover {
-  background-color: #808080;
-  color: #000000;
+  background-color: #676666;
+  color: #ffffff;
 }
 .navBarElement {
     float: both;

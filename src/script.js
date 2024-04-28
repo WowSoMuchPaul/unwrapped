@@ -387,7 +387,11 @@ const tick = () => {
     lastCamPosition = Math.round(camera.position.z);
      //console.log("Checking position:", lastCamPosition, "vs", targetPoints.onRepeat);
     //  if(lastCamPosition <= targetPoints.)
-    //  createPlaylistButton();
+    if(lastCamPosition < targetPoints.onRepeat){
+        createPlaylistButton();
+    }
+     
+
     
 
     //console.log(lastCamPosition);
@@ -686,15 +690,16 @@ function createPlaylist(){
     
 }
 
-// function createPlaylistButton(){
-//     console.log('bin drinn')
-//     const button  = document.createElement('button');
-//     button.id = 'createPlaylist-btn';
-//     button.textContent = 'Create Playlist'
-//     button.style.display = 'grid';
-//     playlistBttnContainer.appendChild(button);
-//document.getElementById("createPlaylist-btn").addEventListener("click",setFestivalPlaylist);
-// }
+function createPlaylistButton(){
+    console.log('bin drinn')
+    const button  = document.createElement('button');
+    button.id = 'createPlaylist-btn';
+    button.textContent = 'Create Playlist';
+    // button.style.textAlign = 'start';
+    button.style.display = 'block';
+    document.getElementById('playlistBttnContainer').appendChild(button);
+    document.getElementById("createPlaylist-btn").addEventListener("click",setFestivalPlaylist);
+}
 
 // function playlistBtn(){
 //     if(lastCamPosition < 1000){
