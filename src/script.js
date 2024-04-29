@@ -1,10 +1,13 @@
-import * as THREE from 'three';
+// import * as THREE from 'three';
+// import TWEEN from '@tweenjs/tween.js';
+
+import { THREE, TWEEN } from './imports.js';
+
 import { updateRaycasterInteraction } from './interaction.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import TWEEN from '@tweenjs/tween.js';
 import Stats from 'stats.js';
 //import typefaceFont from 'three/examples/fonts/helvetiker_regular.typeface.json';
 
@@ -12,12 +15,12 @@ import { onPageLoad, authorizationReq, setFestivalPlaylist, setTimeRangeLong, se
 import { log } from 'three/examples/jsm/nodes/Nodes.js';
 
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotGroup, lastIntersected;
-export {heavyRotGroup, inhaltGroup, scene};
+export {camera, heavyRotGroup, inhaltGroup, scene};
 export const minCameraZ = 1000;
 export const maxCameraZ = 1500;
-var inEinemBereich = false;
-var tweenAktiviert = false;
-var freeMovement = true;
+let inEinemBereich = false;
+let tweenAktiviert = false;
+let freeMovement = true;
 export const targetPoints = {};
 const bereichOffsetVorne = 400;
 const bereichDampingVorne = bereichOffsetVorne / 2;
@@ -35,13 +38,41 @@ const stats = new Stats();
 document.body.appendChild(stats.dom);
 
 /** Raycaster */
-const raycaster = new THREE.Raycaster();
-let mouse = new THREE.Vector2();
+export const raycaster = new THREE.Raycaster();
+export let mouse = new THREE.Vector2();
 
 window.addEventListener('mousemove', (event) => {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    // handleMouseMove();
 }, false);
+
+/**
+ * Berechnet die Position der Maus im 3D-Raum relativ zur aktuellen Kameraposition und der Mausposition auf dem Bildschirm.
+ * @param {THREE.Vector2} mouse - Der Mausvektor, normalisiert (-1 bis 1 in beiden Achsen).
+ * @param {THREE.Camera} camera - Die verwendete Kamera in der Szene.
+ * @returns {THREE.Vector3} Die berechnete Position der Maus im 3D-Raum.
+ */
+export function getMouse3DPosition(mouse, camera) {
+    // Erstelle einen neuen 3D-Vektor, der den normalisierten Mausvektor aufnimmt
+    const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5); // z=0.5 stellt sicher, dass der Vektor in den Raum vor der Kamera projiziert wird.
+
+    // Die Funktion unproject transformiert den normalisierten Gerätekoordinatenvektor in Weltkoordinaten
+    vector.unproject(camera); 
+
+    // Berechne die Richtung vom Kamerastandpunkt zum Mausvektor
+    const dir = vector.sub(camera.position).normalize(); 
+
+    // Berechne die Distanz zur z=0 Ebene, basierend auf der Annahme, dass die Kamera in Richtung der negativen z-Achse sieht
+    const distance = -camera.position.z / dir.z; 
+
+    // Berechne die genaue Position im 3D-Raum, indem die berechnete Distanz entlang der Richtungsvektor von der aktuellen Kameraposition aus angewendet wird
+    const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+
+    return pos; // Gibt die berechnete 3D-Position der Maus zurück
+}
+
+
 
 /**cursor */
 const cursor = {};
@@ -248,9 +279,13 @@ function checkCamPosition() {
     }
 
     //Bereich Songs
-    if((pos <= (targetPoints.topSong + bereichOffsetVorne)) && (pos >= (targetPoints.topSong - bereichOffsetHinten)))
-    {
+    if((pos <= (targetPoints.topSong + bereichOffsetVorne)) && (pos >= (targetPoints.topSong - bereichOffsetHinten))){
         handleBereich(pos, targetPoints.topSong);
+    }
+
+    //Bereich OnRepeat
+    if ((pos <= (targetPoints.onRepeat + bereichOffsetVorne)) && (pos >= (targetPoints.onRepeat - bereichOffsetHinten))) {
+        handleBereich(pos, targetPoints.onRepeat);
     }
 
     //Bereich Playlist
@@ -362,17 +397,18 @@ const tick = () => {
     
     // aktualiseren der TrackballControls und der TWEEN-Animationen
     trackControls.update();
-    TWEEN.update();
+    TWEEN.update(); //!! Bereitet gerade Probleme, bounced zurück beim scrollen !!
 
     // Rendern der Szene und anfordern einer neuen Animation
     renderer.render(scene, camera);
     window.requestAnimationFrame(tick);
+    // console.log(camera.position.z);
 }
 
 
 
 // Funktion zum erstellen von TextMeshes
-export function createTextMesh(text, fontsize, x, y, z, rotationY) {
+export async function createTextMesh(text, fontsize, x, y, z, rotationY) {
     return new Promise((resolve, reject) => {
     const fontLoader = new FontLoader()
     fontLoader.load(
@@ -407,6 +443,7 @@ export function createTextMesh(text, fontsize, x, y, z, rotationY) {
             inhaltGroup.add(textMesh);
 
             // Auflösen des Promises mit dem erstellten TextMesh
+            textMesh.userData.name = text;
             resolve(textMesh);
         },
         undefined,
@@ -433,6 +470,25 @@ function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
     bildMesh.rotateY(rotationY * (Math.PI / 180));
     bildMesh.isHovered = false;
     return bildMesh;
+}
+
+function createCube(options) {
+    const geometry = new THREE.BoxGeometry();
+    const materials = options.materials.map(material => {
+        if (typeof material === 'string' && (material.startsWith('http') || material.match(/\.(jpeg|jpg|gif|png)$/))) {
+            return new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load(material) });
+        } else {
+            return new THREE.MeshBasicMaterial({ color: material });
+        }
+    });
+
+    const cube = new THREE.Mesh(geometry, materials);
+    cube.rotation.y = Math.PI + (Math.PI / 2);
+    cube.scale.set(options.scale, options.scale, options.scale);
+    cube.position.z = options.positionZ;
+    scene.add(cube);
+
+    return cube;
 }
 
 function createProfil() {
@@ -468,29 +524,44 @@ function createProfil() {
 function createTopArtist() {
     let profil = getProfil();
     let topArtists = getTopArtists();
+    let artistPics = [];
     let i = 0;
     //console.log("createTopArtists, hier sind sie: " + topArtists);
     //console.log("Diese Profil gehört: " + profil.name);
-    createTextMesh(profil.name + "'s", 20, -300, 110, targetPoints.topArtist - 200, 0);
-    let headlineTwo = createTextMesh("\nTop Artists", 40, -300, 110, targetPoints.topArtist - 200, 0);
+    createTextMesh(profil.name + "'s", 20, -300, -90, targetPoints.topArtist, 0);
+    let headlineTwo = createTextMesh("\nTop Artists", 40, -300, -80, targetPoints.topArtist, 0);
     while (i < topArtists.length) {
-        let x = 100 + i * -15;
-        let y = -60 + i * 25;
-        let z = targetPoints.topArtist - (100 + i * 55);
-        let BildMesh = createBildMesh(topArtists[i].imageUrl, x, y, z, 0, 65, 0);
-        topArtists[i].mesh = BildMesh;//zwischenspeichern des Meshes im Array
+        let x = 200 + i * -20;
+        let y = -60 + i * 40;
+        let z = targetPoints.topArtist - (i * 100);
+        // let BildMesh = createBildMesh(topArtists[i].imageUrl, x, y, z, 0, 100);
+        artistPics.push(topArtists[i].imageUrl);
+        // topArtists[i].mesh = BildMesh;//zwischenspeichern des Meshes im Array
         let artistName = createTextMesh(topArtists[i].name, 5, x + 45, y + 17, z, 0);
         i++;
     }
+
+    const cubeOptions = {
+        materials: [],
+        positionZ: targetPoints.topArtist,
+        scale: 100,
+        //rotationY: 2
+    };
+
+    for (let i = 0; i < artistPics.length; i++) {
+        cubeOptions.materials.push(artistPics[i]);
+    }
+    const myCube = createCube(cubeOptions);
+    console.log(myCube);    
 }
 
 // Funktion zum Erstellen der Heavy Rotation
-function createHeavyRotation() {
+async function createHeavyRotation() {
     const heavyRotation = getOnRepeat();
     heavyRotGroup = new THREE.Group();
-    heavyRotGroup.position.set(90, -30, targetPoints.onRepeat - 50);
-    scene.add(heavyRotGroup);
+    heavyRotGroup.position.set(110, 0, targetPoints.onRepeat - 50);
     inhaltGroup.add(heavyRotGroup);
+    scene.add(heavyRotGroup);
 
     const baseRadius = 150;
     const radialOffset = 30; // Zusätzliche Radialverschiebung für jedes zweite Element
@@ -510,17 +581,20 @@ function createHeavyRotation() {
         }
 
         // Erstelle BildMesh und füge der Heavy Rotation Group hinzu
-        let bildMesh = createBildMesh(heavyRotation[e].image, x, y, z, 0, 60);
+        let bildMesh = createBildMesh(heavyRotation[e].image, x, y, z, -5, 60);
         heavyRotation[e].mesh = bildMesh;
         bildMesh.userData.name = heavyRotation[e].name;
         bildMesh.userData.artists = heavyRotation[e].artists;
+        bildMesh.userData.originalX = x;
+        bildMesh.userData.originalY = y;
         bildMesh.userData.originalZ = z;
         heavyRotGroup.add(bildMesh);
     }
 
-    createTextMesh("Your Heavy \nRotation", 40, -300, 170, targetPoints.onRepeat - 20, 45);
+    await createTextMesh("Your Heavy \nRotation", 40, -350, 100, targetPoints.onRepeat - 20, 30);
+    await createTextMesh("Hover to see more", 20, -350, 0, targetPoints.onRepeat - 20, 30);
+    console.log("create heavy rotation");
 }
-
 
 // Funktion zu Erstellen aller Hauptgruppen der Szene
 function createTopSongs() {
@@ -556,10 +630,10 @@ function createAll() {
     inhaltGroup.name = "inhaltGroup";
     createProfil();
     createTopArtist();
+    createTopSongs();
     createHeavyRotation();
     createPlaylist();
     // Hinzufügen der "inhaltGroup" zur Haupt-Szene
-    createTopSongs();
     scene.add(inhaltGroup);
 }
 
