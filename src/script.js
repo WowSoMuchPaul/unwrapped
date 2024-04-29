@@ -16,8 +16,8 @@ import { log } from 'three/examples/jsm/nodes/Nodes.js';
 
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotGroup, lastIntersected;
 export {camera, heavyRotGroup, inhaltGroup, scene};
-export const minCameraZ = 1000;
-export const maxCameraZ = 1500;
+// export const minCameraZ = 1000;
+// export const maxCameraZ = 1500;
 let inEinemBereich = false;
 let tweenAktiviert = false;
 let freeMovement = true;

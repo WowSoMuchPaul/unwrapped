@@ -1,5 +1,5 @@
 import { THREE, TWEEN } from './imports.js';
-import { createTextMesh, heavyRotGroup, inhaltGroup, minCameraZ, maxCameraZ, camera, mouse, getMouse3DPosition } from './script.js';
+import { createTextMesh, heavyRotGroup, inhaltGroup, camera, mouse, getMouse3DPosition } from './script.js';
 
 const textMeshMap = new Map();
 
@@ -12,6 +12,8 @@ export function updateRaycasterInteraction(raycaster, mouse, camera, objectsGrou
 }
 
 function isCameraInBounds(camera) {
+    let minCameraZ = 1000;
+    let maxCameraZ = 1500;
     return camera.position.z >= minCameraZ && camera.position.z <= maxCameraZ;
 }
 
