@@ -15,13 +15,13 @@ function isCameraInBounds(camera) {
     return camera.position.z >= minCameraZ && camera.position.z <= maxCameraZ;
 }
 
-function isMouseNearCenter(intersect, threshold = 1.8) {
+function isMouseNearCenter(intersect, threshold = 1.5) {
     const object = intersect.object;
-    const bounds = new THREE.Box3().setFromObject(object); // Erstellt eine Bounding Box um das Objekt
-    const size = bounds.getSize(new THREE.Vector3()); // Größe der Bounding Box
-    const center = bounds.getCenter(new THREE.Vector3()); // Zentrum der Bounding Box
-    const distance = intersect.point.distanceTo(center); // Distanz vom Intersektionspunkt zum Zentrum
-    const maxDistance = Math.min(size.x, size.y) * threshold / 2; // Maximale Distanz basierend auf der kleineren Dimension
+    const bounds = new THREE.Box3().setFromObject(object); // Bounding Box des Objekts
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    const distance = intersect.point.distanceTo(center);
+    const maxDistance = Math.min(size.x, size.y) * threshold / 2;
 
     return distance <= maxDistance; // Prüft, ob die Distanz innerhalb des gewünschten Bereichs ist
 }
@@ -29,9 +29,17 @@ function isMouseNearCenter(intersect, threshold = 1.8) {
 
 let lastHovered = null;
 
+/**
+ * Verarbeitet die Intersects und aktualisiert den letzten intersected  Zustand.
+ * 
+ * @param {Array} intersects - Ein Array von Schnittpunkten.
+ * @param {Object} lastIntersected - Das zuletzt überlappende Objekt.
+ * @returns {Object} - Das aktualisierte letzte überlappende Objekt.
+ */
 function processIntersects(intersects, lastIntersected) {
     if (intersects.length > 0) {
         const intersected = intersects[0].object;
+        // Prüft, ob das Objekt gehovert wird und ob es nicht durch bestimmte Bedingungen blockiert ist
         if (isMouseNearCenter(intersects[0]) && lastIntersected !== intersected && intersected !== lastHovered && !intersected.userData.interactionBlocked && !intersected.userData.isAnimating) {
             resetObject(lastIntersected);
             animateAndDisplayText(intersected);
@@ -47,6 +55,12 @@ function processIntersects(intersects, lastIntersected) {
 }
 
 
+/**
+ * Animiert ein Objekt und zeigt den Text für ein Objekt an.
+ * 
+ * @param {Object} obj - Das Objekt, für das der Text animiert und angezeigt werden soll.
+ * @returns {Promise<void>} Ein Promise, das nach Abschluss der Animation aufgelöst wird.
+ */
 async function animateAndDisplayText(obj) {
     if (!obj.userData.isHovered && !obj.userData.animationActive) {
         obj.userData.isHovered = true;
@@ -94,6 +108,12 @@ function storeAndReturnMesh(obj, mesh) {
     textMeshMap.get(obj).push(mesh);
 }
 
+/**
+ * Bewegt ein Objekt zu einer Zielposition.
+ * 
+ * @param {Object3D} obj - Das zu bewegende Objekt.
+ * @param {number} duration - Die Dauer der Animation in Millisekunden.
+ */
 function moveObject(obj, duration) {
     if (obj.userData.animation) {
         obj.userData.animation.stop();
@@ -101,30 +121,30 @@ function moveObject(obj, duration) {
 
     obj.userData.isAnimating = true;
 
-    // Holen Sie die Mausposition im 3D-Raum, basierend auf der aktuellen Kamera- und Mausposition
+    // Holen der 3D-Mausposition
     const mouse3DPosition = getMouse3DPosition(mouse, camera);
 
-    // Berechnen Sie den Vektor von der aktuellen Position des Objekts zur Mausposition
+    // Berechnung des Richtungsvektors von der aktuellen Position des Objekts zur Mausposition
     const directionVector = new THREE.Vector3(
         mouse3DPosition.x - obj.position.x,
         mouse3DPosition.y - obj.position.y,
         mouse3DPosition.z - obj.position.z
     );
 
-    // Normalisieren Sie den Vektor, damit seine Länge 1 beträgt
+    // Normalisiert den Richtungsvektor, um die Bewegung in die Richtung der Mausposition zu ermöglichen
     directionVector.normalize();
 
-    // Definieren Sie, wie weit das Objekt in Richtung der Mausposition bewegt werden soll
+    // Definiert die Entfernung, die das Objekt bewegt werden soll
     const moveDistance = 5; // Zum Beispiel 50 Einheiten
 
-    // Berechnen Sie die Zielposition, indem Sie den normalisierten Vektor mit der Entfernung multiplizieren und zur aktuellen Position addieren
+    // Berechnet die Zielposition basierend auf dem Richtungsvektor und der Bewegungsdistanz
     const targetPosition = {
         x: obj.position.x + directionVector.x * moveDistance,
         y: obj.position.y + directionVector.y * moveDistance,
         z: obj.position.z + 50//directionVector.z * moveDistance
     };
 
-    // Erstellen Sie eine Tween-Animation, die das Objekt zur Zielposition bewegt
+    // Erstellt eine Tween-Animation, um das Objekt zu bewegen
     const tween = new TWEEN.Tween(obj.position)
         .to(targetPosition, duration)
         .easing(TWEEN.Easing.Exponential.Out)
@@ -148,7 +168,6 @@ function moveObject(obj, duration) {
 
     obj.userData.animation = tween;
 }
-
 
 function resetObjectToOrigin(obj, duration) {
     obj.userData.isAnimating = true;
@@ -187,11 +206,10 @@ function resetObject(obj) {
 
 function scaleObject(obj, scale) {
     if (obj.userData.originalScale === undefined) {
-        obj.userData.originalScale = obj.scale.clone(); // Speichere die ursprüngliche Skalierung
+        obj.userData.originalScale = obj.scale.clone(); // Speichert die ursprüngliche Skalierung des Objekts
     }
     obj.scale.set(obj.userData.originalScale.x * scale, obj.userData.originalScale.y * scale, obj.userData.originalScale.z * scale);
 }
-
 
 function removeTextMeshes(obj) {
     const textMeshes = textMeshMap.get(obj);

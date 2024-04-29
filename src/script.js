@@ -581,7 +581,7 @@ async function createHeavyRotation() {
         }
 
         // Erstelle BildMesh und füge der Heavy Rotation Group hinzu
-        let bildMesh = createBildMesh(heavyRotation[e].image, x, y, z, -5, 60);
+        let bildMesh = createBildMesh(heavyRotation[e].image, x, y, z, -2, 60);
         heavyRotation[e].mesh = bildMesh;
         bildMesh.userData.name = heavyRotation[e].name;
         bildMesh.userData.artists = heavyRotation[e].artists;
