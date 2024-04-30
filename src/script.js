@@ -29,8 +29,7 @@ const bereichDampingHinten = bereichOffsetHinten / 1.2;
 const zoomSpeedNorm = 0.3;
 const zoomSpeedBereich = 0.02;
 const tweenStartDistance = 10;
-const cameraTargetDistance = 300;
-// let lastIntersected = null;
+const cameraTargetDistance = 100;
 
 
 const stats = new Stats();
@@ -77,9 +76,9 @@ export function getMouse3DPosition(mouse, camera) {
 /**cursor */
 const cursor = {};
 
-await init();
+init();
 
-async function init() {
+function init() {
 
     onPageLoad();
 
@@ -109,6 +108,10 @@ async function init() {
     scene.add(camera);
     lastCamPosition = camera.position.z;
 
+    //Inhalt Group definieren
+    inhaltGroup = new THREE.Group();
+    inhaltGroup.name = "inhaltGroup";
+    scene.add(inhaltGroup);
 
     // helper = new THREE.CameraHelper(camera);
     // scene.add(helper);
@@ -205,7 +208,7 @@ async function init() {
     //Alle Geometrien mit den Spotify Daten erstellen
     if (localStorage.getItem("access_token") != undefined) {
         console.log("access token ist am start, create all.")
-        await createAll();
+        createAll();
     }
 }
 
@@ -268,6 +271,7 @@ function checkCamPosition() {
 
     //Bereich Profil
     if ((pos <= (targetPoints.profil + bereichOffsetVorne)) && (pos >= (targetPoints.profil - bereichOffsetHinten))) {
+        console.log("Bereich Profil");
         handleBereich(pos, targetPoints.profil);
     }
 
@@ -296,31 +300,37 @@ function handleBereich(pos, tp) {
 
     //Kamera ist im Eintritts-Damping
     if ((pos <= (tp + bereichOffsetVorne)) && (pos >= (tp + bereichOffsetVorne - bereichDampingVorne))) {
+        // console.log("Eintritts-Damping");
         trackControls.zoomSpeed = zoomSpeedBereich + (pos - ((tp + bereichOffsetVorne) - bereichDampingVorne)) * ((zoomSpeedBereich - zoomSpeedNorm) / (-bereichDampingVorne));
     }
 
     //Kamera ist im Bereich Playlist
     if ((pos <= (tp + bereichOffsetVorne - bereichDampingVorne)) && (pos >= (tp - bereichOffsetHinten + bereichDampingHinten))) {
+        // console.log("Bereich Playlist");
         //Kamera betritt Bereich Playlist
         if (!inEinemBereich) {
             inEinemBereich = true;
-            //trackControls.zoomSpeed = zoomSpeedBereich;
+            trackControls.zoomSpeed = zoomSpeedBereich;
             //console.log("BEREICH BETRETEN " + pos);
         }
         //TWEEN zur Camera Target Position
         if ((pos <= (tp + bereichOffsetVorne - bereichDampingVorne - tweenStartDistance)) && (pos >= (tp - bereichOffsetHinten + bereichDampingHinten + tweenStartDistance)) && (!tweenAktiviert)) {
+            console.log("nutze TWEEN");
             tweenAktiviert = true;
             TrackballControls.noZoom = true;
             new TWEEN.Tween(camera.position).to(
                 {
                     z: tp + cameraTargetDistance
-                }, 5000
+                }, 4000
             )
                 .easing(TWEEN.Easing.Exponential.Out)
-                .start().onComplete(() => {
+                .onComplete(() => {
+                    if(tp == targetPoints.topArtist) {
+                        handleTopArtistBereich();
+                    }
                     TrackballControls.noZoom = false;
-
-                });
+                })
+                .start();
         }
     }
     //Kamera verlaesst Bereich Playlist
@@ -333,10 +343,17 @@ function handleBereich(pos, tp) {
 
     //Kamera ist im Austritts-Damping
     if ((pos >= (tp - bereichOffsetHinten)) && (pos <= (tp - bereichOffsetHinten + bereichDampingHinten))) {
+        console.log("Austritts-Damping");
         trackControls.zoomSpeed = zoomSpeedBereich - (pos - ((tp - bereichOffsetHinten) + bereichDampingHinten)) * ((zoomSpeedBereich - zoomSpeedNorm) / (-bereichDampingHinten));
         //console.log("Damping Hinten. ZoomSpeed: " + trackControls.zoomSpeed);
     }
 }
+
+function handleTopArtistBereich() {
+    console.log("------!Top Artist Bereich");
+    TrackballControls.noZoom = true;
+}
+
 
 function bringeZumBereich(origin) {
     let target;
@@ -386,6 +403,7 @@ const tick = () => {
     camera.position.y += (parallaxY - camera.position.y) * 5 * deltaTime;
 
     if (lastCamPosition != Math.round(camera.position.z) && freeMovement) {
+        console.log("Check Cam Position Entry");
         checkCamPosition();
         //console.log("Es bewegt sich. " + Math.round(camera.position.z));
     }
@@ -405,75 +423,70 @@ const tick = () => {
 
 
 
-// Funktion zum erstellen und returnen von TextMeshes
+// Funktion zum erstellen von TextMeshes
 export async function createTextMesh(text, fontsize, x, y, z, rotationY) {
-    const fontLoader = new FontLoader();
-
-    try {
-        const font = await new Promise((resolve, reject) => {
-            fontLoader.load(
-                '../fonts/W95FA_Regular.typeface.json',
-                resolve,
-                undefined,
-                reject
-            );
-        });
-
-        const textGeometry = new TextGeometry(
-            text, {
-                font: font,
-                size: fontsize,
-                height: 0.2,
-                curveSegments: 12,
-                bevelEnabled: true,
-                bevelThickness: 0.03,
-                bevelSize: 0.02,
-                bevelOffset: 0,
-                bevelSegments: 5
+    return new Promise((resolve, reject) => {
+    const fontLoader = new FontLoader()
+    fontLoader.load(
+        '../fonts/W95FA_Regular.typeface.json',
+        (font) => {
+            const textGeometry = new TextGeometry(
+                text, {
+                    font: font,
+                    size: fontsize,
+                    height: 0.2,
+                    curveSegments: 12,
+                    bevelEnabled: true,
+                    bevelThickness: 0.03,
+                    bevelSize: 0.02,
+                    bevelOffset: 0,
+                    bevelSegments: 5
+                }
+            )
+            const textMaterial = new THREE.MeshBasicMaterial();
+            let textMesh = new THREE.Mesh(textGeometry, textMaterial);
+            
+            // Positionierung des TextMeshes
+            textMesh.position.x = x;
+            textMesh.position.y = y;
+            textMesh.position.z = z;
+            //Rotation um Y-Achse bei angebenem Winkel
+            if (rotationY) {
+                textMesh.rotateY(rotationY * Math.PI / 180);
             }
-        );
 
-        const textMaterial = new THREE.MeshBasicMaterial();
-        let textMesh = new THREE.Mesh(textGeometry, textMaterial);
-        inhaltGroup.add(textMesh);
-
-        // Positionierung des TextMeshes
-        textMesh.position.x = x;
-        textMesh.position.y = y;
-        textMesh.position.z = z;
-
-        //Rotation um Y-Achse bei angebenem Winkel
-        if (rotationY) {
-            textMesh.rotateY(rotationY * Math.PI / 180);
+            // Auflösen des Promises mit dem erstellten TextMesh
+            textMesh.userData.name = text;
+            resolve(textMesh);
+        },
+        undefined,
+        (error) => {  // onError Handler
+            reject(error);
         }
-
-        // Fügt das TextMesh der inhaltGroup hinzu
-        inhaltGroup.add(textMesh);
-
-        // Auflösen des Promises mit dem erstellten TextMesh
-        textMesh.userData.name = text;
-        return textMesh;
-    } catch (error) {
-        console.error('Fehler beim Laden der Schrift:', error);
-    }
+    );
+});
 }
 
 
-function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
-    //Bildtextur
-    const texture = new THREE.TextureLoader().load(bildUrl);//'https://3.bp.blogspot.com/-Ol0cP_dxq7U/VWjIWBW2QpI/AAAAAAAAJxg/8ackwAwAYIE/s1600/JPx7R.jpg' );
-    //Plane Geometry erstellen
-    const geometry = new THREE.PlaneGeometry(bildGroesse, bildGroesse);
-    const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
-    //Geometry und Material vereinen und der Scene hinzufühen
-    let bildMesh = new THREE.Mesh(geometry, material);
-    inhaltGroup.add(bildMesh);
-    bildMesh.position.x = x;
-    bildMesh.position.y = y;
-    bildMesh.position.z = z;
-    bildMesh.rotateY(rotationY * (Math.PI / 180));
-    bildMesh.isHovered = false;
-    return bildMesh;
+async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
+    return new Promise((resolve, reject) => {
+        new THREE.TextureLoader().load(
+            bildUrl,
+            (texture) => {
+                const geometry = new THREE.PlaneGeometry(bildGroesse, bildGroesse);
+                const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+                let bildMesh = new THREE.Mesh(geometry, material);
+                bildMesh.position.set(x, y, z);
+                bildMesh.rotateY(rotationY * (Math.PI / 180));
+                bildMesh.isHovered = false;
+                resolve(bildMesh);
+            },
+            undefined,
+            (error) => {
+                reject(error);
+            }
+        );
+    });
 }
 
 function createCube(options) {
@@ -487,7 +500,8 @@ function createCube(options) {
     });
 
     const cube = new THREE.Mesh(geometry, materials);
-    cube.rotation.y = Math.PI + (Math.PI / 2);
+    cube.rotation.y = Math.PI + (Math.PI / options.rotationY);
+    cube.rotation.x = Math.PI + (Math.PI / options.rotationX);
     cube.scale.set(options.scale, options.scale, options.scale);
     cube.position.z = options.positionZ;
     scene.add(cube);
@@ -495,63 +509,46 @@ function createCube(options) {
     return cube;
 }
 
-
-/**
- * Berechnet die Begrenzungsbox (Bounding Box) eines Meshes.
- *
- * @param {THREE.Mesh} mesh - Das Mesh, für das die Begrenzungsbox berechnet werden soll.
- * @returns {THREE.Box3} Die berechnete Begrenzungsbox des Meshes.
- */
-function getBoundingBox(mesh) {
-    let meshGeo = mesh.geometry;
-    meshGeo.computeBoundingBox();
-    let boundingBox = meshGeo.boundingBox;
-    return boundingBox;
-}
-
 async function createProfil() {
     let profil = getProfil();
     let recentlyPlayed = getRecentlyPlayed();
     let winkel = 0;
-    let profileImage = createBildMesh(profil.imageUrl, 80, 0, targetPoints.profil + 50, 0, 80);
-    let hiText = await createTextMesh("Hey \n" + profil.name + " !", 30, -200, 50, targetPoints.profil, 10);
-    let followText = await createTextMesh("Followers: " + profil.follower.toString(), 4, 55, -30, targetPoints.profil, 0);
+    let contentProfil = [];
 
-    let hiTextBB = getBoundingBox(hiText);
-    let hiTextHeight = hiTextBB.max.y - hiTextBB.min.y;
+    contentProfil.push(await createBildMesh(profil.imageUrl, + 80, 0, targetPoints.profil, winkel, 50));
+    contentProfil.push(await createTextMesh("Hey \n" + profil.name + " !", 10, -80, 30, targetPoints.profil, 0));
+    contentProfil.push(await createTextMesh("Followers: " + profil.follower.toString(), 3, 55, -30, targetPoints.profil, winkel));
 
-    let recGroupX = hiText.position.x;
-    console.log(hiText.geometry);
-    let recGroupY = hiText.position.y - hiTextHeight * 1.2;
-    let recText = 5;
-    let recBildG = 60;
-    let recBildRot = 10;
-    let spacing = recBildG * 1.2 ;
+    let recGroupX = -80;
+    let recGroupY = 0;
+    let recText = 2;
+    let recBildG = 25;
+    let recBildRot = 0;
 
-    await createTextMesh("Recently Played Songs", 5, recGroupX, recGroupY, targetPoints.profil, recBildRot);
+    contentProfil.push(await createTextMesh("Recently Played Songs", 5, recGroupX, recGroupY, targetPoints.profil, recBildRot));
 
-    createBildMesh(recentlyPlayed[0].image, recGroupX, recGroupY , targetPoints.profil, recBildRot, recBildG);
-    await createTextMesh(recentlyPlayed[0].name, recText, recGroupX + 1, recGroupY - 34, targetPoints.profil, recBildRot);
+    for (let i = 0; i < 4; i++) {
+        let x = recGroupX + (i % 2) * 30;
+        let y = recGroupY - Math.floor(i / 2) * 30;
+        contentProfil.push(await createBildMesh(recentlyPlayed[i].image, x + 13, y - 18, targetPoints.profil, recBildRot, recBildG));
+        contentProfil.push(await createTextMesh(recentlyPlayed[i].name, recText, x + 1, y - 34, targetPoints.profil, recBildRot));
+    }
 
-    createBildMesh(recentlyPlayed[1].image, recGroupX + spacing, recGroupY , targetPoints.profil, recBildRot, recBildG);
-    await createTextMesh(recentlyPlayed[1].name, recText, recGroupX + 31, recGroupY - 34, targetPoints.profil, recBildRot);
-
-    createBildMesh(recentlyPlayed[2].image, recGroupX, recGroupY - spacing, targetPoints.profil, recBildRot, recBildG);
-    await createTextMesh(recentlyPlayed[2].name, recText, recGroupX + 1, recGroupY - 64, targetPoints.profil, recBildRot);
-
-    createBildMesh(recentlyPlayed[3].image, recGroupX + spacing, recGroupY - spacing, targetPoints.profil, recBildRot, recBildG);
-    await createTextMesh(recentlyPlayed[3].name, recText, recGroupX + 31, recGroupY - 64, targetPoints.profil, recBildRot);
+    console.log(contentProfil);
+    return contentProfil;
 }
 
-function createTopArtist() {
+
+async function createTopArtist() {
     let profil = getProfil();
     let topArtists = getTopArtists();
     let artistPics = [];
     let i = 0;
+    let topArtistZ = targetPoints.topArtist - 200;
     //console.log("createTopArtists, hier sind sie: " + topArtists);
     //console.log("Diese Profil gehört: " + profil.name);
-    createTextMesh(profil.name + "'s", 20, -300, -90, targetPoints.topArtist, 0);
-    let headlineTwo = createTextMesh("\nTop Artists", 40, -300, -80, targetPoints.topArtist, 0);
+    await createTextMesh(profil.name + "'s", 20, -300, -90, topArtistZ, 0);
+    let headlineTwo = await createTextMesh("\nTop Artists", 40, -300, -80, topArtistZ, 0);
     while (i < topArtists.length) {
         let x = 200 + i * -20;
         let y = -60 + i * 40;
@@ -559,21 +556,23 @@ function createTopArtist() {
         // let BildMesh = createBildMesh(topArtists[i].imageUrl, x, y, z, 0, 100);
         artistPics.push(topArtists[i].imageUrl);
         // topArtists[i].mesh = BildMesh;//zwischenspeichern des Meshes im Array
-        let artistName = createTextMesh(topArtists[i].name, 5, x + 45, y + 17, z, 0);
+        let artistName = await createTextMesh(topArtists[i].name, 5, x + 45, y + 17, z, 0);
         i++;
     }
 
     const cubeOptions = {
         materials: [],
-        positionZ: targetPoints.topArtist,
+        positionZ: topArtistZ,
         scale: 100,
-        //rotationY: 2
+        rotationY: 2,
+        rotationX: -8,
     };
 
     for (let i = 0; i < artistPics.length; i++) {
         cubeOptions.materials.push(artistPics[i]);
     }
     const myCube = createCube(cubeOptions);
+    inhaltGroup.add(myCube);
     console.log(myCube);    
 }
 
@@ -603,7 +602,7 @@ async function createHeavyRotation() {
         }
 
         // Erstelle BildMesh und füge der Heavy Rotation Group hinzu
-        let bildMesh = createBildMesh(heavyRotation[e].image, x, y, z, -2, 60);
+        let bildMesh = await createBildMesh(heavyRotation[e].image, x, y, z, -2, 60);
         heavyRotation[e].mesh = bildMesh;
         bildMesh.userData.name = heavyRotation[e].name;
         bildMesh.userData.artists = heavyRotation[e].artists;
@@ -619,7 +618,7 @@ async function createHeavyRotation() {
 }
 
 // Funktion zu Erstellen aller Hauptgruppen der Szene
-function createTopSongs() {
+async function createTopSongs() {
     let songs;
     if (localStorage.getItem("topSongs") == undefined) {
         console.log("Top Songs noch nicht ermittelt.");
@@ -628,13 +627,13 @@ function createTopSongs() {
         songs = JSON.parse(localStorage.getItem("topSongs"));
     }
     //console.log(songs);
-    createTextMesh("Deine Top 3 Songs", 5, -55, 15, targetPoints.topSong);
-    createBildMesh(songs[0].imageUrl, 0, 0, targetPoints.topSong, 0, 20);
-    createTextMesh("1: " + songs[0].name, 2, -10, -15, targetPoints.topSong);
-    createBildMesh(songs[1].imageUrl, -30, -5, targetPoints.topSong, 0, 20);
-    createTextMesh("2: " + songs[1].name, 2, -40, -20, targetPoints.topSong);
-    createBildMesh(songs[2].imageUrl, 30, -10, targetPoints.topSong, 0, 20);
-    createTextMesh("3: " + songs[2].name, 2, 20, -25, targetPoints.topSong);
+    await createTextMesh("Deine Top 3 Songs", 5, -55, 15, targetPoints.topSong);
+    await createBildMesh(songs[0].imageUrl, 0, 0, targetPoints.topSong, 0, 20);
+    await createTextMesh("1: " + songs[0].name, 2, -10, -15, targetPoints.topSong);
+    await createBildMesh(songs[1].imageUrl, -30, -5, targetPoints.topSong, 0, 20);
+    await createTextMesh("2: " + songs[1].name, 2, -40, -20, targetPoints.topSong);
+    await createBildMesh(songs[2].imageUrl, 30, -10, targetPoints.topSong, 0, 20);
+    await createTextMesh("3: " + songs[2].name, 2, 20, -25, targetPoints.topSong);
 }
 
 // Funktion zum Erstellen der Playlist
@@ -648,18 +647,18 @@ function createPlaylist() {
 
 async function createAll() {
     console.log("createAll aufgerufen");
-    inhaltGroup = new THREE.Group();
-    inhaltGroup.name = "inhaltGroup";
-    await createProfil();
+    let inhaltProfil = await createProfil();
+    inhaltProfil.forEach(element => inhaltGroup.add(element));
     createTopArtist();
     createTopSongs();
     createHeavyRotation();
     createPlaylist();
     // Hinzufügen der "inhaltGroup" zur Haupt-Szene
-    scene.add(inhaltGroup);
+    // scene.add(inhaltGroup);
 }
 
 function deleteGroup() {
+    console.log(inhaltGroup);
     clearThree(inhaltGroup);
 }
 
