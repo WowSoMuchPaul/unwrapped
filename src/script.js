@@ -653,17 +653,17 @@ async function createTopSongs() {
 }
 
 // Funktion zum Erstellen der Playlist
-function createPlaylist() {
+async function createPlaylist() {
+    let contentPlaylist = [];
     let playlist = getPlaylist();
     let i = 0;
-    createTextMesh("Your \nunwrapped \nPlaylist", 10, -85, 20, targetPoints.playlist);
-    //createButton 
+    contentPlaylist.push(await createTextMesh("Your \nunwrapped \nPlaylist", 10, -85, 20, targetPoints.playlist));
     
+    return contentPlaylist;
 }
 
 async function createAll() {
-    console.log("createAll aufgerufen");
-
+    
     let inhaltProfil = await createProfil();
     inhaltProfil.forEach(element => inhaltGroup.add(element));
 
@@ -676,18 +676,11 @@ async function createAll() {
     let heavyRotation = await createHeavyRotation();
     heavyRotation.forEach(element => inhaltGroup.add(element));
 
-
-    createPlaylist();
-
-    console.log(inhaltGroup)
-
-    // Hinzufügen der "inhaltGroup" zur Haupt-Szene
-    // scene.add(inhaltGroup);
+    let playlist = await createPlaylist();
+    playlist.forEach(element => inhaltGroup.add(element));
 }
 
 function deleteGroup() {
-    console.log("Gelöschte wurden: ")
-    console.log(inhaltGroup);
     clearThree(inhaltGroup);
 }
 
