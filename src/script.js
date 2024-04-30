@@ -77,9 +77,9 @@ export function getMouse3DPosition(mouse, camera) {
 /**cursor */
 const cursor = {};
 
-init();
+await init();
 
-function init() {
+async function init() {
 
     onPageLoad();
 
@@ -205,7 +205,7 @@ function init() {
     //Alle Geometrien mit den Spotify Daten erstellen
     if (localStorage.getItem("access_token") != undefined) {
         console.log("access token ist am start, create all.")
-        createAll();
+        await createAll();
     }
 }
 
@@ -405,7 +405,7 @@ const tick = () => {
 
 
 
-// Funktion zum erstellen von TextMeshes
+// Funktion zum erstellen und returnen von TextMeshes
 export async function createTextMesh(text, fontsize, x, y, z, rotationY) {
     const fontLoader = new FontLoader();
 
@@ -495,36 +495,53 @@ function createCube(options) {
     return cube;
 }
 
+
+/**
+ * Berechnet die Begrenzungsbox (Bounding Box) eines Meshes.
+ *
+ * @param {THREE.Mesh} mesh - Das Mesh, für das die Begrenzungsbox berechnet werden soll.
+ * @returns {THREE.Box3} Die berechnete Begrenzungsbox des Meshes.
+ */
+function getBoundingBox(mesh) {
+    let meshGeo = mesh.geometry;
+    meshGeo.computeBoundingBox();
+    let boundingBox = meshGeo.boundingBox;
+    return boundingBox;
+}
+
 async function createProfil() {
     let profil = getProfil();
     let recentlyPlayed = getRecentlyPlayed();
     let winkel = 0;
-    let profileImage = createBildMesh(profil.imageUrl, 80, 0, targetPoints.profil, 0, 50);
+    let profileImage = createBildMesh(profil.imageUrl, 80, 0, targetPoints.profil + 50, 0, 80);
     let hiText = await createTextMesh("Hey \n" + profil.name + " !", 30, -200, 50, targetPoints.profil, 10);
     let followText = await createTextMesh("Followers: " + profil.follower.toString(), 4, 55, -30, targetPoints.profil, 0);
 
-    let recGroupX = -200;
-    let recGroupY = -50;
+    let hiTextBB = getBoundingBox(hiText);
+    let hiTextHeight = hiTextBB.max.y - hiTextBB.min.y;
+
+    let recGroupX = hiText.position.x;
+    console.log(hiText.geometry);
+    let recGroupY = hiText.position.y - hiTextHeight * 1.2;
     let recText = 5;
-    let recBildG = 50;
+    let recBildG = 60;
     let recBildRot = 10;
     let spacing = recBildG * 1.2 ;
 
-    createTextMesh("Recently Played Songs", 5, recGroupX, recGroupY, targetPoints.profil, recBildRot);
+    await createTextMesh("Recently Played Songs", 5, recGroupX, recGroupY, targetPoints.profil, recBildRot);
 
     createBildMesh(recentlyPlayed[0].image, recGroupX, recGroupY , targetPoints.profil, recBildRot, recBildG);
-    createTextMesh(recentlyPlayed[0].name, recText, recGroupX + 1, recGroupY - 34, targetPoints.profil, recBildRot);
+    await createTextMesh(recentlyPlayed[0].name, recText, recGroupX + 1, recGroupY - 34, targetPoints.profil, recBildRot);
 
     createBildMesh(recentlyPlayed[1].image, recGroupX + spacing, recGroupY , targetPoints.profil, recBildRot, recBildG);
-    createTextMesh(recentlyPlayed[1].name, recText, recGroupX + 31, recGroupY - 34, targetPoints.profil, recBildRot);
+    await createTextMesh(recentlyPlayed[1].name, recText, recGroupX + 31, recGroupY - 34, targetPoints.profil, recBildRot);
 
     createBildMesh(recentlyPlayed[2].image, recGroupX, recGroupY - spacing, targetPoints.profil, recBildRot, recBildG);
-    createTextMesh(recentlyPlayed[2].name, recText, recGroupX + 1, recGroupY - 64, targetPoints.profil, recBildRot);
+    await createTextMesh(recentlyPlayed[2].name, recText, recGroupX + 1, recGroupY - 64, targetPoints.profil, recBildRot);
 
     createBildMesh(recentlyPlayed[3].image, recGroupX + spacing, recGroupY - spacing, targetPoints.profil, recBildRot, recBildG);
-    createTextMesh(recentlyPlayed[3].name, recText, recGroupX + 31, recGroupY - 64, targetPoints.profil, recBildRot);
+    await createTextMesh(recentlyPlayed[3].name, recText, recGroupX + 31, recGroupY - 64, targetPoints.profil, recBildRot);
 }
-
 
 function createTopArtist() {
     let profil = getProfil();
@@ -629,11 +646,11 @@ function createPlaylist() {
     
 }
 
-function createAll() {
+async function createAll() {
     console.log("createAll aufgerufen");
     inhaltGroup = new THREE.Group();
     inhaltGroup.name = "inhaltGroup";
-    createProfil();
+    await createProfil();
     createTopArtist();
     createTopSongs();
     createHeavyRotation();
