@@ -504,7 +504,8 @@ function createCube(options) {
     cube.rotation.x = Math.PI + (Math.PI / options.rotationX);
     cube.scale.set(options.scale, options.scale, options.scale);
     cube.position.z = options.positionZ;
-    scene.add(cube);
+    cube.name = "TopArtists Cube";
+    // scene.add(cube); //wird hier aktuell hinzugefügt, soll aber über createTopArtist hinzugefügt werden 
 
     return cube;
 }
@@ -534,7 +535,7 @@ async function createProfil() {
         contentProfil.push(await createTextMesh(recentlyPlayed[i].name, recText, x + 1, y - 34, targetPoints.profil, recBildRot));
     }
 
-    console.log(contentProfil);
+    // console.log(contentProfil);
     return contentProfil;
 }
 
@@ -543,11 +544,13 @@ async function createTopArtist() {
     let profil = getProfil();
     let topArtists = getTopArtists();
     let artistPics = [];
+    let contentTopArtist = [];
+
     let i = 0;
     let topArtistZ = targetPoints.topArtist - 200;
     //console.log("createTopArtists, hier sind sie: " + topArtists);
     //console.log("Diese Profil gehört: " + profil.name);
-    await createTextMesh(profil.name + "'s", 20, -300, -90, topArtistZ, 0);
+    let headlineOne = await createTextMesh(profil.name + "'s", 20, -300, -90, topArtistZ, 0);
     let headlineTwo = await createTextMesh("\nTop Artists", 40, -300, -80, topArtistZ, 0);
     while (i < topArtists.length) {
         let x = 200 + i * -20;
@@ -557,6 +560,7 @@ async function createTopArtist() {
         artistPics.push(topArtists[i].imageUrl);
         // topArtists[i].mesh = BildMesh;//zwischenspeichern des Meshes im Array
         let artistName = await createTextMesh(topArtists[i].name, 5, x + 45, y + 17, z, 0);
+        contentTopArtist.push(artistName);
         i++;
     }
 
@@ -572,8 +576,12 @@ async function createTopArtist() {
         cubeOptions.materials.push(artistPics[i]);
     }
     const myCube = createCube(cubeOptions);
-    inhaltGroup.add(myCube);
-    console.log(myCube);    
+    contentTopArtist.push(headlineOne);
+    contentTopArtist.push(headlineTwo);
+    contentTopArtist.push(myCube);
+    // inhaltGroup.add(myCube);
+    // console.log(myCube);    
+    return contentTopArtist;
 }
 
 // Funktion zum Erstellen der Heavy Rotation
@@ -586,7 +594,7 @@ async function createHeavyRotation() {
 
     const baseRadius = 150;
     const radialOffset = 30; // Zusätzliche Radialverschiebung für jedes zweite Element
-    const numElements = heavyRotation.length;
+    const numElements = heavyRotation.length; 
 
     for (let e = 0; e < numElements; e++) {
         let theta = (2 * Math.PI / numElements) * e;
@@ -614,7 +622,7 @@ async function createHeavyRotation() {
 
     await createTextMesh("Your Heavy \nRotation", 40, -350, 100, targetPoints.onRepeat - 20, 30);
     await createTextMesh("Hover to see more", 20, -350, 0, targetPoints.onRepeat - 20, 30);
-    console.log("create heavy rotation");
+    // console.log("create heavy rotation");
 }
 
 // Funktion zu Erstellen aller Hauptgruppen der Szene
@@ -647,9 +655,17 @@ function createPlaylist() {
 
 async function createAll() {
     console.log("createAll aufgerufen");
+
     let inhaltProfil = await createProfil();
     inhaltProfil.forEach(element => inhaltGroup.add(element));
-    createTopArtist();
+
+    let inhaltTopArtist = await createTopArtist();
+    inhaltTopArtist.forEach(element => inhaltGroup.add(element));
+    // console.log(inhaltTopArtist);
+    // console.log(inhaltTopArtist[5].name);
+
+    console.log(inhaltGroup)
+
     createTopSongs();
     createHeavyRotation();
     createPlaylist();
@@ -658,26 +674,43 @@ async function createAll() {
 }
 
 function deleteGroup() {
+    console.log("Gelöschte wurden: ")
     console.log(inhaltGroup);
     clearThree(inhaltGroup);
 }
 
 function clearThree(obj) {
+    for (let i = obj.children.length - 1; i >= 0; i--) {
+        clearThree(obj.children[i]);
+    }
+    // Nun die Kinder aus dem aktuellen Objekt entfernen
     while (obj.children.length > 0) {
-        clearThree(obj.children[0]);
         obj.remove(obj.children[0]);
     }
-    if (obj.geometry) obj.geometry.dispose();
+    // Ressourcen des Objekts freigeben, wenn vorhanden
+function clearThree(obj) {
+    // Zuerst alle Kinder rekursiv löschen
+    for (let i = obj.children.length - 1; i >= 0; i--) {
+        clearThree(obj.children[i]);
+    }
 
+    // Nun die Kinder aus dem aktuellen Objekt entfernen
+    while (obj.children.length > 0) {
+        obj.remove(obj.children[0]);
+    }
+
+    // Ressourcen des Objekts freigeben, wenn vorhanden
+    if (obj.geometry) obj.geometry.dispose();
+    
     if (obj.material) {
-        //in case of map, bumpMap, normalMap, envMap ...
-        Object.keys(obj.material).forEach(prop => {
-            if (!obj.material[prop])
-                return;
-            if (obj.material[prop] !== null && typeof obj.material[prop].dispose === 'function')
-                obj.material[prop].dispose();
-        })
-        obj.material.dispose();
+        if (Array.isArray(obj.material)) {
+            obj.material.forEach(material => material.dispose());
+        } else {
+            obj.material.dispose();
+        }
+    }
+
+    if (obj.texture) obj.texture.dispose();
     }
 }
 
