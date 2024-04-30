@@ -628,6 +628,8 @@ async function createHeavyRotation() {
 // Funktion zu Erstellen aller Hauptgruppen der Szene
 async function createTopSongs() {
     let songs;
+    let inhaltTopSongs = [];
+
     if (localStorage.getItem("topSongs") == undefined) {
         console.log("Top Songs noch nicht ermittelt.");
         return;
@@ -635,13 +637,15 @@ async function createTopSongs() {
         songs = JSON.parse(localStorage.getItem("topSongs"));
     }
     //console.log(songs);
-    await createTextMesh("Deine Top 3 Songs", 5, -55, 15, targetPoints.topSong);
-    await createBildMesh(songs[0].imageUrl, 0, 0, targetPoints.topSong, 0, 20);
-    await createTextMesh("1: " + songs[0].name, 2, -10, -15, targetPoints.topSong);
-    await createBildMesh(songs[1].imageUrl, -30, -5, targetPoints.topSong, 0, 20);
-    await createTextMesh("2: " + songs[1].name, 2, -40, -20, targetPoints.topSong);
-    await createBildMesh(songs[2].imageUrl, 30, -10, targetPoints.topSong, 0, 20);
-    await createTextMesh("3: " + songs[2].name, 2, 20, -25, targetPoints.topSong);
+    inhaltTopSongs.push(await createTextMesh("Deine Top 3 Songs", 5, -55, 15, targetPoints.topSong));
+    inhaltTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 0, targetPoints.topSong, 0, 20));
+    inhaltTopSongs.push(await createTextMesh("1: " + songs[0].name, 2, -10, -15, targetPoints.topSong));
+    inhaltTopSongs.push(await createBildMesh(songs[1].imageUrl, -30, -5, targetPoints.topSong, 0, 20));
+    inhaltTopSongs.push(await createTextMesh("2: " + songs[1].name, 2, -40, -20, targetPoints.topSong));
+    inhaltTopSongs.push(await createBildMesh(songs[2].imageUrl, 30, -10, targetPoints.topSong, 0, 20));
+    inhaltTopSongs.push(await createTextMesh("3: " + songs[2].name, 2, 20, -25, targetPoints.topSong));
+
+    return inhaltTopSongs;
 }
 
 // Funktion zum Erstellen der Playlist
@@ -661,14 +665,15 @@ async function createAll() {
 
     let inhaltTopArtist = await createTopArtist();
     inhaltTopArtist.forEach(element => inhaltGroup.add(element));
-    // console.log(inhaltTopArtist);
-    // console.log(inhaltTopArtist[5].name);
+
+    let inhaltTopSongs = await createTopSongs();
+    inhaltTopSongs.forEach(element => inhaltGroup.add(element));
+
+    createHeavyRotation();
+    createPlaylist();
 
     console.log(inhaltGroup)
 
-    createTopSongs();
-    createHeavyRotation();
-    createPlaylist();
     // Hinzufügen der "inhaltGroup" zur Haupt-Szene
     // scene.add(inhaltGroup);
 }
@@ -688,20 +693,7 @@ function clearThree(obj) {
         obj.remove(obj.children[0]);
     }
     // Ressourcen des Objekts freigeben, wenn vorhanden
-function clearThree(obj) {
-    // Zuerst alle Kinder rekursiv löschen
-    for (let i = obj.children.length - 1; i >= 0; i--) {
-        clearThree(obj.children[i]);
-    }
-
-    // Nun die Kinder aus dem aktuellen Objekt entfernen
-    while (obj.children.length > 0) {
-        obj.remove(obj.children[0]);
-    }
-
-    // Ressourcen des Objekts freigeben, wenn vorhanden
     if (obj.geometry) obj.geometry.dispose();
-    
     if (obj.material) {
         if (Array.isArray(obj.material)) {
             obj.material.forEach(material => material.dispose());
@@ -709,8 +701,8 @@ function clearThree(obj) {
             obj.material.dispose();
         }
     }
-
-    if (obj.texture) obj.texture.dispose();
+    if (obj.texture) {
+        obj.texture.dispose();
     }
 }
 
