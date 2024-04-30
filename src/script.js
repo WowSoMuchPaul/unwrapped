@@ -586,11 +586,13 @@ async function createTopArtist() {
 
 // Funktion zum Erstellen der Heavy Rotation
 async function createHeavyRotation() {
+    let contentHeavyRotation = [];
     const heavyRotation = getOnRepeat();
     heavyRotGroup = new THREE.Group();
+    heavyRotGroup.name = "Heavy Rotation Circle";
     heavyRotGroup.position.set(110, 0, targetPoints.onRepeat - 60);
-    inhaltGroup.add(heavyRotGroup);
-    scene.add(heavyRotGroup);
+    // inhaltGroup.add(heavyRotGroup);
+    // scene.add(heavyRotGroup);
 
     const baseRadius = 150;
     const radialOffset = 30; // Zusätzliche Radialverschiebung für jedes zweite Element
@@ -620,15 +622,17 @@ async function createHeavyRotation() {
         heavyRotGroup.add(bildMesh);
     }
 
-    await createTextMesh("Your Heavy \nRotation", 40, -350, 100, targetPoints.onRepeat - 20, 30);
-    await createTextMesh("Hover to see more", 20, -350, 0, targetPoints.onRepeat - 20, 30);
-    // console.log("create heavy rotation");
+    contentHeavyRotation.push(await createTextMesh("Your Heavy \nRotation", 40, -350, 100, targetPoints.onRepeat - 20, 30));
+    contentHeavyRotation.push(await createTextMesh("Hover to see more", 20, -350, 0, targetPoints.onRepeat - 20, 30));
+    contentHeavyRotation.push(heavyRotGroup);
+
+    return contentHeavyRotation;
 }
 
 // Funktion zu Erstellen aller Hauptgruppen der Szene
 async function createTopSongs() {
     let songs;
-    let inhaltTopSongs = [];
+    let contentTopSongs = [];
 
     if (localStorage.getItem("topSongs") == undefined) {
         console.log("Top Songs noch nicht ermittelt.");
@@ -637,15 +641,15 @@ async function createTopSongs() {
         songs = JSON.parse(localStorage.getItem("topSongs"));
     }
     //console.log(songs);
-    inhaltTopSongs.push(await createTextMesh("Deine Top 3 Songs", 5, -55, 15, targetPoints.topSong));
-    inhaltTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 0, targetPoints.topSong, 0, 20));
-    inhaltTopSongs.push(await createTextMesh("1: " + songs[0].name, 2, -10, -15, targetPoints.topSong));
-    inhaltTopSongs.push(await createBildMesh(songs[1].imageUrl, -30, -5, targetPoints.topSong, 0, 20));
-    inhaltTopSongs.push(await createTextMesh("2: " + songs[1].name, 2, -40, -20, targetPoints.topSong));
-    inhaltTopSongs.push(await createBildMesh(songs[2].imageUrl, 30, -10, targetPoints.topSong, 0, 20));
-    inhaltTopSongs.push(await createTextMesh("3: " + songs[2].name, 2, 20, -25, targetPoints.topSong));
+    contentTopSongs.push(await createTextMesh("Deine Top 3 Songs", 5, -55, 15, targetPoints.topSong));
+    contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 0, targetPoints.topSong, 0, 20));
+    contentTopSongs.push(await createTextMesh("1: " + songs[0].name, 2, -10, -15, targetPoints.topSong));
+    contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -30, -5, targetPoints.topSong, 0, 20));
+    contentTopSongs.push(await createTextMesh("2: " + songs[1].name, 2, -40, -20, targetPoints.topSong));
+    contentTopSongs.push(await createBildMesh(songs[2].imageUrl, 30, -10, targetPoints.topSong, 0, 20));
+    contentTopSongs.push(await createTextMesh("3: " + songs[2].name, 2, 20, -25, targetPoints.topSong));
 
-    return inhaltTopSongs;
+    return contentTopSongs;
 }
 
 // Funktion zum Erstellen der Playlist
@@ -669,7 +673,10 @@ async function createAll() {
     let inhaltTopSongs = await createTopSongs();
     inhaltTopSongs.forEach(element => inhaltGroup.add(element));
 
-    createHeavyRotation();
+    let heavyRotation = await createHeavyRotation();
+    heavyRotation.forEach(element => inhaltGroup.add(element));
+
+
     createPlaylist();
 
     console.log(inhaltGroup)
