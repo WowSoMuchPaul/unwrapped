@@ -248,8 +248,6 @@ function getPlaylist() {
     return playlist;
 }
 
-
-
 function closeOverlay() {
     document.getElementById("overlay").style.display = "none";
 }
@@ -299,7 +297,6 @@ function handleBereich(pos, tp) {
     //Kamera ist im Eintritts-Damping
     if ((pos <= (tp + bereichOffsetVorne)) && (pos >= (tp + bereichOffsetVorne - bereichDampingVorne))) {
         trackControls.zoomSpeed = zoomSpeedBereich + (pos - ((tp + bereichOffsetVorne) - bereichDampingVorne)) * ((zoomSpeedBereich - zoomSpeedNorm) / (-bereichDampingVorne));
-        //console.log("Damping. ZoomSpeed: " + trackControls.zoomSpeed);
     }
 
     //Kamera ist im Bereich Playlist
@@ -362,13 +359,14 @@ function bringeZumBereich(origin) {
     new TWEEN.Tween(camera.position).to(
         {
             z: target
-        }, 5000
+        }, 3000
     )
-        .easing(TWEEN.Easing.Exponential.Out)
-        .start().onComplete(() => {
-            TrackballControls.noZoom = false;
-            freeMovement = true;
-        });
+    .easing(TWEEN.Easing.Exponential.Out)
+    .onComplete(() => {
+        TrackballControls.noZoom = false;
+        freeMovement = true;
+    })
+    .start();
 }
 
 const clock = new THREE.Clock();
@@ -409,49 +407,55 @@ const tick = () => {
 
 // Funktion zum erstellen von TextMeshes
 export async function createTextMesh(text, fontsize, x, y, z, rotationY) {
-    return new Promise((resolve, reject) => {
-    const fontLoader = new FontLoader()
-    fontLoader.load(
-        '../fonts/W95FA_Regular.typeface.json',
-        (font) => {
-            const textGeometry = new TextGeometry(
-                text, {
-                    font: font,
-                    size: fontsize,
-                    height: 0.2,
-                    curveSegments: 12,
-                    bevelEnabled: true,
-                    bevelThickness: 0.03,
-                    bevelSize: 0.02,
-                    bevelOffset: 0,
-                    bevelSegments: 5
-                }
-            )
-            const textMaterial = new THREE.MeshBasicMaterial();
-            let textMesh = new THREE.Mesh(textGeometry, textMaterial);
-            inhaltGroup.add(textMesh);
-            // Positionierung des TextMeshes
-            textMesh.position.x = x;
-            textMesh.position.y = y;
-            textMesh.position.z = z;
-            //Rotation um Y-Achse bei angebenem Winkel
-            if (rotationY) {
-                textMesh.rotateY(rotationY * Math.PI / 180);
+    const fontLoader = new FontLoader();
+
+    try {
+        const font = await new Promise((resolve, reject) => {
+            fontLoader.load(
+                '../fonts/W95FA_Regular.typeface.json',
+                resolve,
+                undefined,
+                reject
+            );
+        });
+
+        const textGeometry = new TextGeometry(
+            text, {
+                font: font,
+                size: fontsize,
+                height: 0.2,
+                curveSegments: 12,
+                bevelEnabled: true,
+                bevelThickness: 0.03,
+                bevelSize: 0.02,
+                bevelOffset: 0,
+                bevelSegments: 5
             }
+        );
 
-            // Fügt das TextMesh der inhaltGroup hinzu
-            inhaltGroup.add(textMesh);
+        const textMaterial = new THREE.MeshBasicMaterial();
+        let textMesh = new THREE.Mesh(textGeometry, textMaterial);
+        inhaltGroup.add(textMesh);
 
-            // Auflösen des Promises mit dem erstellten TextMesh
-            textMesh.userData.name = text;
-            resolve(textMesh);
-        },
-        undefined,
-        (error) => {  // onError Handler
-            reject(error);
+        // Positionierung des TextMeshes
+        textMesh.position.x = x;
+        textMesh.position.y = y;
+        textMesh.position.z = z;
+
+        //Rotation um Y-Achse bei angebenem Winkel
+        if (rotationY) {
+            textMesh.rotateY(rotationY * Math.PI / 180);
         }
-    );
-});
+
+        // Fügt das TextMesh der inhaltGroup hinzu
+        inhaltGroup.add(textMesh);
+
+        // Auflösen des Promises mit dem erstellten TextMesh
+        textMesh.userData.name = text;
+        return textMesh;
+    } catch (error) {
+        console.error('Fehler beim Laden der Schrift:', error);
+    }
 }
 
 
@@ -491,32 +495,33 @@ function createCube(options) {
     return cube;
 }
 
-function createProfil() {
+async function createProfil() {
     let profil = getProfil();
     let recentlyPlayed = getRecentlyPlayed();
     let winkel = 0;
-    createBildMesh(profil.imageUrl, + 80, 0, targetPoints.profil, winkel, 50);
-    createTextMesh("Hey \n" + profil.name + " !", 10, -80, 30, targetPoints.profil, 0);
-    createTextMesh("Followers: " + profil.follower.toString(), 3, 55, -30, targetPoints.profil, winkel);
+    let profileImage = createBildMesh(profil.imageUrl, 80, 0, targetPoints.profil, 0, 50);
+    let hiText = await createTextMesh("Hey \n" + profil.name + " !", 30, -200, 50, targetPoints.profil, 10);
+    let followText = await createTextMesh("Followers: " + profil.follower.toString(), 4, 55, -30, targetPoints.profil, 0);
 
-    let recGroupX = -80;
-    let recGroupY = 0;
-    let recText = 2;
-    let recBildG = 25;
-    let recBildRot = 0;
+    let recGroupX = -200;
+    let recGroupY = -50;
+    let recText = 5;
+    let recBildG = 50;
+    let recBildRot = 10;
+    let spacing = recBildG * 1.2 ;
 
     createTextMesh("Recently Played Songs", 5, recGroupX, recGroupY, targetPoints.profil, recBildRot);
 
-    createBildMesh(recentlyPlayed[0].image, recGroupX + 13, recGroupY - 18, targetPoints.profil, recBildRot, recBildG);
+    createBildMesh(recentlyPlayed[0].image, recGroupX, recGroupY , targetPoints.profil, recBildRot, recBildG);
     createTextMesh(recentlyPlayed[0].name, recText, recGroupX + 1, recGroupY - 34, targetPoints.profil, recBildRot);
 
-    createBildMesh(recentlyPlayed[1].image, recGroupX + 43, recGroupY - 18, targetPoints.profil, recBildRot, recBildG);
+    createBildMesh(recentlyPlayed[1].image, recGroupX + spacing, recGroupY , targetPoints.profil, recBildRot, recBildG);
     createTextMesh(recentlyPlayed[1].name, recText, recGroupX + 31, recGroupY - 34, targetPoints.profil, recBildRot);
 
-    createBildMesh(recentlyPlayed[2].image, recGroupX + 13, recGroupY - 48, targetPoints.profil, recBildRot, recBildG);
+    createBildMesh(recentlyPlayed[2].image, recGroupX, recGroupY - spacing, targetPoints.profil, recBildRot, recBildG);
     createTextMesh(recentlyPlayed[2].name, recText, recGroupX + 1, recGroupY - 64, targetPoints.profil, recBildRot);
 
-    createBildMesh(recentlyPlayed[3].image, recGroupX + 43, recGroupY - 48, targetPoints.profil, recBildRot, recBildG);
+    createBildMesh(recentlyPlayed[3].image, recGroupX + spacing, recGroupY - spacing, targetPoints.profil, recBildRot, recBildG);
     createTextMesh(recentlyPlayed[3].name, recText, recGroupX + 31, recGroupY - 64, targetPoints.profil, recBildRot);
 }
 
@@ -559,7 +564,7 @@ function createTopArtist() {
 async function createHeavyRotation() {
     const heavyRotation = getOnRepeat();
     heavyRotGroup = new THREE.Group();
-    heavyRotGroup.position.set(110, 0, targetPoints.onRepeat - 50);
+    heavyRotGroup.position.set(110, 0, targetPoints.onRepeat - 60);
     inhaltGroup.add(heavyRotGroup);
     scene.add(heavyRotGroup);
 

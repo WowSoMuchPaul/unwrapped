@@ -17,7 +17,7 @@ function isCameraInBounds(camera) {
     return camera.position.z >= minCameraZ && camera.position.z <= maxCameraZ;
 }
 
-function isMouseNearCenter(intersect, threshold = 1.5) {
+function isMouseNearCenter(intersect, threshold = 1.2) {
     const object = intersect.object;
     const bounds = new THREE.Box3().setFromObject(object); // Bounding Box des Objekts
     const size = bounds.getSize(new THREE.Vector3());
