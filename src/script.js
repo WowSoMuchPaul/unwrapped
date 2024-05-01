@@ -5,7 +5,11 @@ import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import TWEEN, { remove } from '@tweenjs/tween.js';
 import Stats from 'stats.js';
-//import typefaceFont from 'three/examples/fonts/helvetiker_regular.typeface.json';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DirectionalLight } from 'three';
+import { AmbientLight } from 'three';
+import { HemisphereLight } from 'three';
+import { PMREMGenerator } from 'three';
 
 import { onPageLoad, authorizationReq, setFestivalPlaylist, setTimeRangeLong, setTimeRangeMid, setTimeRangeShort } from "./spotify.js";
 import { color, log, tangentGeometry } from 'three/examples/jsm/nodes/Nodes.js';
@@ -80,8 +84,29 @@ function init() {
     // camera.focus = 1000;
     scene.add(camera);
     lastCamPosition = camera.position.z;
-    
+    // let light = new THREE.DirectionalLight(0xffff00, 5);
+    //   scene.add(light);
+    // let ambientLight = new THREE.AmbientLight(0x404040, 2);
+    // scene.add(ambientLight);
 
+    // const pmremGenerator = new THREE.PMREMGenerator(renderer);
+
+    // pmremGenerator.compileEquirectangularShader();
+
+
+    // new THREE.RGBELoader()
+    //     .setDataType(THREE.UnsignedByteType)
+    //     .load('../110_hdrmaps_com_free_1K.exr', function (texture) {
+    //         const envMap = pmremGenerator.fromEquirectangular(texture).texture;
+    //         scene.environment = envMap;
+    //         texture.dispose();
+    //         pmremGenerator.dispose();
+    //     });
+
+    //Hemisphären Licht
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 3, 1);
+    hemiLight.position.set(0, 20, 0);
+    scene.add(hemiLight);
 
     // helper = new THREE.CameraHelper(camera);
     // scene.add(helper);
@@ -706,6 +731,29 @@ function createHeavyRotation() {
     createTextMesh("Your \nHeavy Rotation", headlineSize, -200, 0, targetPoints.onRepeat - 300,0, 0, 0x000000,0.7,'Jersey 15_Regular');
 }
 
+async function createGLTFMesh(x, y, z, rotationX, rotationY, rotationZ, scale) {
+    return new Promise((resolve, reject) => {
+        const gltfloader = new GLTFLoader();
+        gltfloader.load(
+            '../Pedestal_GLTF/scene.gltf',
+            (gltf) => {
+                gltf.scene.scale.set(scale, scale, scale);
+                gltf.scene.position.set(x, y, z);
+                gltf.scene.rotateX(rotationX * (Math.PI / 180));
+                gltf.scene.rotateY(rotationY * (Math.PI / 180));
+                gltf.scene.rotateZ(rotationZ * (Math.PI / 180));
+                inhaltGroup.add(gltf.scene);
+                resolve(gltf.scene);
+            },
+            undefined,
+            (error) => {
+                reject(error);
+            }
+        );
+    });
+}
+
+
 // Funktion zu Erstellen aller Hauptgruppen der Szene
 function createTopSongs() {
     let songs;
@@ -716,14 +764,17 @@ function createTopSongs() {
         songs = JSON.parse(localStorage.getItem("topSongs"));
     }
     //console.log(songs);
-    createTextMesh("Deine Top 3 Songs", headlineSize, -55, 15, targetPoints.topSong,0, 0, 0x000000,1,'Jersey 15_Regular');
-    createBildMesh(songs[0].imageUrl, 0, 0, targetPoints.topSong, 0, 50);
-    createTextMesh("1: " + songs[0].name, textSmallSize, -10, -15, targetPoints.topSong,0,0,0x000000, 1,'W95FA_Regular.typeface');
-    createBildMesh(songs[1].imageUrl, -30, -5, targetPoints.topSong, 0, 50);
-    createTextMesh("2: " + songs[1].name, textSmallSize, -40, -20, targetPoints.topSong,0,0,0x000000, 1,'W95FA_Regular.typeface');
-    createBildMesh(songs[2].imageUrl, 30, -10, targetPoints.topSong, 0, 50);
-    createTextMesh("3: " + songs[2].name, textSmallSize, 20, -25, targetPoints.topSong,0,0,0x000000, 1,'W95FA_Regular.typeface');
+    createTextMesh("Deine Top 3 Songs", headlineSize, -170, -135, targetPoints.topSong-20,0, 0, 0x000000,1,'Jersey 15_Regular');
+    createBildMesh(songs[0].imageUrl, 0, 0, targetPoints.topSong-50, 0, 70);
+    createTextMesh("1: " + songs[0].name, textSize, -10, 40, targetPoints.topSong-50,0,0,0x000000, 1,'W95FA_Regular.typeface');
+    createBildMesh(songs[1].imageUrl, -95, -5, targetPoints.topSong-35, 20, 70);
+    createTextMesh("2: " + songs[1].name, textSize, -125, 35, targetPoints.topSong-35,0,20,0x000000, 1,'W95FA_Regular.typeface');
+    createBildMesh(songs[2].imageUrl, 130, -10, targetPoints.topSong-35, -20, 70);
+    createTextMesh("3: " + songs[2].name, textSize, 110, 30, targetPoints.topSong-35,0,-20,0x000000, 1,'W95FA_Regular.typeface');
 
+    createGLTFMesh(0, -100, targetPoints.topSong-50, 0, 0, 0, 50);
+    createGLTFMesh(-95, -110, targetPoints.topSong-35, 0, 20, 0, 50);
+    createGLTFMesh(130, -110, targetPoints.topSong-35, 0, -20, 0, 50);
 }
 
 async function iconAnimationPl(){
