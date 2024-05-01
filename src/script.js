@@ -717,12 +717,13 @@ function createTopSongs() {
     }
     //console.log(songs);
     createTextMesh("Deine Top 3 Songs", headlineSize, -55, 15, targetPoints.topSong,0, 0, 0x000000,1,'Jersey 15_Regular');
-    createBildMesh(songs[0].imageUrl, 0, 0, targetPoints.topSong, 0, 20);
+    createBildMesh(songs[0].imageUrl, 0, 0, targetPoints.topSong, 0, 50);
     createTextMesh("1: " + songs[0].name, textSmallSize, -10, -15, targetPoints.topSong,0,0,0x000000, 1,'W95FA_Regular.typeface');
-    createBildMesh(songs[1].imageUrl, -30, -5, targetPoints.topSong, 0, 20);
+    createBildMesh(songs[1].imageUrl, -30, -5, targetPoints.topSong, 0, 50);
     createTextMesh("2: " + songs[1].name, textSmallSize, -40, -20, targetPoints.topSong,0,0,0x000000, 1,'W95FA_Regular.typeface');
-    createBildMesh(songs[2].imageUrl, 30, -10, targetPoints.topSong, 0, 20);
+    createBildMesh(songs[2].imageUrl, 30, -10, targetPoints.topSong, 0, 50);
     createTextMesh("3: " + songs[2].name, textSmallSize, 20, -25, targetPoints.topSong,0,0,0x000000, 1,'W95FA_Regular.typeface');
+
 }
 
 async function iconAnimationPl(){
@@ -734,29 +735,29 @@ async function iconAnimationPl(){
     const iconAl = null;
     const iconRob = null;
     
-    if(iconAl == null && iconRob == null){
-        console.log("i m a shit in this 1");
-    const iconAl = await createTextMesh("w", textBigSize-5, 55, 85, targetPoints.playlist,0, -25, 0x000000,0.3,'Yarndings 12_Regular');
-    const iconRob = await createTextMesh("x", textBigSize-10, -120, -75, targetPoints.playlist,0, 15, 0x000000,0.2,'Yarndings 12_Regular');
-        //animation der Modelle
-        console.log(iconAl);
-        console.log(iconRob);
-        // console.log(iconAl.rotation.y);
-        console.log(elapsedTime)
-        //  iconAl.rotation.y  += Math.sin(elapsedTime) * 0.9;
-        //iconAl.rotation.x += Math.cos(elapsedTime) * 0.5;
-        // iconAl.y = Math.sin(elapsedTime) * 5;
-        console.log(iconAl.x);
-        iconAl.x = Math.cos(elapsedTime) * -0.5;
-        // iconRob.rotationY = Math.sin(elapsedTime) * 2;
-        // iconRob.rotationX = Math.cos(elapsedTime) * 3;   
-        // iconRob.y = Math.sin(elapsedTime) * 5;
-        // iconRob.x = Math.cos(elapsedTime) * 5;
-    }
-}
+//     if(iconAl == null && iconRob == null){
+//         console.log("i m a shit in this 1");
+//     const iconAl = await createTextMesh("w", textBigSize-5, 55, 85, targetPoints.playlist,0, -25, 0x000000,0.3,'Yarndings 12_Regular');
+//     const iconRob = await createTextMesh("x", textBigSize-10, -120, -75, targetPoints.playlist,0, 15, 0x000000,0.2,'Yarndings 12_Regular');
+//         //animation der Modelle
+//         // console.log(iconAl);
+//         // console.log(iconRob);
+//         // console.log(iconAl.rotation.y);
+//         // console.log(elapsedTime)
+//         //  iconAl.rotation.y  += Math.sin(elapsedTime) * 0.9;
+//         //iconAl.rotation.x += Math.cos(elapsedTime) * 0.5;
+//         // iconAl.y = Math.sin(elapsedTime) * 5;
+//         console.log(iconAl.x);
+//         iconAl.x = Math.cos(elapsedTime) * -0.5;
+//         // iconRob.rotationY = Math.sin(elapsedTime) * 2;
+//         // iconRob.rotationX = Math.cos(elapsedTime) * 3;   
+//         // iconRob.y = Math.sin(elapsedTime) * 5;
+//         // iconRob.x = Math.cos(elapsedTime) * 5;
+//     }
+} 
 
-function createPlaylist(){
-    createTextMesh("Deine \nunwrapped \nPlaylist", headlineSize, -250, 85, targetPoints.playlist-40,0,25,0x000000, 1,'Jersey 15_Regular');
+async function createPlaylist(){
+    await createTextMesh("Deine \nunwrapped \nPlaylist", headlineSize, -250, 85, targetPoints.playlist-40,0,25,0x000000, 1,'Jersey 15_Regular');
     // createTextMesh("w", textBigSize-5, 55, 85, targetPoints.playlist,0, -25, 0x000000,0.3,'Yarndings 12_Regular');
     // createTextMesh("x", textBigSize-10, -120, -75, targetPoints.playlist,0, 15, 0x000000,0.2,'Yarndings 12_Regular');
 }
@@ -770,8 +771,8 @@ function createPlaylistButton(){
     document.getElementById("createPlaylist-btn").addEventListener("click",setFestivalPlaylist);
 }
 
-function createEND(){
-    createTextMesh("THE END", headlineSize, -40, 0, targetPoints.playlist-500,0, 0, 0x000000,0.7,'Jersey 15_Regular');
+async function createEND(){
+    await createTextMesh("THE END", headlineSize, -40, 0, targetPoints.playlist-500,0, 0, 0x000000,0.7,'Jersey 15_Regular');
     createRingMesh(15,0,targetPoints.playlist-500,-35,15,0x42887E,150,160);
     createQuaderMesh(0,0,targetPoints.playlist-500,20,10, 120, 0x8043E2);
 }
