@@ -7,13 +7,14 @@ import TWEEN, { remove } from '@tweenjs/tween.js';
 import Stats from 'stats.js';
 //import typefaceFont from 'three/examples/fonts/helvetiker_regular.typeface.json';
 
-import { onPageLoad, authorizationReq, setFestivalPlaylist, setTimeRangeLong, setTimeRangeMid, setTimeRangeShort } from "./spotify.js";
+import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
 import { log } from 'three/examples/jsm/nodes/Nodes.js';
 
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotGroup, lastIntersected;
 var inEinemBereich = false;
 var tweenAktiviert = false;
 var freeMovement = true;
+var timeRange = "long_term";
 const targetPoints = {};
 const bereichOffsetVorne = 400;
 const bereichDampingVorne = bereichOffsetVorne / 2;
@@ -26,7 +27,7 @@ const cameraTargetDistance = 100;
 
 const stats = new Stats();
 // stats.showPanel(0);
-document.body.appendChild(stats.dom);
+//document.body.appendChild(stats.dom);
 
 /** Raycaster */
 const raycaster = new THREE.Raycaster();
@@ -42,9 +43,7 @@ const cursor = {};
 
 init();
 
-function init() {
-
-    onPageLoad();
+async function init() {
 
     /**
      * Sizes
@@ -114,14 +113,25 @@ function init() {
     trackControls.staticMoving = false;
     trackControls.dynamicDampingFactor = 0.04;
 
+
+    //Erstelle alle Geometrien, wenn Nutzer bereits authentifiziert ist
+    if (await (onPageLoad())) {
+        await createAll();
+    }else{
+        
+    }
+
     //Listener setzen
     window.addEventListener('resize', onWindowResize);
     document.getElementById("closebtn").addEventListener("click", closeOverlay);
     document.getElementById("help").addEventListener("click", openOverlay);
     document.getElementById("delete").addEventListener("click", deleteGroup);
     document.getElementById("create").addEventListener("click", createAll);
-    document.getElementById("auth").addEventListener("click", authorizationReq);
-    document.getElementById("playlist").addEventListener("click", setFestivalPlaylist);
+    document.getElementById("auth").addEventListener("click", loginWithSpotifyClick);
+    document.getElementById("refreshToken").addEventListener("click", refreshToken);
+    document.getElementById("playlist").addEventListener("click", () => {
+        setFestivalPlaylist(timeRange);
+    });
     
     //Nav Bar Listener
     document.getElementById("navPlaylist").addEventListener("click", e => {
@@ -142,22 +152,8 @@ function init() {
 
     document.getElementById("timeRange").addEventListener("change", function() {
         deleteGroup();
-        console.log(this.value);
-        if (this.value == "long_term") {
-            setTimeRangeLong();
-        }
-        if (this.value == "medium_term") {
-            setTimeRangeMid();
-        }
-        if (this.value == "short_term") {
-            setTimeRangeShort();
-        }
-        //Das ist vielleicht nicht die eleganteste Lösung, aber das Ding muss halt auf die aktualisierten Werte warten, da die ja neu von spotify abgerufen werden.
-
-        setTimeout(function () {
-            createAll();
-            console.log("halllllo");
-        }, 250);
+        timeRange = this.value;
+        createAll();
     });
 
     window.addEventListener('mousemove', (event) => {
@@ -165,53 +161,7 @@ function init() {
         cursor.y = event.clientY / sizes.height - 0.5;
     })
 
-    //Alle Geometrien mit den Spotify Daten erstellen
-    if (localStorage.getItem("access_token") != undefined) {
-        console.log("access token ist am start, create all.")
-        createAll();
-    }
 }
-
-/* Getter Fnktionen für alle Daten aus dem Local Storage */
-
-//Profil Getter
-function getProfil() {
-    const profil = JSON.parse(localStorage.getItem("myProfil")) || [];
-    return profil;
-}
-
-//RecentlyPlayed Getter
-function getRecentlyPlayed() {
-    const recentlyPlayed = JSON.parse(localStorage.getItem("recentlyPlayed")) || [];
-    return recentlyPlayed;
-}
-
-//TopArtist Getter
-function getTopArtists() {
-    const topArtists = JSON.parse(localStorage.getItem("topArtists")) || [];
-    return topArtists;
-}
-
-//TopSongs Getter
-function getTopSongs() {
-    const topSongs = JSON.parse(localStorage.getItem("topSongs")) || [];
-    return topSongs;
-}
-
-//OnRepeat Getter
-function getOnRepeat() {
-    const onRepeat = JSON.parse(localStorage.getItem("onRepeat")) || [];
-    // console.log(onRepeat[0].name);
-    return onRepeat;
-}
-
-//Playlist Getter
-function getPlaylist() {
-    const playlist = JSON.parse(localStorage.getItem("playlist")) || [];
-    return playlist;
-}
-
-
 
 function closeOverlay() {
     document.getElementById("overlay").style.display = "none";
@@ -464,9 +414,9 @@ function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
     return bildMesh;
 }
 
-function createProfil() {
-    let profil = getProfil();
-    let recentlyPlayed = getRecentlyPlayed();
+async function createProfil() {
+    const profil = await getMe();
+    const recentlyPlayed = await getRecentlyPlayed();
     let winkel = 0;
     createBildMesh(profil.imageUrl, + 80, 0, targetPoints.profil, winkel, 50);
     createTextMesh("Hey \n" + profil.name + " !", 10, -80, 30, targetPoints.profil, 0);
@@ -494,12 +444,10 @@ function createProfil() {
 }
 
 
-function createTopArtist() {
-    let profil = getProfil();
-    let topArtists = getTopArtists();
+async function createTopArtist() {
+    let profil = await getMe();
+    let topArtists = await getTopArtists(timeRange);
     let i = 0;
-    //console.log("createTopArtists, hier sind sie: " + topArtists);
-    //console.log("Diese Profil gehört: " + profil.name);
     createTextMesh(profil.name + "'s", 20, -300, 110, targetPoints.topArtist - 200, 0);
     let headlineTwo = createTextMesh("\nTop Artists", 40, -300, 110, targetPoints.topArtist - 200, 0);
     while (i < topArtists.length) {
@@ -514,9 +462,9 @@ function createTopArtist() {
 }
 
 // Funktion zum erstellen der Heavy Rotation
-function createHeavyRotation() {
+async function createHeavyRotation() {
     // Heavy Rotation aus dem Local Storage holen
-    const heavyRotation = getOnRepeat();
+    const heavyRotation = await getOnRepeat();
     // Heavy Rotation Group erstellen
     heavyRotGroup = new THREE.Group();
     // Heavy Rotation Group positionieren
@@ -549,15 +497,8 @@ function createHeavyRotation() {
 }
 
 // Funktion zu Erstellen aller Hauptgruppen der Szene
-function createTopSongs() {
-    let songs;
-    if (localStorage.getItem("topSongs") == undefined) {
-        console.log("Top Songs noch nicht ermittelt.");
-        return;
-    }else{
-        songs = JSON.parse(localStorage.getItem("topSongs"));
-    }
-    //console.log(songs);
+async function createTopSongs() {
+    const songs = await getTopSongs(timeRange);
     createTextMesh("Deine Top 3 Songs", 5, -55, 15, targetPoints.topSong);
     createBildMesh(songs[0].imageUrl, 0, 0, targetPoints.topSong, 0, 20);
     createTextMesh("1: " + songs[0].name, 2, -10, -15, targetPoints.topSong);
@@ -567,19 +508,20 @@ function createTopSongs() {
     createTextMesh("3: " + songs[2].name, 2, 20, -25, targetPoints.topSong);
 }
 
-function createAll() {
-    console.log("createAll aufgerufen");
+async function createAll() {
     inhaltGroup = new THREE.Group();
     inhaltGroup.name = "inhaltGroup";
-    createProfil();
-    createTopArtist();
-    createHeavyRotation();
+    await createProfil();
+    await createTopArtist();
+    await createHeavyRotation();
+    await createTopSongs();
+
     // Hinzufügen der "inhaltGroup" zur Haupt-Szene
-    createTopSongs();
     scene.add(inhaltGroup);
 }
 
 function deleteGroup() {
+    //console.log(inhaltGroup);
     clearThree(inhaltGroup);
 }
 
