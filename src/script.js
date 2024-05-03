@@ -12,7 +12,7 @@ import { HemisphereLight } from 'three';
 import { PMREMGenerator } from 'three';
 
 import { onPageLoad, authorizationReq, setFestivalPlaylist, setTimeRangeLong, setTimeRangeMid, setTimeRangeShort } from "./spotify.js";
-import { color, log, tangentGeometry } from 'three/examples/jsm/nodes/Nodes.js';
+import { color, log, materialColor, materialOpacity, tangentGeometry } from 'three/examples/jsm/nodes/Nodes.js';
 
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotGroup, lastIntersected;
 var inEinemBereich = false;
@@ -522,7 +522,7 @@ export async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotati
                 text, {
                     font: font,
                     size: fontsize,
-                    height: 0.2,
+                    height: 1,
                     curveSegments: 12,
                     bevelEnabled: true,
                     bevelThickness: 0.03,
@@ -540,12 +540,13 @@ export async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotati
             textMesh.position.z = z;
             textMesh.rotateY(rotationY * (Math.PI / 180))
             textMesh.rotateX(rotationX * (Math.PI / 180));
-            textMaterial.color = color || new THREE.Color(0xffffff);
+            textMaterial.transparent = true;
+            textMaterial.materialColor = color || new THREE.Color(0xffffff);
             textMaterial.opacity = opacity || 1;
+
 
             // Fügt das TextMesh der inhaltGroup hinzu
             inhaltGroup.add(textMesh);
-
             // Auflösen des Promises mit dem erstellten TextMesh
             textMesh.userData.name = text;
             resolve(textMesh);
@@ -588,6 +589,7 @@ function createRingMesh(x,y,z,rotationY,rotationX, farbe, inRad, outRad ){
     ringMesh.position.z = z;
     ringMesh.rotateY(rotationY * (Math.PI/180));
     ringMesh.rotateX(rotationX * (Math.PI/180));
+    material.transparent = true;
     material.color = farbe;
 
     return ringMesh;
@@ -633,7 +635,7 @@ function createQuaderMesh(x,y,z,rotationX, rotationY, size, color){
    frameGeometry.setIndex(new THREE.BufferAttribute(indices, 1));
    frameGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
 
-   const material = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide, wireframe: false });
+   const material = new THREE.MeshBasicMaterial({ color :color , side: THREE.DoubleSide, wireframe: false });
    const frameMesh = new THREE.Mesh(frameGeometry, material);
    inhaltGroup.add(frameMesh);
 
@@ -642,8 +644,8 @@ function createQuaderMesh(x,y,z,rotationX, rotationY, size, color){
    frameMesh.position.z = z;
    frameMesh.rotateY(rotationY * (Math.PI/180));
    frameMesh.rotateX(rotationX * (Math.PI/180));
+   material.transparent = true;
     material.color = color;
-
    return frameMesh;
 }
 
@@ -652,25 +654,33 @@ function createProfil() {
     let recentlyPlayed = getRecentlyPlayed();
     let winkel = 0;
     createBildMesh(profil.imageUrl, + 80, 0, targetPoints.profil, winkel, 50);
-    createTextMesh("Hey \n" + profil.name + " !", textSize, -80, 30, targetPoints.profil,0,0,0x000000, 1,'W95FA_Regular.typeface');
+    createTextMesh("Hey \n" + profil.name + " !", textBigSize, -80, 30, targetPoints.profil,0,0,0x000000, 1,'Jersey 15_Regular');
     createTextMesh("Followers: " + profil.follower.toString(), textSmallSize, 55, -30, targetPoints.profil,winkel,0,0x000000, 1,'W95FA_Regular.typeface');
 
     let recGroupX = -80;
     let recGroupY = -17;
-    let recText = textSize;
+    let recText = 2;
     let recBildG = 25;
     let recBildRot = 0;
 
-    createTextMesh("Recently Played Songs", 5, recGroupX, recGroupY, targetPoints.profil, recBildRot);
+    for(let i = 0; i < recentlyPlayed.length; i++){
+        if(recentlyPlayed[i].name.length >= 20){
+            recentlyPlayed[i].name = recentlyPlayed[i].name.substring(0,20) + "...";
+        }
+    }
+    
+    console.log(recentlyPlayed);
+
+    createTextMesh("Recently Played Songs", textSize, recGroupX, recGroupY, targetPoints.profil,0, 0, 0x000000,1,'Jersey 15_Regular');
 
     createBildMesh(recentlyPlayed[0].image, recGroupX + 13, recGroupY - 18, targetPoints.profil, recBildRot, recBildG);
-    createTextMesh(recentlyPlayed[0].name, recText, recGroupX + 1, recGroupY - 34, targetPoints.profil, recBildRot);
+    createTextMesh(recentlyPlayed[0].name, recText, recGroupX + 1, recGroupY - 34, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface');
 
     createBildMesh(recentlyPlayed[1].image, recGroupX + 43, recGroupY - 18, targetPoints.profil, recBildRot, recBildG);
-    createTextMesh(recentlyPlayed[1].name, recText, recGroupX + 31, recGroupY - 34, targetPoints.profil, recBildRot);
+    createTextMesh(recentlyPlayed[1].name, recText, recGroupX + 31, recGroupY - 34, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface');
 
     createBildMesh(recentlyPlayed[2].image, recGroupX + 13, recGroupY - 48, targetPoints.profil, recBildRot, recBildG);
-    createTextMesh(recentlyPlayed[2].name, recText, recGroupX + 1, recGroupY - 64, targetPoints.profil, recBildRot);
+    createTextMesh(recentlyPlayed[2].name, recText, recGroupX + 1, recGroupY - 64, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface');
 
     createBildMesh(recentlyPlayed[3].image, recGroupX + 43, recGroupY - 48, targetPoints.profil, recBildRot, recBildG);
     createTextMesh(recentlyPlayed[3].name, recText, recGroupX + 31, recGroupY - 64, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface');
@@ -684,7 +694,7 @@ function createTopArtist() {
     //console.log("createTopArtists, hier sind sie: " + topArtists);
     //console.log("Diese Profil gehört: " + profil.name);
     createTextMesh(profil.name + "'s", textBigSize, -300, 110, targetPoints.topArtist - 200,0,0,0x000000, 1,'W95FA_Regular.typeface');
-    let headlineTwo = createTextMesh("\nTop Artists", headlineSize, -300, 110, targetPoints.topArtist - 200,0, 0, 0x000000,0.7,'Jersey 15_Regular');
+    let headlineTwo = createTextMesh("\nTop Artists", headlineSize, -300, 110, targetPoints.topArtist - 200,0, 0, 0x000000,1,'Jersey 15_Regular');
     while (i < topArtists.length) {
         let x = 100 + i * -15;
         let y = -60 + i * 25;
@@ -728,7 +738,7 @@ function createHeavyRotation() {
         bildMesh.userData.name = heavyRotation[e].name;
         heavyRotGroup.add(bildMesh);
     }
-    createTextMesh("Your \nHeavy Rotation", headlineSize, -200, 0, targetPoints.onRepeat - 300,0, 0, 0x000000,0.7,'Jersey 15_Regular');
+    createTextMesh("Your \nHeavy Rotation", headlineSize, -200, 0, targetPoints.onRepeat - 300,0, 0, 0x000000,1,'Jersey 15_Regular');
 }
 
 async function createGLTFMesh(x, y, z, rotationX, rotationY, rotationZ, scale) {
@@ -775,6 +785,7 @@ function createTopSongs() {
     createGLTFMesh(0, -100, targetPoints.topSong-50, 0, 0, 0, 50);
     createGLTFMesh(-95, -110, targetPoints.topSong-35, 0, 20, 0, 50);
     createGLTFMesh(130, -110, targetPoints.topSong-35, 0, -20, 0, 50);
+
 }
 
 async function iconAnimationPl(){
@@ -823,9 +834,10 @@ function createPlaylistButton(){
 }
 
 async function createEND(){
-    await createTextMesh("THE END", headlineSize, -40, 0, targetPoints.playlist-500,0, 0, 0x000000,0.7,'Jersey 15_Regular');
+    await createTextMesh("THE END", headlineSize, -40, 0, targetPoints.playlist-500,0, 0, 0x000000,1,'Jersey 15_Regular');
     createRingMesh(15,0,targetPoints.playlist-500,-35,15,0x42887E,150,160);
-    createQuaderMesh(0,0,targetPoints.playlist-500,20,10, 120, 0x8043E2);
+    createQuaderMesh(0,0,targetPoints.playlist-500,20,10, 120, 0xffffff);
+    createTextMesh("a", 1300, -800, -500, targetPoints.playlist,0,0,0x000000,0.1,'Yarndings 12_Regular');
 }
 
 function createAll() {
