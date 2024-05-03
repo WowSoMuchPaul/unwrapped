@@ -7,7 +7,7 @@ import TWEEN, { remove } from '@tweenjs/tween.js';
 import Stats from 'stats.js';
 //import typefaceFont from 'three/examples/fonts/helvetiker_regular.typeface.json';
 
-import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, logoutClick } from "./spotify.js";
+import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
 import { log } from 'three/examples/jsm/nodes/Nodes.js';
 
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotGroup, lastIntersected;
@@ -27,7 +27,7 @@ const cameraTargetDistance = 100;
 
 const stats = new Stats();
 // stats.showPanel(0);
-document.body.appendChild(stats.dom);
+//document.body.appendChild(stats.dom);
 
 /** Raycaster */
 const raycaster = new THREE.Raycaster();
@@ -113,6 +113,14 @@ async function init() {
     trackControls.staticMoving = false;
     trackControls.dynamicDampingFactor = 0.04;
 
+
+    //Erstelle alle Geometrien, wenn Nutzer bereits authentifiziert ist
+    if (await (onPageLoad())) {
+        await createAll();
+    }else{
+        
+    }
+
     //Listener setzen
     window.addEventListener('resize', onWindowResize);
     document.getElementById("closebtn").addEventListener("click", closeOverlay);
@@ -120,6 +128,7 @@ async function init() {
     document.getElementById("delete").addEventListener("click", deleteGroup);
     document.getElementById("create").addEventListener("click", createAll);
     document.getElementById("auth").addEventListener("click", loginWithSpotifyClick);
+    document.getElementById("refreshToken").addEventListener("click", refreshToken);
     document.getElementById("playlist").addEventListener("click", () => {
         setFestivalPlaylist(timeRange);
     });
@@ -151,11 +160,6 @@ async function init() {
         cursor.x = event.clientX / sizes.width - 0.5;
         cursor.y = event.clientY / sizes.height - 0.5;
     })
-
-    //Erstelle alle Geometrien, wenn Nutzer bereits authentifiziert ist
-    if (await (onPageLoad())) {
-        createAll();
-    }
 
 }
 
@@ -504,19 +508,20 @@ async function createTopSongs() {
     createTextMesh("3: " + songs[2].name, 2, 20, -25, targetPoints.topSong);
 }
 
-function createAll() {
+async function createAll() {
     inhaltGroup = new THREE.Group();
     inhaltGroup.name = "inhaltGroup";
-    createProfil();
-    createTopArtist();
-    createHeavyRotation();
-    createTopSongs();
+    await createProfil();
+    await createTopArtist();
+    await createHeavyRotation();
+    await createTopSongs();
 
     // Hinzufügen der "inhaltGroup" zur Haupt-Szene
     scene.add(inhaltGroup);
 }
 
 function deleteGroup() {
+    //console.log(inhaltGroup);
     clearThree(inhaltGroup);
 }
 

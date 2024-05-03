@@ -17,7 +17,7 @@ const recentlyPlayedEndpoint = "https://api.spotify.com/v1/me/player/recently-pl
 const currentToken = {
     get access_token() { return localStorage.getItem('access_token') || null; },
     get refresh_token() { return localStorage.getItem('refresh_token') || null; },
-    get expires_in() { return localStorage.getItem('refresh_in') || null },
+    get expires_in() { return localStorage.getItem('expires_in') || null },
     get expires() { return localStorage.getItem('expires') || null },
   
     save: function (response) {
@@ -30,7 +30,7 @@ const currentToken = {
       const expiry = new Date(now.getTime() + (expires_in * 1000));
       localStorage.setItem('expires', expiry);
     }
-  };
+};
 
 export async function onPageLoad(){
    
@@ -40,8 +40,8 @@ export async function onPageLoad(){
 
     // If we find a code, we're in a callback, do a token exchange
     if (code) {
-        const token = await getToken(code);
-        currentToken.save(token);
+        console.log("Code found in URL, exchanging for token");
+        await getToken(code);
 
         // Remove code from URL so we can refresh correctly.
         const url = new URL(window.location.href);
@@ -51,9 +51,8 @@ export async function onPageLoad(){
         window.history.replaceState({}, document.title, updatedUrl);
     }
 
-    // Meldet zurück, ob der Nutzer eingeloggt ist.
-    return (currentToken.access_token);
-
+    // Prüft, ob der Nutzer eingeloggt ist.
+    return (currentToken.access_token && currentToken.access_token != "undefined");
 }
 
 export async function redirectToSpotifyAuthorize() {
@@ -103,11 +102,14 @@ async function getToken(code) {
         code_verifier: code_verifier,
       }),
     });
-  
-    return await response.json();
+
+    if(response.status == 200) {
+        const token = await response.json();
+        currentToken.save(token);
+    }
 }
 
-async function refreshToken() {
+export async function refreshToken() {
     const response = await fetch(tokenEndpoint, {
       method: 'POST',
       headers: {
@@ -119,8 +121,12 @@ async function refreshToken() {
         refresh_token: currentToken.refresh_token
       }),
     });
-  
-    return await response.json();
+    if (response.status == 200) {
+        const token = await response.json();
+        currentToken.save(token);
+    }else{
+        console.log("refresh Token failed");
+    }
 }
 
 // Click handlers
@@ -134,10 +140,7 @@ export async function logoutClick() {
     window.location.href = redirect_uri;
 }
   
-async function refreshTokenClick() {
-    const token = await refreshToken();
-    currentToken.save(token);
-}
+
 
 
 // DATEN ABRUFEN
@@ -171,13 +174,19 @@ async function getBase64Image(path) {
  */
 async function callApi(method, url, body) {
     let response;
+    //Prüft, ob der Token noch gültig ist, falls nicht wird ein neuer Token angefordert.
+    const now = new Date();
+    if (new Date(currentToken.expires) < now) {
+        await refreshToken();
+        console.log("Token refreshed");
+    }
     if(method == "GET") {
         //API call ohne Body
         response = await fetch(url, {
             method: method,
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + currentToken.access_token
+                'Authorization': 'Bearer ' + await currentToken.access_token
             }
         })
     }else if (method == "PUT"){
@@ -185,7 +194,7 @@ async function callApi(method, url, body) {
             method: method,
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + currentToken.access_token
+                'Authorization': 'Bearer ' + await currentToken.access_token
             },
             body: body
         }) 
@@ -195,7 +204,7 @@ async function callApi(method, url, body) {
             method: method,
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + currentToken.access_token
+                'Authorization': 'Bearer ' + await currentToken.access_token
             },
             body: JSON.stringify(body)
         }) 
@@ -206,13 +215,14 @@ async function callApi(method, url, body) {
         //Bei erfolgreichem call die erfragten Daten returnen
         return response.json();
     }else if (status == 401 ){
-        //refreshAccessToken();
-        refreshTokenClick();
+        await refreshToken();
         callApi(method, url, body);
+    }else if (status == 202){
+        //Erfolgreicher Request, Cover wurde gesetzt
+        return response;
     }else{
-        //const status = await response.status + ": " + response.responseText;
+        //Bei Fehlern den Response loggen und zurückgeben
         console.log(response);
-        //alert(status);
         return response;
     }
 }
@@ -405,5 +415,10 @@ export async function setFestivalPlaylist(timeRange){
 
     
     let base64Cover = await (getBase64Image(coverUrl));
-    callApi("PUT", "https://api.spotify.com/v1/playlists/" + playlistId + "/images", base64Cover);
+    let coverRes = await (callApi("PUT", "https://api.spotify.com/v1/playlists/" + playlistId + "/images", base64Cover));
+    //Beim Cover setzten scheint Spotify etwas unzuverlässig zu sein, daher wird der Request so lange wiederholt, bis er erfolgreich ist.
+    //Kein 100% sauberer Weg, aber zunächst ein ausreichender Workaround.
+    while(coverRes.status != 202){
+        coverRes = await (callApi("PUT", "https://api.spotify.com/v1/playlists/" + playlistId + "/images", base64Cover));
+    }
 }
