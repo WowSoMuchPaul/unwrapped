@@ -99,12 +99,14 @@ div.overlaybar {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
+  padding-left: 5px;
+  padding-right: 2px;
 }
 
 .closebtn {
   justify-self: end;
   background-color: #c0c0c0;
-  margin: 2px 2px 2px px;
+  margin: 2px 2px 2px 2px;
   position : relative;
   border-width: 1px;
   border-color: #FFFFFF #808080 #808080 #FFFFFF;

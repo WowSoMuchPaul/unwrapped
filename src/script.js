@@ -7,15 +7,16 @@ import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'stats.js';
 
-import { onPageLoad, authorizationReq, setFestivalPlaylist, setTimeRangeLong, setTimeRangeMid, setTimeRangeShort } from "./spotify.js";
+import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
 import { log } from 'three/examples/jsm/nodes/Nodes.js';
 
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotGroup, lastIntersected, topArtistsCube, cleanupTopArtistsRot;
 export {camera, heavyRotGroup, inhaltGroup, scene};
+export const targetPoints = {};
 let inEinemBereich = false;
 let tweenAktiviert = false;
 let freeMovement = true;
-export const targetPoints = {};
+let timeRange = "long_term";
 const bereichOffsetVorne = 400;
 const bereichDampingVorne = bereichOffsetVorne / 2;
 const bereichOffsetHinten = 100;
@@ -27,7 +28,7 @@ const cameraTargetDistance = 100;
 
 const stats = new Stats();
 // stats.showPanel(0);
-document.body.appendChild(stats.dom);
+//document.body.appendChild(stats.dom);
 
 /** Raycaster */
 export const raycaster = new THREE.Raycaster();
@@ -72,8 +73,6 @@ const cursor = {};
 await init();
 
 async function init() {
-
-    onPageLoad();
 
     /**
      * Sizes
@@ -142,15 +141,26 @@ async function init() {
     trackControls.zoomSpeed = zoomSpeedNorm;
     trackControls.staticMoving = false;
     trackControls.dynamicDampingFactor = 0.04;
-    
+
+
+    //Erstelle alle Geometrien, wenn Nutzer bereits authentifiziert ist
+    if (await (onPageLoad())) {
+        await createAll();
+    }else{
+        
+    }
+
     //Listener setzen
     window.addEventListener('resize', onWindowResize);
     document.getElementById("closebtn").addEventListener("click", closeOverlay);
     document.getElementById("help").addEventListener("click", openOverlay);
     document.getElementById("delete").addEventListener("click", deleteGroup);
     document.getElementById("create").addEventListener("click", createAll);
-    document.getElementById("auth").addEventListener("click", authorizationReq);
-    document.getElementById("playlist").addEventListener("click", setFestivalPlaylist);
+    document.getElementById("auth").addEventListener("click", loginWithSpotifyClick);
+    document.getElementById("refreshToken").addEventListener("click", refreshToken);
+    document.getElementById("playlist").addEventListener("click", () => {
+        setFestivalPlaylist(timeRange);
+    });
     
     //Nav Bar Listener
     document.getElementById("navPlaylist").addEventListener("click", e => {
@@ -171,22 +181,8 @@ async function init() {
 
     document.getElementById("timeRange").addEventListener("change", function() {
         deleteGroup();
-        console.log(this.value);
-        if (this.value == "long_term") {
-            setTimeRangeLong();
-        }
-        if (this.value == "medium_term") {
-            setTimeRangeMid();
-        }
-        if (this.value == "short_term") {
-            setTimeRangeShort();
-        }
-        //Das ist vielleicht nicht die eleganteste Lösung, aber das Ding muss halt auf die aktualisierten Werte warten, da die ja neu von spotify abgerufen werden.
-
-        setTimeout(function () {
-            createAll(); // Hier worked was nicht beim umschalten der Zeitranges
-            console.log("halllllo");
-        }, 250);
+        timeRange = this.value;
+        createAll();
     });
 
     window.addEventListener('mousemove', (event) => {
@@ -194,50 +190,6 @@ async function init() {
         cursor.y = event.clientY / sizes.height - 0.5;
     })
 
-    //Alle Geometrien mit den Spotify Daten erstellen
-    if (localStorage.getItem("access_token") != undefined) {
-        console.log("access token ist am start, create all.")
-        createAll();
-    }
-}
-
-/* Getter Fnktionen für alle Daten aus dem Local Storage */
-
-//Profil Getter
-function getProfil() {
-    const profil = JSON.parse(localStorage.getItem("myProfil")) || [];
-    return profil;
-}
-
-//RecentlyPlayed Getter
-function getRecentlyPlayed() {
-    const recentlyPlayed = JSON.parse(localStorage.getItem("recentlyPlayed")) || [];
-    return recentlyPlayed;
-}
-
-//TopArtist Getter
-function getTopArtists() {
-    const topArtists = JSON.parse(localStorage.getItem("topArtists")) || [];
-    return topArtists;
-}
-
-//TopSongs Getter
-function getTopSongs() {
-    const topSongs = JSON.parse(localStorage.getItem("topSongs")) || [];
-    return topSongs;
-}
-
-//OnRepeat Getter
-function getOnRepeat() {
-    const onRepeat = JSON.parse(localStorage.getItem("onRepeat")) || [];
-    // console.log(onRepeat[0].name);
-    return onRepeat;
-}
-
-//Playlist Getter
-function getPlaylist() {
-    const playlist = JSON.parse(localStorage.getItem("playlist")) || [];
-    return playlist;
 }
 
 function closeOverlay() {
@@ -553,8 +505,8 @@ function createCube(options) {
 }
 
 async function createProfil() {
-    let profil = getProfil();
-    let recentlyPlayed = getRecentlyPlayed();
+    const profil = await getMe();
+    const recentlyPlayed = await getRecentlyPlayed();
     let winkel = 0;
     let contentProfil = [];
 
@@ -583,8 +535,8 @@ async function createProfil() {
 
 
 async function createTopArtist() {
-    let profil = getProfil();
-    let topArtists = getTopArtists();
+    let profil = await getMe();
+    let topArtists = await getTopArtists(timeRange);
     let artistPics = [];
     let contentTopArtist = [];
 
@@ -625,10 +577,12 @@ async function createTopArtist() {
     return contentTopArtist;
 }
 
-// Funktion zum Erstellen der Heavy Rotation
+// Funktion zum erstellen der Heavy Rotation
 async function createHeavyRotation() {
     let contentHeavyRotation = [];
-    const heavyRotation = getOnRepeat();
+    // Heavy Rotation aus dem Local Storage holen
+    const heavyRotation = await getOnRepeat();
+    // Heavy Rotation Group erstellen
     heavyRotGroup = new THREE.Group();
     heavyRotGroup.name = "Heavy Rotation Circle";
     heavyRotGroup.position.set(110, 0, targetPoints.onRepeat - 60);
@@ -704,24 +658,19 @@ async function createPlaylist() {
 }
 
 async function createAll() {
+    inhaltGroup = new THREE.Group();
+    inhaltGroup.name = "inhaltGroup";
+    await createProfil();
+    await createTopArtist();
+    await createHeavyRotation();
+    await createTopSongs();
 
-    let inhaltProfil = await createProfil();
-    inhaltProfil.forEach(element => inhaltGroup.add(element));
-
-    let inhaltTopArtist = await createTopArtist();
-    inhaltTopArtist.forEach(element => inhaltGroup.add(element));
-
-    let inhaltTopSongs = await createTopSongs();
-    inhaltTopSongs.forEach(element => inhaltGroup.add(element));
-
-    let heavyRotation = await createHeavyRotation();
-    heavyRotation.forEach(element => inhaltGroup.add(element));
-
-    let playlist = await createPlaylist();
-    playlist.forEach(element => inhaltGroup.add(element));
+    // Hinzufügen der "inhaltGroup" zur Haupt-Szene
+    scene.add(inhaltGroup);
 }
 
 function deleteGroup() {
+    //console.log(inhaltGroup);
     clearThree(inhaltGroup);
 }
 
