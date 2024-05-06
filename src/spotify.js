@@ -285,7 +285,7 @@ export async function getTopArtists(timeRange){
     const data = await callApi("GET", topArtistsEndpoint + "?time_range=" + timeRange, null);
     let topArtists = [];
     //Fuer jede*n Artist ein Object mit allen benötigten Daten anlegen.
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 6; i++) {
         let artistData = data.items[i];
         let artistObject = {};
         artistObject.id = artistData.id;

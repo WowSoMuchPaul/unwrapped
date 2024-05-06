@@ -72,7 +72,7 @@ async function animateAndDisplayText(obj) {
         centerTextMesh(songName);
         let songArtists = await displaySongArtist(obj);
         centerTextMesh(songArtists, -15);
-
+        console.log(songName, songArtists);
         scaleObject(obj, 1.6); // Vergrößern des Objekts beim Hover
 
         moveObject(obj, 300);
@@ -143,7 +143,7 @@ function moveObject(obj, duration) {
     const targetPosition = {
         x: obj.position.x + directionVector.x * moveDistance,
         y: obj.position.y + directionVector.y * moveDistance,
-        z: obj.position.z + 50//directionVector.z * moveDistance
+        z: obj.position.z + 50 //directionVector.z * moveDistance
     };
 
     // Erstellt eine Tween-Animation, um das Objekt zu bewegen
@@ -155,7 +155,7 @@ function moveObject(obj, duration) {
                 tween.stop();
                 obj.userData.animationActive = false;
                 obj.userData.animation = null;
-                removeTextMeshes(obj);
+                removeTextMesh(obj);
                 resetObjectToOrigin(obj);
             }
         })
@@ -201,7 +201,7 @@ function resetObject(obj) {
 
         scaleObject(obj, 1.0); // Zurücksetzen auf die ursprüngliche Skalierung
 
-        removeTextMeshes(obj);
+        removeTextMesh(obj);
         moveObject(obj, 300);
     }
 }
@@ -213,14 +213,24 @@ function scaleObject(obj, scale) {
     obj.scale.set(obj.userData.originalScale.x * scale, obj.userData.originalScale.y * scale, obj.userData.originalScale.z * scale);
 }
 
-function removeTextMeshes(obj) {
-    const textMeshes = textMeshMap.get(obj);
-    if (textMeshes) {
-        textMeshes.forEach(textMesh => {
-            inhaltGroup.remove(textMesh);
-            textMesh.geometry.dispose();
-            textMesh.material.dispose();
-        });
-        textMeshMap.delete(obj);
+export function removeTextMesh(obj) {
+    console.log("Lösche jetzt", obj);
+    if(obj === undefined || obj === null) return;
+    obj.traverse(node => {
+        if(node instanceof THREE.Mesh) {
+            node.geometry?.dispose();
+            if(Array.isArray(node.material)) {
+                node.material.forEach(mat => mat.dispose());
+            }else {
+                node.material?.dispose();
+            }
+        }
+    });
+    while (obj.children.length > 0) {
+        obj.remove(obj.children[0]);
     }
+    obj.parent?.remove(obj);
+    // obj = null;
+    console.log(obj, " weil gelöscht");
+    // console.log("Gelöscht");
 }
