@@ -1,23 +1,17 @@
-// import * as THREE from 'three';
-// import TWEEN from '@tweenjs/tween.js';
-
 import { THREE, TWEEN } from './imports.js';
 
-import { updateRaycasterInteraction } from './interaction.js';
+import { updateRaycasterInteraction } from './heavyRotInteraction.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'stats.js';
-//import typefaceFont from 'three/examples/fonts/helvetiker_regular.typeface.json';
 
 import { onPageLoad, authorizationReq, setFestivalPlaylist, setTimeRangeLong, setTimeRangeMid, setTimeRangeShort } from "./spotify.js";
 import { log } from 'three/examples/jsm/nodes/Nodes.js';
 
-let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotGroup, lastIntersected;
+let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotGroup, lastIntersected, topArtistsCube, cleanupTopArtistsRot;
 export {camera, heavyRotGroup, inhaltGroup, scene};
-// export const minCameraZ = 1000;
-// export const maxCameraZ = 1500;
 let inEinemBereich = false;
 let tweenAktiviert = false;
 let freeMovement = true;
@@ -30,7 +24,6 @@ const zoomSpeedNorm = 0.3;
 const zoomSpeedBereich = 0.02;
 const tweenStartDistance = 10;
 const cameraTargetDistance = 100;
-
 
 const stats = new Stats();
 // stats.showPanel(0);
@@ -76,9 +69,9 @@ export function getMouse3DPosition(mouse, camera) {
 /**cursor */
 const cursor = {};
 
-init();
+await init();
 
-function init() {
+async function init() {
 
     onPageLoad();
 
@@ -101,7 +94,7 @@ function init() {
     /**
      * Camera
      */
-    camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 75, 700 );
+    camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 700 );
     camera.position.z = 3000;
     // camera.far = 500;
     // camera.focus = 1000;
@@ -112,10 +105,6 @@ function init() {
     inhaltGroup = new THREE.Group();
     inhaltGroup.name = "inhaltGroup";
     scene.add(inhaltGroup);
-
-    // helper = new THREE.CameraHelper(camera);
-    // scene.add(helper);
-
 
     /**
     * Axis Helper 
@@ -153,7 +142,7 @@ function init() {
     trackControls.zoomSpeed = zoomSpeedNorm;
     trackControls.staticMoving = false;
     trackControls.dynamicDampingFactor = 0.04;
-
+    
     //Listener setzen
     window.addEventListener('resize', onWindowResize);
     document.getElementById("closebtn").addEventListener("click", closeOverlay);
@@ -195,7 +184,7 @@ function init() {
         //Das ist vielleicht nicht die eleganteste Lösung, aber das Ding muss halt auf die aktualisierten Werte warten, da die ja neu von spotify abgerufen werden.
 
         setTimeout(function () {
-            createAll();
+            createAll(); // Hier worked was nicht beim umschalten der Zeitranges
             console.log("halllllo");
         }, 250);
     });
@@ -271,7 +260,6 @@ function checkCamPosition() {
 
     //Bereich Profil
     if ((pos <= (targetPoints.profil + bereichOffsetVorne)) && (pos >= (targetPoints.profil - bereichOffsetHinten))) {
-        console.log("Bereich Profil");
         handleBereich(pos, targetPoints.profil);
     }
 
@@ -315,20 +303,20 @@ function handleBereich(pos, tp) {
         }
         //TWEEN zur Camera Target Position
         if ((pos <= (tp + bereichOffsetVorne - bereichDampingVorne - tweenStartDistance)) && (pos >= (tp - bereichOffsetHinten + bereichDampingHinten + tweenStartDistance)) && (!tweenAktiviert)) {
-            console.log("nutze TWEEN");
             tweenAktiviert = true;
             TrackballControls.noZoom = true;
-            new TWEEN.Tween(camera.position).to(
-                {
+            new TWEEN.Tween(camera.position)
+                .to({
                     z: tp + cameraTargetDistance
-                }, 4000
-            )
+                    }, 2000)
                 .easing(TWEEN.Easing.Exponential.Out)
                 .onComplete(() => {
                     if(tp == targetPoints.topArtist) {
-                        handleTopArtistBereich();
+                        let exit = handleTopArtistBereich();
+                    } else {
+                        console.log("TWEEN abgeschlossen");
+                        TrackballControls.noZoom = false;
                     }
-                    TrackballControls.noZoom = false;
                 })
                 .start();
         }
@@ -351,8 +339,62 @@ function handleBereich(pos, tp) {
 
 function handleTopArtistBereich() {
     console.log("------!Top Artist Bereich");
-    TrackballControls.noZoom = true;
+    trackControls.noZoom = true; // Verhindere Zoom während der Rotation
+
+    let rotationIndex = 0;
+    let isAnimating = false;
+    let rotationSequence = [
+        { axis: 'y', angle: Math.PI / 2 },  // Drehung nach rechts
+        { axis: 'x', angle: Math.PI / 2 },  // Kippen nach oben
+        { axis: 'y', angle: Math.PI / 2 },  // Weiter Drehung nach rechts
+        { axis: 'y', angle: Math.PI / 2 },  // Nochmal Drehung nach rechts
+        { axis: 'x', angle: Math.PI / 2 }   // Kippen nach oben
+    ];
+
+    function rotateCube(event) {
+        if (isAnimating || event.deltaY === 0) return; // Keine Aktion wenn bereits animiert wird oder kein Scroll-Input
+
+        isAnimating = true;
+        let direction = Math.sign(event.deltaY); // Bestimmt die Richtung des Scrolling
+        // Update rotation index based on scroll direction
+        rotationIndex -= direction;
+        if (rotationIndex < 0) {
+            rotationIndex = rotationSequence.length - 1;
+            console.log("RotationIndex: vorwärts" + rotationIndex);
+        }
+        if (rotationIndex >= rotationSequence.length) {
+            rotationIndex = 0;
+        }
+
+        let step = rotationSequence[rotationIndex];
+
+        // Berechnet den neuen Winkel basierend auf der aktuellen Rotation und der Richtung
+        let newAngle = topArtistsCube.rotation[step.axis] + step.angle * (direction < 0 ? 1 : -1); 
+
+        let rotation = {};
+        rotation[step.axis] = newAngle;
+
+        new TWEEN.Tween(topArtistsCube.rotation)
+            .to(rotation, 500)
+            .easing(TWEEN.Easing.Cubic.InOut)
+            .onComplete(() => {
+                console.log("Rotation abgeschlossen");
+                setTimeout(() => {
+                    isAnimating = false;
+                }, 1000); // Warte 1 Sekunde zwischen den Rotationen
+            })
+            .start();
+    }
+
+    window.addEventListener('wheel', rotateCube, { passive: true });
+
+    return function cleanup() {
+        window.removeEventListener('wheel', rotateCube);
+        console.log("Event entfernt");
+    };
 }
+
+
 
 
 function bringeZumBereich(origin) {
@@ -371,7 +413,7 @@ function bringeZumBereich(origin) {
     target += cameraTargetDistance;
 
     freeMovement = false;
-    TrackballControls.noZoom = true;
+    trackControls.noZoom = true;
 
     new TWEEN.Tween(camera.position).to(
         {
@@ -380,7 +422,7 @@ function bringeZumBereich(origin) {
     )
     .easing(TWEEN.Easing.Exponential.Out)
     .onComplete(() => {
-        TrackballControls.noZoom = false;
+        trackControls.noZoom = false;
         freeMovement = true;
     })
     .start();
@@ -501,7 +543,7 @@ function createCube(options) {
 
     const cube = new THREE.Mesh(geometry, materials);
     cube.rotation.y = Math.PI + (Math.PI / options.rotationY);
-    cube.rotation.x = Math.PI + (Math.PI / options.rotationX);
+    cube.rotation.x = 0;
     cube.scale.set(options.scale, options.scale, options.scale);
     cube.position.z = options.positionZ;
     cube.name = "TopArtists Cube";
@@ -571,14 +613,13 @@ async function createTopArtist() {
         rotationY: 2,
         rotationX: -8,
     };
-
     for (let i = 0; i < artistPics.length; i++) {
         cubeOptions.materials.push(artistPics[i]);
     }
-    const myCube = createCube(cubeOptions);
+    topArtistsCube = createCube(cubeOptions);
     contentTopArtist.push(headlineOne);
     contentTopArtist.push(headlineTwo);
-    contentTopArtist.push(myCube);
+    contentTopArtist.push(topArtistsCube);
     // inhaltGroup.add(myCube);
     // console.log(myCube);    
     return contentTopArtist;
@@ -663,7 +704,7 @@ async function createPlaylist() {
 }
 
 async function createAll() {
-    
+
     let inhaltProfil = await createProfil();
     inhaltProfil.forEach(element => inhaltGroup.add(element));
 

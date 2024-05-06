@@ -200,7 +200,7 @@ function callbackArtists(){
         topArtists = [];
 
         //Fuer jede*n Artist ein Object mit allen benötigten Daten anlegen.
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 6; i++) {
             let artistData = data.items[i];
             let artistObject = {};
             artistObject.id = artistData.id;
@@ -529,6 +529,7 @@ export function setTimeRangeMid() {
     timeRange = "medium_term";
     localStorage.removeItem("topArtists");
     localStorage.removeItem("topSongs");
+    console.log("time range: Medium");
     getTopArtists();
     getTopSongs();
     console.log("time range: Medium");
