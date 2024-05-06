@@ -37,6 +37,10 @@ const textSmallSize = 5;
 const textBigSize = 20;
 
 const stats = new Stats();
+
+const textHeight = 0;
+const textWidth = 0;
+const textDepth = 0;
 // stats.showPanel(0);
 //document.body.appendChild(stats.dom);
 
@@ -366,32 +370,34 @@ const tick = () => {
     camera.position.x += (parallaxX - camera.position.x) * 5 * deltaTime;
     camera.position.y += (parallaxY - camera.position.y) * 5 * deltaTime;
 
-    if (lastCamPosition != Math.round(camera.position.z) && freeMovement) {
-        checkCamPosition();
-        //console.log("Es bewegt sich. " + Math.round(camera.position.z));
-    }
-    
-    // Prüfen, ob die Kamera im Bereich der Playlist ist
-    if(lastCamPosition <= targetPoints.onRepeat){
-        if(document.getElementById("createPlaylist-btn") == null){
+        if (lastCamPosition != Math.round(camera.position.z) && freeMovement) {
+            checkCamPosition();
+        }
+        
+        // if(lastCamPosition <= targetPoints.onRepeat){
+        //     if(document.getElementById("createPlaylist-btn") == null){
+        //         createPlaylistButton();
+        //     }
+        // }
+
+        if (lastCamPosition >= targetPoints.playlist && lastCamPosition <= targetPoints.onRepeat) {  
+            console.log(lastCamPosition);  
             createPlaylistButton();
-        }
-    }
+            document.getElementById("createPlaylist-btn").style.display = "block";
+                console.log("createPlaylistButton");
+            if(document.getElementById("createPlaylist-btn") != null){
+                document.getElementById("createPlaylist-btn").style.display = "none";
+            } else {
 
-    // Prüfen, ob die Kamera im Bereich der Playlist ist
-    if (lastCamPosition <= targetPoints.playlist){    
-        if(document.getElementById("createPlaylist-btn") != null){
-            document.getElementById("createPlaylist-btn").style.display = "none";
+            }
         }
-    }
 
-    // Prüfen, ob die Kamera im Bereich der Playlist ist
-    if (lastCamPosition >= targetPoints.onRepeat){    
-        if(document.getElementById("createPlaylist-btn") != null){
-            document.getElementById("createPlaylist-btn").style.display = "none";
-        }
-    }
-    
+        // if (lastCamPosition >= targetPoints.onRepeat){    
+        //     if(document.getElementById("createPlaylist-btn") != null){
+        //         document.getElementById("createPlaylist-btn").style.display = "none";
+        //     }
+        //     }
+
     iconAnimationPl()
 
     //console.log(lastCamPosition);
@@ -463,6 +469,7 @@ const tick = () => {
 //     };
 
     // Funktion zum erstellen von TextMeshes
+    
 export async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotationY, color, opacity, fontName) {
     return new Promise((resolve, reject) => {
     const fontLoader = new FontLoader()
@@ -494,6 +501,11 @@ export async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotati
             textMaterial.transparent = true;
             textMaterial.materialColor = color || new THREE.Color(0xffffff);
             textMaterial.opacity = opacity || 1;
+
+            // textGeometry.computeBoundingBox();
+            // textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
+            // textHeight = textGeometry.boundingBox.max.y - textGeometry.boundingBox.min.y;
+            // textDepth = textGeometry.boundingBox.max.z - textGeometry.boundingBox.min.z;
 
 
             // Fügt das TextMesh der inhaltGroup hinzu
@@ -635,6 +647,12 @@ async function createProfil() {
 
     createBildMesh(recentlyPlayed[3].image, recGroupX + 43, recGroupY - 48, targetPoints.profil, recBildRot, recBildG);
     createTextMesh(recentlyPlayed[3].name, recText, recGroupX + 31, recGroupY - 64, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface');
+
+    createTextMesh("j", textBigSize, 45, -35, targetPoints.profil+40,0, -25, 0x000000,0.4,'Yarndings 12_Regular');
+    createTextMesh("k", textSize,-80, -95, targetPoints.profil+20,0, 12, 0x000000,0.4,'Yarndings 12_Regular');
+    createTextMesh("y", textBigSize-8, -30, 20, targetPoints.profil-40,-5, 15, 0x000000,0.3,'Yarndings 12_Regular');
+
+    createGLTFMesh(0, -90, targetPoints.profil, 0, Math.PI, 0, 20, 'DP_Frame_001');
 }
 
 
@@ -692,11 +710,11 @@ async function createHeavyRotation() {
     createTextMesh("Your \nHeavy Rotation", headlineSize, -200, 0, targetPoints.onRepeat - 300,0, 0, 0x000000,1,'Jersey 15_Regular');
 }
 
-async function createGLTFMesh(x, y, z, rotationX, rotationY, rotationZ, scale) {
+async function createGLTFMesh(x, y, z, rotationX, rotationY, rotationZ, scale, name) {
     return new Promise((resolve, reject) => {
         const gltfloader = new GLTFLoader();
         gltfloader.load(
-            '../Pedestal_GLTF/scene.gltf',
+            `../models/${name}.glb`,
             (gltf) => {
                 gltf.scene.scale.set(scale, scale, scale);
                 gltf.scene.position.set(x, y, z);
@@ -724,19 +742,26 @@ function createTopSongs() {
     }else{
         songs = JSON.parse(localStorage.getItem("topSongs"));
     }
+    // let y = -sizes.height / 3;
+    // let x = -sizes.width / 3;
+    // console.log(x);
+    // console.log(y);
+    // let z = targetPoints.topSong;
+    
     //console.log(songs);
-    createTextMesh("Deine Top 3 Songs", headlineSize, -170, -135, targetPoints.topSong-20,0, 0, 0x000000,1,'Jersey 15_Regular');
-    createBildMesh(songs[0].imageUrl, 0, 0, targetPoints.topSong-50, 0, 70);
-    createTextMesh("1: " + songs[0].name, textSize, -10, 40, targetPoints.topSong-50,0,0,0x000000, 1,'W95FA_Regular.typeface');
-    createBildMesh(songs[1].imageUrl, -95, -5, targetPoints.topSong-35, 20, 70);
-    createTextMesh("2: " + songs[1].name, textSize, -125, 35, targetPoints.topSong-35,0,20,0x000000, 1,'W95FA_Regular.typeface');
-    createBildMesh(songs[2].imageUrl, 130, -10, targetPoints.topSong-35, -20, 70);
-    createTextMesh("3: " + songs[2].name, textSize, 110, 30, targetPoints.topSong-35,0,-20,0x000000, 1,'W95FA_Regular.typeface');
+    createTextMesh("Your Top Songs", headlineSize, -150, -100, targetPoints.topSong ,0, 0, 0x000000,1,'Jersey 15_Regular');
+    
+    createBildMesh(songs[0].imageUrl, 0, 10, targetPoints.topSong-100, 0, 70);
+    createTextMesh("1: " + songs[0].name, textSize, -35, 50, targetPoints.topSong-100,0,0,0x000000, 1,'W95FA_Regular.typeface');
+    createGLTFMesh(0, -90, targetPoints.topSong-100, 0, 0, 0, 50);
 
-    createGLTFMesh(0, -100, targetPoints.topSong-50, 0, 0, 0, 50);
-    createGLTFMesh(-95, -110, targetPoints.topSong-35, 0, 20, 0, 50);
-    createGLTFMesh(130, -110, targetPoints.topSong-35, 0, -20, 0, 50);
+    createBildMesh(songs[1].imageUrl, -120, -5, targetPoints.topSong-55,20, 70);
+    createTextMesh("2: " + songs[1].name, textSize, -155, 35, targetPoints.topSong-45,0,20,0x000000, 1,'W95FA_Regular.typeface');
+    createGLTFMesh(-120, -110, targetPoints.topSong-55, 0,20, 0, 50);
 
+    createBildMesh(songs[2].imageUrl, 110, -15, targetPoints.topSong-35, -20, 70);
+    createTextMesh("3: " + songs[2].name, textSize, 75,25, targetPoints.topSong-35,0,-20,0x000000, 1,'W95FA_Regular.typeface');
+    createGLTFMesh(110, -120, targetPoints.topSong-35, 0, -20, 0, 50);
 }
 
 async function iconAnimationPl(){
@@ -771,8 +796,9 @@ async function iconAnimationPl(){
 
 async function createPlaylist(){
     await createTextMesh("Deine \nunwrapped \nPlaylist", headlineSize, -250, 85, targetPoints.playlist-40,0,25,0x000000, 1,'Jersey 15_Regular');
-    // createTextMesh("w", textBigSize-5, 55, 85, targetPoints.playlist,0, -25, 0x000000,0.3,'Yarndings 12_Regular');
-    // createTextMesh("x", textBigSize-10, -120, -75, targetPoints.playlist,0, 15, 0x000000,0.2,'Yarndings 12_Regular');
+    createTextMesh("w", textBigSize, 55, 85, targetPoints.playlist,0, -25, 0x000000,0.3,'Yarndings 12_Regular');
+    createTextMesh("x", textBigSize,-120, -75, targetPoints.playlist,0, 15, 0x000000,0.2,'Yarndings 12_Regular');
+    createTextMesh("a", 1000, -580,-500, targetPoints.playlist-20,0,0,0x000000,0.1,'Yarndings 12_Regular');
 }
 
 function createPlaylistButton(){
@@ -786,9 +812,9 @@ function createPlaylistButton(){
 
 async function createEND(){
     await createTextMesh("THE END", headlineSize, -40, 0, targetPoints.playlist-500,0, 0, 0x000000,1,'Jersey 15_Regular');
-    createRingMesh(15,0,targetPoints.playlist-500,-35,15,0x42887E,150,160);
-    createQuaderMesh(0,0,targetPoints.playlist-500,20,10, 120, 0xffffff);
-    createTextMesh("a", 1300, -800, -500, targetPoints.playlist,0,0,0x000000,0.1,'Yarndings 12_Regular');
+    // createRingMesh(15,0,targetPoints.playlist-500,-35,15,0x42887E,150,160);
+    // createQuaderMesh(0,0,targetPoints.playlist-500,20,10, 120, 0xffffff);
+    createTextMesh("v", 150, -150,-100,targetPoints.playlist-470 ,0,0,0x000000,0.1,'Yarndings 12_Regular');
 }
 
 async function createAll() {
