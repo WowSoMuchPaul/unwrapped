@@ -1,4 +1,7 @@
-
+:root {
+  --grey: #c6c6c6;
+  --blue: #000080;
+}
 
 @font-face {
   font-family: Gotham;
@@ -80,10 +83,50 @@ body {
   /* margin-top: 1%; */
 }
 
+h1 {
+  font-size: 20px;
+  margin: 0;
+  color:#000000;
+}
+
+button {
+  justify-self: center;
+  background-color: var(--grey);
+  position: relative;
+
+  display: grid;
+  align-items: center;
+  border-width: 3px;
+  /* border-color: #000000 #808080 #ffffff #FFFFFF; */
+  border-style: outset;
+  /* padding: 2px 2px 2px 2px; */
+  font-size: 12px;
+  font-weight: regular;
+  font-family: W95FA;
+  text-align: center;
+  cursor: pointer;
+  color: #000000;
+  margin: 2px 2px 2px 2px;
+}
+
+button:hover {
+  border-style: inset;
+}
+
+.windows95edges {
+  border-width: 3px;
+  border-style: outset;
+  /* border-color: #000000 #808080 #ffffff #FFFFFF; */
+}
+
+.windows95edgesImage {
+  border-width: 3px;
+  border-style: inset;
+}
 
 .overlay {
-  height: 50%;
-  width: 50%;
+  height: 70%;
+  width: 60%;
   position: fixed;
   /* display: none; */
   z-index: 1;
@@ -91,120 +134,106 @@ body {
   left: 50%;
   -ms-transform: translate(-50%, -50%);
   transform: translate(-50%, -50%);
-  background-color: #c0c0c0;
-  overflow-x: hidden;
+  background-color: var(--grey);
+  overflow: auto;
   transition: 0.5s;
-  border-width: 2px;
-  border-color: #FFFFFF #808080 #808080 #FFFFFF;
-  border-style: outset;
-}
-
-.overlay-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 1fr 1fr 1fr;
-  position: relative;
-  top: 25%;
-  width: 100%;
-  text-align: center;
-  align-items: center;
-  margin-top: 50px;
-}
-div.overlaybar {
-  background-color: #1926e1;
-  color: #ffffff;
-  border-width: 1px;
-  border-color: #000000 #808080 #808080 #FFFFFF;
-  border-style: outset;
-  height: 25px;
-  display:flexbox;
 }
 
 .overlaybar {
-  background-color: #1926e1;
+  position: -webkit-sticky; /* Safari */
+  position: sticky;
+  top: 0;
+  background-color: var(--blue);
   color: #ffffff;
   height: 25px;
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
-  padding-left: 5px;
-  padding-right: 2px;
+  padding: 2px;
+  font-size: 16px;
 }
 
-.closebtn {
-  justify-self: end;
-  background-color: #c0c0c0;
-  margin: 2px 2px 2px 2px;
-  position : relative;
-  border-width: 1px;
-  border-color: #FFFFFF #808080 #808080 #FFFFFF;
-  border-style: outset;
-  padding: 2px 2px 2px 2px;
-  /* display: flex; */
-  /* float: left;  */
-  font-size: 12px;
-  font-weight: bold;
-  font-family: Tahoma;
-  text-align: center;
-  cursor: pointer;
-  color: #000000;
-  
-}
-
-
-.closebtn:hover {
-  background-color: #808080;
-  color: #000000;
-}
-
-
-h1 {
-  font-size: 20px;
-  color: #ffffff;
-  margin-left: 10px;
-  margin-top: 2px;
-}
-
-
-#spotifyConnect-btn {
-  justify-self: center;
-  background-color: #c0c0c0;
-  position: relative;
-
-  display: grid;
-  align-items: center;
-  border-width: 2px;
-  border-color: #000000 #808080 #808080 #FFFFFF;
-  border-style: outset;
-  /* padding: 2px 2px 2px 2px; */
-  font-size: 12px;
-  font-weight: bold;
-  font-family: Tahoma;
-  text-align: center;
-  cursor: pointer;
-  color: #000000;
-  margin: 2px 2px 2px 2px;
-
-}
-
-
-#spotifyConnect-btn:hover {
-  background-color: #808080;
-  color: #000000;
-}
 .navBarElement {
-    float: both;
-    color: #ffffff;
-    border-radius: 50%;
-    height: 20px;
-    width: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 3px solid;
-    border-color: #000000;
-    box-sizing: border-box;
-    cursor: pointer;
+  position: absolute;
+  -ms-transform: translate(0%, 50%);
+  transform: translate(0%, 50%);
+  object-fit: cover;
+  max-width: 25px;
+  max-height: 25px;
+  right: 150%;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: right;
+  cursor: pointer;
+  transition: .2s ease;
+}
+
+.navBarElement:hover {
+  max-width: 30px;
+  max-height: 30px;
+}
+
+.navBarElementLable {
+  position: absolute;
+  left: 20px;
+}
+
+#fensterInhaltWrap {
+  margin: 4%;
+  color: #000000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+#fensterInhalt {
+  display: flex;
+  flex-direction: row;
+  /* justify-content: space-around; */
+  gap: 5%;
+}
+
+#fensterTutorialImg {
+  aspect-ratio: 4/3;
+  max-width: 50%;
+  object-fit: cover;
+}
+
+#fensterInhaltRechts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 50%;
+  overflow: auto;
+}
+
+#loginStatus {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: left;
+}
+
+#profilImage {
+  /* border-width: 2px;
+  border-style: inset; */
+  max-height: 50px;
+  max-width: 50px;
+  object-fit: cover;
+}
+
+#spotifyConnectButton {
+  padding: 5%;
+  font-size: 16px;
+  margin: 0;
+}
+
+#timeRangeDiv {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  justify-content: stretch;
 }
 
 #help {
@@ -213,27 +242,29 @@ h1 {
     left: 20px;
     height: 40px;
     width: 40px;
+    cursor: pointer;
 }
 
 #navBar {
+    display: none;
     position: absolute;
     top: 50%;
-    right: 50px;
+    right: 1rem;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    height: 300px;
+    height: 60vh;
+    width: 1.2rem;
     -ms-transform: translate(-50%, -50%);
     transform: translate(-50%, -50%);
+    background-color: var(--grey);
 }
 
 #navProgress {
-    position: absolute;
-    width: 4px;
-    transform: translateX(-50%);
-    color: #000000;
-    background-color: #000000;
-    background: var(--line-border-fill);
-    content: "";
+  position: absolute;
+  z-index: -1;
+  left: 20%;
+  height: 0%;
+  width: 60%;
+  background-color: var(--blue);
 }
 

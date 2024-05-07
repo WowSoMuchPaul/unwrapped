@@ -8,6 +8,11 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'stats.js';
 
 import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
+import fensterTutorialImg from '../static/images/vapor.png';
+import profilImage from '../static/images/profil_icon.png';
+import offlineImage from '../static/images/offline.png';
+import onlineImage from '../static/images/online.png';
+import help from '../static/images/help.png';
 import { log } from 'three/examples/jsm/nodes/Nodes.js';
 
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, topArtistCountText;
@@ -19,6 +24,7 @@ let freeMovement = true;
 let timeRange = "long_term";
 let topArtistsRotationIndex;
 let initCubeAnimationPlayed = false;
+const gesamtTiefe = 3000;
 const bereichOffsetVorne = 400;
 const bereichDampingVorne = bereichOffsetVorne / 2;
 const bereichOffsetHinten = 100;
@@ -27,6 +33,7 @@ const zoomSpeedNorm = 0.3;
 const zoomSpeedBereich = 0.02;
 const tweenStartDistance = 10;
 const cameraTargetDistance = 100;
+const progBarBottom = 2;
 
 let topArtistsRank = new THREE.Mesh;
 let topArtistsName = new THREE.Mesh;
@@ -125,9 +132,7 @@ async function init() {
      * Camera
      */
     camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 700 );
-    camera.position.z = 3000;
-    // camera.far = 500;
-    // camera.focus = 1000;
+    camera.position.z = gesamtTiefe;
     scene.add(camera);
     lastCamPosition = camera.position.z;
 
@@ -171,25 +176,63 @@ async function init() {
     trackControls.staticMoving = false;
     trackControls.dynamicDampingFactor = 0.04;
 
+    //Help Button
+    document.getElementById("help").src = help;
+    document.getElementById("help").style.display = "none";
+
+    //Nav Bar
+    document.getElementById("navProgress").style.bottom = progBarBottom + "%";
+    document.getElementById("navBar").style.display = "none";
+    document.getElementById("navProfil").style.bottom = (1 - (targetPoints.profil + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
+    document.getElementById("navProfil").src = profilImage;
+    document.getElementById("navArtists").style.bottom = (1 - (targetPoints.topArtist + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
+    document.getElementById("navArtists").src = profilImage;
+    document.getElementById("navSongs").style.bottom = (1 - (targetPoints.topSong + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
+    document.getElementById("navSongs").src = profilImage;
+    document.getElementById("navOnRepeat").style.bottom = (1 - (targetPoints.onRepeat + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
+    document.getElementById("navOnRepeat").src = profilImage;
+    document.getElementById("navPlaylist").style.bottom = (1 - (targetPoints.playlist + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
+    document.getElementById("navPlaylist").src = profilImage;
+
 
     //Erstelle alle Geometrien, wenn Nutzer bereits authentifiziert ist
     if (await (onPageLoad())) {
+        const profil = await getMe();
+        document.getElementById("fensterHeadline").innerText = "Welcome, " + profil.name + "!";
+        document.getElementById("fensterTutorialImg").src = fensterTutorialImg;
+        document.getElementById("profilImage").src = profil.imageUrl;
+        document.getElementById("profilImage").classList.add("windows95edgesImage");
+        document.getElementById("loginStatusImage").src = onlineImage;
+        document.getElementById("loginStatusLabel").innerText = "online";
+        document.getElementById("spotifyConnectButton").innerText = "Start unwrapped!"
+        document.getElementById("spotifyConnectButton").addEventListener("click", closeOverlay);
+        document.getElementById("logoutButton").addEventListener("click", logoutClick);
+        document.getElementById("timeRange").addEventListener("change", function() {
+            deleteGroup();
+            timeRange = this.value;
+            createAll();
+        });
         await createAll();
     }else{
-        
+       document.getElementById("fensterTutorialImg").src = fensterTutorialImg;
+       document.getElementById("profilImage").src = profilImage;
+       document.getElementById("loginStatusImage").src = offlineImage;
+       document.getElementById("loginStatusLabel").innerText = "offline";
+       document.getElementById("spotifyConnectButton").addEventListener("click", loginWithSpotifyClick);
+       document.getElementById("timeRangeDiv").style.display = "none";
+       document.getElementById("logoutButton").style.display = "none";
     }
 
     //Listener setzen
     window.addEventListener('resize', onWindowResize);
-    document.getElementById("closebtn").addEventListener("click", closeOverlay);
+    // document.getElementById("closebtn").addEventListener("click", closeOverlay);
     document.getElementById("help").addEventListener("click", openOverlay);
-    document.getElementById("delete").addEventListener("click", deleteGroup);
-    document.getElementById("create").addEventListener("click", createAll);
-    document.getElementById("auth").addEventListener("click", loginWithSpotifyClick);
-    document.getElementById("refreshToken").addEventListener("click", refreshToken);
-    document.getElementById("playlist").addEventListener("click", () => {
-        setFestivalPlaylist(timeRange);
-    });
+    // document.getElementById("delete").addEventListener("click", deleteGroup);
+    // document.getElementById("create").addEventListener("click", createAll);
+    // document.getElementById("refreshToken").addEventListener("click", refreshToken);
+    // document.getElementById("playlist").addEventListener("click", () => {
+    //     setFestivalPlaylist(timeRange);
+    // });
     
     //Nav Bar Listener
     document.getElementById("navPlaylist").addEventListener("click", e => {
@@ -208,11 +251,7 @@ async function init() {
         bringeZumBereich(e.target);
     });
 
-    document.getElementById("timeRange").addEventListener("change", function() {
-        deleteGroup();
-        timeRange = this.value;
-        createAll();
-    });
+
 
     window.addEventListener('mousemove', (event) => {
         cursor.x = event.clientX / sizes.width - 0.5;
@@ -222,10 +261,14 @@ async function init() {
 
 function closeOverlay() {
     document.getElementById("overlay").style.display = "none";
+    document.getElementById("help").style.display = "block";
+    document.getElementById("navBar").style.display = "block";
 }
 
 function openOverlay() {
     document.getElementById("overlay").style.display = "block";
+    document.getElementById("help").style.display = "none";
+    document.getElementById("navBar").style.display = "none";
 }
 
 function onWindowResize() {
@@ -234,6 +277,14 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+function setProgressBar() {
+    var barProgress = 0;
+    const progBarMaxH = 100 - 2 * progBarBottom;
+    const camProgress = (1 - (Math.round(camera.position.z) / gesamtTiefe)) * 100;
+    barProgress = camProgress * (progBarMaxH / 100);
+    
+    document.getElementById("navProgress").style.height = barProgress + "%";
+}
 
 /**
  * Überprüft die Position der Kamera und ruft entsprechende Funktionen auf, basierend auf der Position.
@@ -505,9 +556,12 @@ const tick = () => {
     camera.position.x += (parallaxX - camera.position.x) * 5 * deltaTime;
     camera.position.y += (parallaxY - camera.position.y) * 5 * deltaTime;
 
-    if (lastCamPosition != Math.round(camera.position.z) && freeMovement) {
-        console.log("Check Cam Position Entry");
-        checkCamPosition();
+    if (lastCamPosition != Math.round(camera.position.z)) {
+        setProgressBar();
+        if (freeMovement) {
+            checkCamPosition();
+            //console.log("Es bewegt sich. " + Math.round(camera.position.z));
+        }
     }
     lastCamPosition = Math.round(camera.position.z);
 

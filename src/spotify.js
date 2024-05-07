@@ -216,7 +216,7 @@ async function callApi(method, url, body) {
         return response.json();
     }else if (status == 401 ){
         await refreshToken();
-        callApi(method, url, body);
+        //callApi(method, url, body);
     }else if (status == 202){
         //Erfolgreicher Request, Cover wurde gesetzt
         return response;
