@@ -82,6 +82,7 @@ async function animateAndDisplayText(obj) {
 async function displaySongName(obj) {
     let songNameTextMesh = await createTextMesh(obj.userData.name, 10);
     storeAndReturnMesh(obj, songNameTextMesh);
+    inhaltGroup.add(songNameTextMesh);
     return songNameTextMesh;
 }
 
@@ -89,6 +90,7 @@ async function displaySongArtist(obj) {
     const artistsArray = obj.userData.artists.map(artist => artist.name).join(", ");
     let songArtistTextMesh = await createTextMesh(artistsArray, 8, 0, -15);
     storeAndReturnMesh(obj, songArtistTextMesh);
+    inhaltGroup.add(songArtistTextMesh);
     return songArtistTextMesh;
 }
 
@@ -155,7 +157,7 @@ function moveObject(obj, duration) {
                 tween.stop();
                 obj.userData.animationActive = false;
                 obj.userData.animation = null;
-                removeTextMesh(obj);
+                removeTextMeshes(obj);
                 resetObjectToOrigin(obj);
             }
         })
@@ -201,7 +203,7 @@ function resetObject(obj) {
 
         scaleObject(obj, 1.0); // Zurücksetzen auf die ursprüngliche Skalierung
 
-        removeTextMesh(obj);
+        removeTextMeshes(obj);
         moveObject(obj, 300);
     }
 }
@@ -213,24 +215,14 @@ function scaleObject(obj, scale) {
     obj.scale.set(obj.userData.originalScale.x * scale, obj.userData.originalScale.y * scale, obj.userData.originalScale.z * scale);
 }
 
-export function removeTextMesh(obj) {
-    console.log("Lösche jetzt", obj);
-    if(obj === undefined || obj === null) return;
-    obj.traverse(node => {
-        if(node instanceof THREE.Mesh) {
-            node.geometry?.dispose();
-            if(Array.isArray(node.material)) {
-                node.material.forEach(mat => mat.dispose());
-            }else {
-                node.material?.dispose();
-            }
-        }
-    });
-    while (obj.children.length > 0) {
-        obj.remove(obj.children[0]);
+function removeTextMeshes(obj) {
+    const textMeshes = textMeshMap.get(obj);
+    if (textMeshes) {
+        textMeshes.forEach(textMesh => {
+            inhaltGroup.remove(textMesh);
+            textMesh.geometry?.dispose();
+            textMesh.material?.dispose();
+        });
+        textMeshMap.delete(obj);
     }
-    obj.parent?.remove(obj);
-    // obj = null;
-    console.log(obj, " weil gelöscht");
-    // console.log("Gelöscht");
 }

@@ -1,6 +1,6 @@
 import { THREE, TWEEN } from './imports.js';
 
-import { updateRaycasterInteraction, removeTextMesh } from './heavyRotInteraction.js';
+import { updateRaycasterInteraction } from './heavyRotInteraction.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
@@ -10,13 +10,15 @@ import Stats from 'stats.js';
 import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
 import { log } from 'three/examples/jsm/nodes/Nodes.js';
 
-let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotGroup, lastIntersected, topArtistsCube, topArtistCountText;
-export {camera, heavyRotGroup, inhaltGroup, scene};
+let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, topArtistCountText;
+export {camera, heavyRotCircleGroup as heavyRotGroup, inhaltGroup, scene};
 export const targetPoints = {};
 let inEinemBereich = false;
 let tweenAktiviert = false;
 let freeMovement = true;
 let timeRange = "long_term";
+let topArtistsRotationIndex;
+let initCubeAnimationPlayed = false;
 const bereichOffsetVorne = 400;
 const bereichDampingVorne = bereichOffsetVorne / 2;
 const bereichOffsetHinten = 100;
@@ -30,8 +32,6 @@ let topArtistsRank = new THREE.Mesh;
 let topArtistsName = new THREE.Mesh;
 
 const stats = new Stats();
-// stats.showPanel(0);
-//document.body.appendChild(stats.dom);
 
 /** Raycaster */
 export const raycaster = new THREE.Raycaster();
@@ -40,7 +40,6 @@ export let mouse = new THREE.Vector2();
 window.addEventListener('mousemove', (event) => {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    // handleMouseMove();
 }, false);
 
 /**
@@ -68,13 +67,19 @@ export function getMouse3DPosition(mouse, camera) {
     return pos; // Gibt die berechnete 3D-Position der Maus zurück
 }
 
-
-
 /**cursor */
 const cursor = {};
 
-await init();
+await init(); // Starte die Initialisierung der Szene
 
+
+/**
+ * Initialisiert die Anwendung.
+ * Erstellt alle nötigen Elemente und fügt sie der Szene hinzu.
+ * @async
+ * @function init
+ * @returns {Promise<void>}
+ */
 async function init() {
 
     /**
@@ -90,8 +95,6 @@ async function init() {
 
     // Scene
     scene = new THREE.Scene();
-    //let backgroundColor = new THREE.Color('skyblue');
-    //scene.background = new THREE.Color( 0xff0000 );
 
     /**
      * Camera
@@ -111,8 +114,6 @@ async function init() {
     /**
     * Axis Helper 
     */
-    // const axesHelper = new THREE.AxesHelper( 100 );
-    // scene.add( axesHelper );
 
     // Seiten Target
     targetPoints.profil = camera.position.z - (camera.position.z / 6);
@@ -192,7 +193,6 @@ async function init() {
         cursor.x = event.clientX / sizes.width - 0.5;
         cursor.y = event.clientY / sizes.height - 0.5;
     })
-
 }
 
 function closeOverlay() {
@@ -209,6 +209,9 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+/**
+ * Überprüft die Position der Kamera und ruft entsprechende Funktionen auf, basierend auf der Position.
+ */
 function checkCamPosition() {
     //Aktuelle Kamera Position
     const pos = Math.round(camera.position.z);
@@ -239,24 +242,25 @@ function checkCamPosition() {
     }
 }
 
+/**
+ * Behandelt den Bereich basierend auf der (Kamera) Position und dem Ziel-Punkt.
+ *
+ * @param {number} pos - Die aktuelle (Kamera) Position.
+ * @param {number} tp - Der Ziel-Punkt.
+ */
 function handleBereich(pos, tp) {
-
-    //Kamera ist im Eintritts-Damping
+    //Kamera ist im Eintritts-Damping des Bereichs
     if ((pos <= (tp + bereichOffsetVorne)) && (pos >= (tp + bereichOffsetVorne - bereichDampingVorne))) {
-        // console.log("Eintritts-Damping");
         trackControls.zoomSpeed = zoomSpeedBereich + (pos - ((tp + bereichOffsetVorne) - bereichDampingVorne)) * ((zoomSpeedBereich - zoomSpeedNorm) / (-bereichDampingVorne));
     }
-
-    //Kamera ist im Bereich Playlist
+    //Überprüfen ob Kamera in den Bereich eintritt 
     if ((pos <= (tp + bereichOffsetVorne - bereichDampingVorne)) && (pos >= (tp - bereichOffsetHinten + bereichDampingHinten))) {
-        // console.log("Bereich Playlist");
-        //Kamera betritt Bereich Playlist
+        //Kamera ist in neuem Bereich
         if (!inEinemBereich) {
             inEinemBereich = true;
             trackControls.zoomSpeed = zoomSpeedBereich;
-            //console.log("BEREICH BETRETEN " + pos);
         }
-        //TWEEN zur Camera Target Position
+        //TWEEN Animation zur Camera Target Position
         if ((pos <= (tp + bereichOffsetVorne - bereichDampingVorne - tweenStartDistance)) && (pos >= (tp - bereichOffsetHinten + bereichDampingHinten + tweenStartDistance)) && (!tweenAktiviert)) {
             tweenAktiviert = true;
             TrackballControls.noZoom = true;
@@ -276,35 +280,38 @@ function handleBereich(pos, tp) {
                 .start();
         }
     }
-    //Kamera verlaesst Bereich Playlist
+    //Kamera verlaesst Bereich 
     if (((pos > (tp + bereichOffsetVorne - bereichDampingVorne)) || (pos < (tp - bereichOffsetHinten + bereichDampingHinten))) && inEinemBereich) {
         inEinemBereich = false;
         tweenAktiviert = false;
-        //trackControls.zoomSpeed = zoomSpeedNorm;
-        //console.log("BEREICH VERLASSEN " + pos);
     }
-
     //Kamera ist im Austritts-Damping
     if ((pos >= (tp - bereichOffsetHinten)) && (pos <= (tp - bereichOffsetHinten + bereichDampingHinten))) {
         console.log("Austritts-Damping");
         trackControls.zoomSpeed = zoomSpeedBereich - (pos - ((tp - bereichOffsetHinten) + bereichDampingHinten)) * ((zoomSpeedBereich - zoomSpeedNorm) / (-bereichDampingHinten));
-        //console.log("Damping Hinten. ZoomSpeed: " + trackControls.zoomSpeed);
     }
 }
 
-let hasInitialAnimationPlayed = false;
-
+/**
+ * Behandelt den Bereich der Top-Künstler.
+ * Wird aufgerufen wenn die Kamera in den Bereich der Top-Künstler eintritt.
+ * Steuert die Rotation des Würfels und die Anzeige der Künstlerinformationen.
+ * 
+ * @async
+ * @function handleTopArtistBereich
+ * @returns {Promise<void>}
+ */
 async function handleTopArtistBereich() {
     window.addEventListener('wheel', rotateCube, { passive: true });
-    if (!hasInitialAnimationPlayed) {
+    let initialTween = new TWEEN.Tween(topArtistsCube.rotation);
+    topArtistsCube.rotation.set(0, Math.PI + (Math.PI / 2), 0);
+    if (!initCubeAnimationPlayed) {
         initialAnimation();
-        hasInitialAnimationPlayed = true;
+        initCubeAnimationPlayed = true;
     }
-    let rotationIndex = 0;
+    topArtistsRotationIndex = 0;
     let isAnimating = false;
-    trackControls.noZoom = true; // Verhindere Zoom während der Rotation
-    
-
+    trackControls.noZoom = true; // Verhindert Zoom während der Rotation
     let rotationSequence = [
         [ //Auf 1
             { axis: 'y', angle: Math.PI / 2 }    
@@ -327,21 +334,26 @@ async function handleTopArtistBereich() {
         ]
     ];
 
+    /**
+     * Dreht den Würfel und aktualisiert die angezeigten Informationen.
+     * 
+     * @param {Event} event - Das Ereignis, das den Funktionsaufruf ausgelöst hat.
+     * @returns {Promise<void>} Ein Promise, das gelöst wird, wenn die Animation abgeschlossen ist.
+     */
     async function rotateCube(event) {
         if (isAnimating || event.deltaY === 0) return;
-        // TWEEN.removeAll();
+        initialTween.stop();
         isAnimating = true;
-        rotationIndex = (rotationIndex + 1) % rotationSequence.length; // Immer zum nächsten Schritt
-        if(rotationIndex == 0) {
+        topArtistsRotationIndex = (topArtistsRotationIndex + 1) % rotationSequence.length; // Immer zum nächsten Schritt
+        if(topArtistsRotationIndex == 0) {
             trackControls.noZoom = false;
-            removeTextMesh(topArtistsRank);
-            removeTextMesh(topArtistsName);
+            clearAndRemoveObject(topArtistsRank);
+            clearAndRemoveObject(topArtistsName);
             cleanup();
         }
-
-        let steps = rotationSequence[rotationIndex];
+        let steps = rotationSequence[topArtistsRotationIndex];
         let tween;
-
+        // Führe jede Rotation aus dem Schritt in der Sequenz aus
         steps.forEach(async (step, index) => {
             let rotation = {};
             rotation[step.axis] = topArtistsCube.rotation[step.axis] + step.angle;
@@ -353,22 +365,26 @@ async function handleTopArtistBereich() {
                 tween.onComplete(() => {
                     setTimeout(() => {
                         isAnimating = false;
-                    }, 800); // Warte 1 Sekunde zwischen den Rotationen
+                    }, 800); // Wartezeit zur nächsten Animation
                 });
             }
             tween.start();
         });
-        removeTextMesh(topArtistsRank);
-        removeTextMesh(topArtistsName);
-        // if(text != null) removeTextMesh(text);
-        topArtistsRank = await createTextMesh("Top " + (rotationIndex + 1), 20, 100, 40, targetPoints.topArtist -200, 0);
-        topArtistsName = await createTextMesh(topArtistsCube.userData.artistNames[rotationIndex], 15, 100, 10, targetPoints.topArtist -200, 0);
+        clearAndRemoveObject(topArtistsRank);
+        clearAndRemoveObject(topArtistsName);
+        topArtistsRank = await createTextMesh("Top " + (topArtistsRotationIndex + 1), 20, 100, 40, targetPoints.topArtist -200, 0);
+        topArtistsName = await createTextMesh(topArtistsCube.userData.artistNames[topArtistsRotationIndex], 15, 100, 10, targetPoints.topArtist -200, 0);
         inhaltGroup.add(topArtistsRank);
         inhaltGroup.add(topArtistsName);
-        // console.log(topArtistsCube.userData.artistNames[rotationIndex] );
-        // console.log(inhaltGroup.children.length);
     }
 
+    /**
+     * Funktion zum Aufräumen und Zurücksetzen des Würfels.
+     * Entfernt den Event-Listener für das Scrollen und setzt den Würfel auf die erste Rotation aus der Sequenz zurück.
+     * @async
+     * @function cleanup
+     * @returns {Promise<void>}
+     */
     async function cleanup() {
         window.removeEventListener('wheel', rotateCube);
         // Setze den Würfel auf die erste Rotation aus der Sequenz zurück
@@ -384,16 +400,19 @@ async function handleTopArtistBereich() {
             .start();
     };
 
-    async function initialAnimation() {
-        let initialTween = new TWEEN.Tween(topArtistsCube.rotation)
-            .to({ x: topArtistsCube.rotation.x - Math.PI / 8 }, 600)
+    /**
+     * Initiale Würfel-Animation beim ersten Betreten des Top-Artists-Bereichs.
+     */
+    function initialAnimation() {
+            initialTween
+            .to({ x: topArtistsCube.rotation.x - Math.PI / 10 }, 600)
             .easing(TWEEN.Easing.Quadratic.InOut)
             .yoyo(true) // Rückkehr zur Ausgangsposition
             .repeat(2) // Wiederhole die Bewegung einmal
             .onComplete(() => {
                 if (!isAnimating) { // Wenn keine andere Animation aktiv ist, führe Rückbewegung aus
                     new TWEEN.Tween(topArtistsCube.rotation)
-                        .to({ x: topArtistsCube.rotation.x + Math.PI / 8 }, 600)
+                        .to({ x: topArtistsCube.rotation.x + Math.PI / 10 }, 600)
                         .easing(TWEEN.Easing.Quadratic.InOut)
                         .start();
                 }
@@ -438,7 +457,12 @@ function bringeZumBereich(origin) {
 const clock = new THREE.Clock();
 let previousTime = 0;
 
-// Funktion zum animieren der Szene
+
+/**
+ * Funktion zum Steuern des Haupt-Animations-Loops.
+ * @function tick
+ * @returns {void}
+ */
 const tick = () => {
     stats.begin();
     const elapsedTime = clock.getElapsedTime();
@@ -454,25 +478,33 @@ const tick = () => {
     if (lastCamPosition != Math.round(camera.position.z) && freeMovement) {
         console.log("Check Cam Position Entry");
         checkCamPosition();
-        //console.log("Es bewegt sich. " + Math.round(camera.position.z));
     }
     lastCamPosition = Math.round(camera.position.z);
 
-    lastIntersected = updateRaycasterInteraction(raycaster, mouse, camera, heavyRotGroup, lastIntersected);
+    lastIntersected = updateRaycasterInteraction(raycaster, mouse, camera, heavyRotCircleGroup, lastIntersected);
     
     // aktualiseren der TrackballControls und der TWEEN-Animationen
     trackControls.update();
-    TWEEN.update(); //!! Bereitet gerade Probleme, bounced zurück beim scrollen !!
+    TWEEN.update();
 
     // Rendern der Szene und anfordern einer neuen Animation
     renderer.render(scene, camera);
     window.requestAnimationFrame(tick);
-    // console.log(camera.position.z);
 }
 
 
-
-// Funktion zum erstellen von TextMeshes
+/**
+ * Erstellt ein TextMesh mit dem angegebenen Text, Schriftgröße und Position.
+ * 
+ * @param {string} text - Der Text, der im TextMesh angezeigt werden soll.
+ * @param {number} fontsize - Die Schriftgröße des Textes.
+ * @param {number} x - Die x-Koordinate der Position des TextMeshes.
+ * @param {number} y - Die y-Koordinate der Position des TextMeshes.
+ * @param {number} z - Die z-Koordinate der Position des TextMeshes.
+ * @param {number} rotationY - Der Winkel, um den das TextMesh um die Y-Achse gedreht werden soll (in Grad).
+ * @returns {Promise<THREE.Mesh>} Ein Promise, das das erstellte TextMesh enthält.
+ * @throws {Error} Wenn ein Fehler beim Laden der Schriftart auftritt.
+ */
 export async function createTextMesh(text, fontsize, x, y, z, rotationY) {
     return new Promise((resolve, reject) => {
     const fontLoader = new FontLoader()
@@ -494,7 +526,6 @@ export async function createTextMesh(text, fontsize, x, y, z, rotationY) {
             )
             const textMaterial = new THREE.MeshBasicMaterial();
             let textMesh = new THREE.Mesh(textGeometry, textMaterial);
-            
             // Positionierung des TextMeshes
             textMesh.position.x = x;
             textMesh.position.y = y;
@@ -503,13 +534,11 @@ export async function createTextMesh(text, fontsize, x, y, z, rotationY) {
             if (rotationY) {
                 textMesh.rotateY(rotationY * Math.PI / 180);
             }
-
-            // Auflösen des Promises mit dem erstellten TextMesh
             textMesh.userData.name = text;
             resolve(textMesh);
         },
         undefined,
-        (error) => {  // onError Handler
+        (error) => {
             reject(error);
         }
     );
@@ -517,14 +546,16 @@ export async function createTextMesh(text, fontsize, x, y, z, rotationY) {
 }
 
 
-function changeTextMesh(obj) {
-    let position = obj.position;
-    // console.log(position);
-    removeTextMesh(obj);
-    return position;
-}
-
-
+/**
+ * Erstellt ein Bild-Mesh mit den angegebenen Parametern.
+ * @param {string} bildUrl - Die URL des Bildes, das geladen werden soll.
+ * @param {number} x - Die x-Koordinate der Position des Meshes.
+ * @param {number} y - Die y-Koordinate der Position des Meshes.
+ * @param {number} z - Die z-Koordinate der Position des Meshes.
+ * @param {number} rotationY - Die Y-Rotation des Meshes in Grad.
+ * @param {number} bildGroesse - Die Größe des Meshes.
+ * @returns {Promise<THREE.Mesh>} Ein Promise, das das erstellte Bild-Mesh enthält.
+ */
 async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
     return new Promise((resolve, reject) => {
         new THREE.TextureLoader().load(
@@ -546,23 +577,32 @@ async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
     });
 }
 
+/**
+ * Erstellt einen ThreeJS Würfel mit den angegebenen Optionen.
+ *
+ * @param {Object} options - Die Optionen für den Würfel.
+ * @param {Array} options.materials - Ein Array von Materialien für die Seiten des Würfels.
+ * @param {number} options.scale - Der Skalierungsfaktor des Würfels.
+ * @param {number} options.positionZ - Die Z-Position des Würfels.
+ * @returns {THREE.Mesh} - Der erstellte Würfel.
+ */
 function createCube(options) {
     const geometry = new THREE.BoxGeometry();
     const materials = options.materials.map(material => {
         if (typeof material === 'string' && (material.startsWith('http') || material.match(/\.(jpeg|jpg|gif|png)$/))) {
             return new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load(material) });
         } else {
-            return new THREE.MeshBasicMaterial({ color: material });
+            return new THREE.MeshBasicMaterial({ color: material,transparent: true, opacity: 1 });
         }
     });
 
     const cube = new THREE.Mesh(geometry, materials);
-    cube.rotation.y = Math.PI + (Math.PI / options.rotationY);
     cube.rotation.x = 0;
+    cube.rotation.y = Math.PI + (Math.PI / 2);
+    cube.rotation.z = 0;
     cube.scale.set(options.scale, options.scale, options.scale);
     cube.position.z = options.positionZ;
     cube.name = "TopArtists Cube";
-    // scene.add(cube); //wird hier aktuell hinzugefügt, soll aber über createTopArtist hinzugefügt werden 
 
     return cube;
 }
@@ -592,11 +632,15 @@ async function createProfil() {
         contentProfil.push(await createTextMesh(recentlyPlayed[i].name, recText, x + 1, y - 34, targetPoints.profil, recBildRot));
     }
 
-    // console.log(contentProfil);
     return contentProfil;
 }
 
 
+/**
+ * Erstellt die Top-Künstler-Seite.
+ * 
+ * @returns {Array} Ein Array mit den erstellten Inhalten der Top-Künstler-Seite.
+ */
 async function createTopArtist() {
     let topArtists = await getTopArtists(timeRange);
     let artistPics = [];
@@ -620,7 +664,7 @@ async function createTopArtist() {
     }
     topArtistsCube = createCube(cubeOptions);
     topArtistsCube.userData.artistNames = topArtists.map(artist => artist.name); // Speichert die Namen im userData
-
+    // alle Elemente in die Gruppe hinzufügen
     contentTopArtist.push(headlineOne);
     contentTopArtist.push(headlineTwo);
     contentTopArtist.push(topArtistsRank);
@@ -630,15 +674,16 @@ async function createTopArtist() {
     return contentTopArtist;
 }
 
-// Funktion zum erstellen der Heavy Rotation
+/**
+ * Erstellt die Heavy-Rotation-Seite mit den am häufigsten abgespielten Songs.
+ * @returns {Promise<Array<THREE.Object3D>>} Ein Array mit den erstellten Inhalten der Heavy-Rotation-Seite.
+ */
 async function createHeavyRotation() {
     const heavyRotation = await getOnRepeat();
     let contentHeavyRotation = [];
-    
-    // Heavy Rotation Group erstellen
-    heavyRotGroup = new THREE.Group();
-    heavyRotGroup.name = "Heavy Rotation Circle";
-    heavyRotGroup.position.set(110, 0, targetPoints.onRepeat - 60);
+    heavyRotCircleGroup = new THREE.Group();
+    heavyRotCircleGroup.name = "Heavy Rotation Circle";
+    heavyRotCircleGroup.position.set(110, 0, targetPoints.onRepeat - 60);
 
     const baseRadius = 150;
     const radialOffset = 30; // Zusätzliche Radialverschiebung für jedes zweite Element
@@ -646,18 +691,16 @@ async function createHeavyRotation() {
 
     for (let e = 0; e < numElements; e++) {
         let theta = (2 * Math.PI / numElements) * e;
-        let effectiveRadius = baseRadius + ((e % 2 === 0) ? radialOffset : 0); // Erhöhe Radius für jedes zweite Element
+        let effectiveRadius = baseRadius + ((e % 2 === 0) ? radialOffset : 0); // Erhöht Radius für jedes zweite Element
         let x = effectiveRadius * Math.cos(theta);
         let y = effectiveRadius * Math.sin(theta);
         // Berechnet z-Position basierend auf der Position des Elements
-        let z = - 5; // Standardwert
+        let z = - 5;
         if (e % 3 === 1) {
             z = 20; // Zweites Element, 20 Einheiten nach vorne
         } else if (e % 3 === 2) {
             z = 10; // Drittes Element, 10 Einheiten nach vorne
         }
-
-        // Erstelle BildMesh und füge der Heavy Rotation Group hinzu
         let bildMesh = await createBildMesh(heavyRotation[e].image, x, y, z, -2, 60);
         heavyRotation[e].mesh = bildMesh;
         bildMesh.userData.name = heavyRotation[e].name;
@@ -665,12 +708,11 @@ async function createHeavyRotation() {
         bildMesh.userData.originalX = x;
         bildMesh.userData.originalY = y;
         bildMesh.userData.originalZ = z;
-        heavyRotGroup.add(bildMesh);
+        heavyRotCircleGroup.add(bildMesh);
     }
-
     contentHeavyRotation.push(await createTextMesh("Your Heavy \nRotation", 40, -350, 100, targetPoints.onRepeat - 20, 30));
     contentHeavyRotation.push(await createTextMesh("Hover to see more", 20, -350, 0, targetPoints.onRepeat - 20, 30));
-    contentHeavyRotation.push(heavyRotGroup);
+    contentHeavyRotation.push(heavyRotCircleGroup);
 
     return contentHeavyRotation;
 }
@@ -706,6 +748,7 @@ async function createAll() {
     let inhaltProfil = await createProfil();
     inhaltProfil.forEach(element => inhaltGroup.add(element));
 
+    topArtistsRotationIndex = 0;
     let inhaltTopArtist = await createTopArtist();
     inhaltTopArtist.forEach(element => inhaltGroup.add(element));
 
@@ -720,30 +763,47 @@ async function createAll() {
 }
 
 function deleteGroup() {
-    //console.log(inhaltGroup);
-    clearThree(inhaltGroup);
+    clearGroup(inhaltGroup);
 }
 
-function clearThree(obj) {
-    for (let i = obj.children.length - 1; i >= 0; i--) {
-        clearThree(obj.children[i]);
-    }
-    // Nun die Kinder aus dem aktuellen Objekt entfernen
+/**
+ * Löscht alle Kinderobjekte von `obj`.
+ * 
+ * @param {Object} obj - Das Objekt, dessen Kinder gelöscht werden sollen.
+ */
+function clearGroup(obj) {
+    if (obj === undefined || obj === null) return;
+    obj.children.forEach(child => {
+        clearAndRemoveObject(child);
+    });
     while (obj.children.length > 0) {
-        obj.remove(obj.children[0]);
+        obj.remove(obj.children[obj.children.length - 1]);
     }
-    // Ressourcen des Objekts freigeben, wenn vorhanden
-    if (obj.geometry) obj.geometry.dispose();
-    if (obj.material) {
-        if (Array.isArray(obj.material)) {
-            obj.material.forEach(material => material.dispose());
-        } else {
-            obj.material.dispose();
+}
+
+/**
+ * Löscht und entfernt ein Objekt aus der Szene und entsorgt alle zugehörigen Ressourcen.
+ * @param {THREE.Object3D} obj - Das zu löschende und zu entfernende Objekt.
+ */
+function clearAndRemoveObject(obj) {
+    if (obj === undefined || obj === null) return;
+    obj.traverse(node => {
+        if (node instanceof THREE.Mesh) {
+            node.geometry?.dispose(); // Entsorgt die Geometrie
+            if (Array.isArray(node.material)) { // Entsorgt alle Materialien im Materialarray
+                node.material.forEach(mat => mat.dispose());
+            } else { // Entsorgt einzelnes Material
+                node.material?.dispose();
+            }
         }
+        if (node.texture) {
+            node.texture.dispose();
+        }
+    });
+    while (obj.children.length > 0) {
+        clearAndRemoveObject(obj.children[obj.children.length - 1]);
     }
-    if (obj.texture) {
-        obj.texture.dispose();
-    }
+    obj.parent?.remove(obj);
 }
 
 tick();
