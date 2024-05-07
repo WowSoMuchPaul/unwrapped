@@ -75,25 +75,25 @@ const loadingLabel = document.getElementById('progress-bar-label');
 const progressBar = document.getElementById('progress-bar');
 const progressBarContainer = document.querySelector('.progress-bar-container');
 
-loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
-    loadingLabel.innerText = "Nearly done...";
-}
+// loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
+//     loadingLabel.innerText = "Nearly done...";
+// }
 
-let lastProgress = 0; 
-loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
-    let currentProgress = (itemsLoaded / itemsTotal) * 100;
+// let lastProgress = 0; 
+// loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
+//     let currentProgress = (itemsLoaded / itemsTotal) * 100;
 
-    if(currentProgress > lastProgress) {
-        progressBar.value = currentProgress;
-        lastProgress = currentProgress;
-    }
-};
+//     if(currentProgress > lastProgress) {
+//         progressBar.value = currentProgress;
+//         lastProgress = currentProgress;
+//     }
+// };
 
-loadingManager.onLoad = function() {
-    setTimeout(() => {
-            progressBarContainer.style.display = 'none';
-    }, 1500);
-}
+// loadingManager.onLoad = function() {
+//     setTimeout(() => {
+//             progressBarContainer.style.display = 'none';
+//     }, 1500);
+// }
 
 await init(); // Starte die Initialisierung der Szene
 
