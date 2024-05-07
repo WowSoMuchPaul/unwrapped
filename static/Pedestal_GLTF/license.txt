@@ -1,0 +1,11 @@
+Model Information:
+* title:	Textures
+* source:	https://sketchfab.com/3d-models/textures-4838817706e2427bae04a175b758789d
+* author:	chammyvasanth0308 (https://sketchfab.com/chammyvasanth0308)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Textures" (https://sketchfab.com/3d-models/textures-4838817706e2427bae04a175b758789d) by chammyvasanth0308 (https://sketchfab.com/chammyvasanth0308) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

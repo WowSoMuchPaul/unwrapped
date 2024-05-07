@@ -6,6 +6,11 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'stats.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DirectionalLight } from 'three';
+import { AmbientLight } from 'three';
+import { HemisphereLight } from 'three';
+import { PMREMGenerator } from 'three';
 
 import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
 import fensterTutorialImg from '../static/images/vapor.png';
@@ -39,6 +44,17 @@ let topArtistsRank = new THREE.Mesh;
 let topArtistsName = new THREE.Mesh;
 
 const stats = new Stats();
+// Textgrößen Konstanten
+const headlineSize = 40;
+const textSize = 10;
+const textSmallSize = 5;
+const textBigSize = 20;
+
+const textHeight = 0;
+const textWidth = 0;
+const textDepth = 0;
+// stats.showPanel(0);
+//document.body.appendChild(stats.dom);
 
 /** Raycaster */
 export const raycaster = new THREE.Raycaster();
@@ -135,11 +151,37 @@ async function init() {
     camera.position.z = gesamtTiefe;
     scene.add(camera);
     lastCamPosition = camera.position.z;
+    // let light = new THREE.DirectionalLight(0xffff00, 5);
+    //   scene.add(light);
+    // let ambientLight = new THREE.AmbientLight(0x404040, 2);
+    // scene.add(ambientLight);
 
     //Inhalt Group definieren
     inhaltGroup = new THREE.Group();
     inhaltGroup.name = "inhaltGroup";
     scene.add(inhaltGroup);
+    // const pmremGenerator = new THREE.PMREMGenerator(renderer);
+
+    // pmremGenerator.compileEquirectangularShader();
+
+
+    // new THREE.RGBELoader()
+    //     .setDataType(THREE.UnsignedByteType)
+    //     .load('../110_hdrmaps_com_free_1K.exr', function (texture) {
+    //         const envMap = pmremGenerator.fromEquirectangular(texture).texture;
+    //         scene.environment = envMap;
+    //         texture.dispose();
+    //         pmremGenerator.dispose();
+    //     });
+
+    //Hemisphären Licht
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 3, 1);
+    hemiLight.position.set(0, 20, 0);
+    scene.add(hemiLight);
+
+    // helper = new THREE.CameraHelper(camera);
+    // scene.add(helper);
+
 
     /**
     * Axis Helper 
@@ -549,6 +591,7 @@ const tick = () => {
     const elapsedTime = clock.getElapsedTime();
     const deltaTime = elapsedTime - previousTime;
     previousTime = elapsedTime;
+    lastCamPosition = Math.round(camera.position.z);
 
     //Animate camera
     const parallaxX = cursor.x * 50;
@@ -563,7 +606,41 @@ const tick = () => {
             //console.log("Es bewegt sich. " + Math.round(camera.position.z));
         }
     }
-    lastCamPosition = Math.round(camera.position.z);
+        
+        if(lastCamPosition <= targetPoints.onRepeat){
+            if(document.getElementById("createPlaylist-btn") == null){
+                createPlaylistButton();
+            }
+        }
+
+        // if (lastCamPosition >= targetPoints.playlist && lastCamPosition <= targetPoints.onRepeat) {  
+        //     console.log(lastCamPosition);  
+        //     createPlaylistButton();
+        //     document.getElementById("createPlaylist-btn").style.display = "block";
+        //         console.log("createPlaylistButton");
+        //     if(document.getElementById("createPlaylist-btn") != null){
+        //         document.getElementById("createPlaylist-btn").style.display = "none";
+        //     } else {
+
+        //     }
+        // }
+
+        if (lastCamPosition >= targetPoints.onRepeat){    
+            if(document.getElementById("createPlaylist-btn") != null){
+                document.getElementById("createPlaylist-btn").style.display = "none";
+            }
+            }
+
+        if (lastCamPosition <= targetPoints.playlist){    
+            if(document.getElementById("createPlaylist-btn") != null){
+                document.getElementById("createPlaylist-btn").style.display = "none";
+            }
+            }
+
+    iconAnimationPl()
+
+    //console.log(lastCamPosition);
+   
 
     lastIntersected = updateRaycasterInteraction(raycaster, mouse, camera, heavyRotCircleGroup, lastIntersected);
     
@@ -589,17 +666,18 @@ const tick = () => {
  * @returns {Promise<THREE.Mesh>} Ein Promise, das das erstellte TextMesh enthält.
  * @throws {Error} Wenn ein Fehler beim Laden der Schriftart auftritt.
  */
-export async function createTextMesh(text, fontsize, x, y, z, rotationY) {
+    
+export async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotationY, color, opacity, fontName) {
     return new Promise((resolve, reject) => {
     const fontLoader = new FontLoader(loadingManager)
     fontLoader.load(
-        '../fonts/W95FA_Regular.typeface.json',
+        `../fonts/${fontName}.json`,
         (font) => {
             const textGeometry = new TextGeometry(
                 text, {
                     font: font,
                     size: fontsize,
-                    height: 0.2,
+                    height: 1,
                     curveSegments: 12,
                     bevelEnabled: true,
                     bevelThickness: 0.03,
@@ -614,21 +692,28 @@ export async function createTextMesh(text, fontsize, x, y, z, rotationY) {
             textMesh.position.x = x;
             textMesh.position.y = y;
             textMesh.position.z = z;
-            //Rotation um Y-Achse bei angebenem Winkel
-            if (rotationY) {
-                textMesh.rotateY(rotationY * Math.PI / 180);
-            }
+            textMesh.rotateY(rotationY * (Math.PI / 180))
+            textMesh.rotateX(rotationX * (Math.PI / 180));
+            textMaterial.transparent = true;
+            textMaterial.materialColor = color || new THREE.Color(0xffffff);
+            textMaterial.opacity = opacity || 1;
+
+            // textGeometry.computeBoundingBox();
+            // textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
+            // textHeight = textGeometry.boundingBox.max.y - textGeometry.boundingBox.min.y;
+            // textDepth = textGeometry.boundingBox.max.z - textGeometry.boundingBox.min.z;
+
+            // Auflösen des Promises mit dem erstellten TextMesh
             textMesh.userData.name = text;
             resolve(textMesh);
         },
         undefined,
-        (error) => {
+        (error) => {  // onError Handler
             reject(error);
         }
     );
 });
 }
-
 
 /**
  * Erstellt ein Bild-Mesh mit den angegebenen Parametern.
@@ -691,6 +776,77 @@ function createCube(options) {
     return cube;
 }
 
+function createRingMesh(x,y,z,rotationY,rotationX, farbe, inRad, outRad ){
+
+    const geometry = new THREE.RingGeometry( inRad, outRad, 90 ); 
+    const material = new THREE.MeshBasicMaterial( { color: 0xffffff, side: THREE.DoubleSide });
+    const ringMesh = new THREE.Mesh( geometry, material );
+    inhaltGroup.add(ringMesh);
+    ringMesh.position.x = x;
+    ringMesh.position.y = y;
+    ringMesh.position.z = z;
+    ringMesh.rotateY(rotationY * (Math.PI/180));
+    ringMesh.rotateX(rotationX * (Math.PI/180));
+    material.transparent = true;
+    material.color = farbe;
+
+    return ringMesh;
+}
+
+function createQuaderMesh(x,y,z,rotationX, rotationY, size, color){
+   // Square frame geometry
+   const frameGeometry = new THREE.BufferGeometry();
+    let outSqu = size;
+    let inSqu = outSqu-(outSqu/10);
+   // Define vertices for an outer and inner square (counter-clockwise winding)
+   const vertices = new Float32Array([
+
+       // Outer square vertices
+       -outSqu, -outSqu, 0.0,  // bottom left
+       outSqu, -outSqu, 0.0,   // bottom right
+       outSqu, outSqu, 0.0,    // top right
+       -outSqu, outSqu, 0.0,   // top left
+       // Inner square vertices
+       -inSqu, -inSqu, 0.0,  // bottom left
+       inSqu, -inSqu, 0.0,   // bottom right
+       inSqu, inSqu, 0.0,    // top right
+       -inSqu, inSqu, 0.0    // top left
+   ]);
+
+   // Define the indices that make up the two square faces (two triangles per face)
+   const indices = new Uint16Array([
+       // Outer square triangle 1
+       0, 1, 4,
+       1, 5, 4,
+       // Outer square triangle 2
+       1, 2, 5,
+       2, 6, 5,
+       // Outer square triangle 3
+       2, 3, 6,
+       3, 7, 6,
+       // Outer square triangle 4
+       3, 0, 7,
+       0, 4, 7
+   ]);
+
+   // Create attribute and set geometry indices
+   frameGeometry.setIndex(new THREE.BufferAttribute(indices, 1));
+   frameGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+
+   const material = new THREE.MeshBasicMaterial({ color :color , side: THREE.DoubleSide, wireframe: false });
+   const frameMesh = new THREE.Mesh(frameGeometry, material);
+   inhaltGroup.add(frameMesh);
+
+   frameMesh.position.x = x;
+   frameMesh.position.y = y;
+   frameMesh.position.z = z;
+   frameMesh.rotateY(rotationY * (Math.PI/180));
+   frameMesh.rotateX(rotationX * (Math.PI/180));
+   material.transparent = true;
+    material.color = color;
+   return frameMesh;
+}
+
 async function createProfil() {
     const profil = await getMe();
     const recentlyPlayed = await getRecentlyPlayed();
@@ -698,26 +854,67 @@ async function createProfil() {
     let contentProfil = [];
 
     contentProfil.push(await createBildMesh(profil.imageUrl, + 80, 0, targetPoints.profil, winkel, 50));
-    contentProfil.push(await createTextMesh("Hey \n" + profil.name + " !", 10, -80, 30, targetPoints.profil, 0));
-    contentProfil.push(await createTextMesh("Followers: " + profil.follower.toString(), 3, 55, -30, targetPoints.profil, winkel));
-
+    contentProfil.push(await createTextMesh("Hey \n" + profil.name + " !", textBigSize, -80, 30, targetPoints.profil,0,0,0x000000, 1,'Jersey 15_Regular'));
+    contentProfil.push(await createTextMesh("Followers: " + profil.follower.toString(), textSmallSize, 55, -30, targetPoints.profil,winkel,0,0x000000, 1,'W95FA_Regular.typeface'));
+    
     let recGroupX = -80;
     let recGroupY = 0;
     let recText = 2;
     let recBildG = 25;
     let recBildRot = 0;
 
-    contentProfil.push(await createTextMesh("Recently Played Songs", 5, recGroupX, recGroupY, targetPoints.profil, recBildRot));
+    // for (let i = 0; i < 4; i++) {
+    //     let x = recGroupX + (i % 2) * 30;
+    //     let y = recGroupY - Math.floor(i / 2) * 30;
 
-    for (let i = 0; i < 4; i++) {
-        let x = recGroupX + (i % 2) * 30;
-        let y = recGroupY - Math.floor(i / 2) * 30;
-        contentProfil.push(await createBildMesh(recentlyPlayed[i].image, x + 13, y - 18, targetPoints.profil, recBildRot, recBildG));
-        contentProfil.push(await createTextMesh(recentlyPlayed[i].name, recText, x + 1, y - 34, targetPoints.profil, recBildRot));
+    for(let i = 0; i < recentlyPlayed.length; i++){
+        if(recentlyPlayed[i].name.length >= 20){
+            recentlyPlayed[i].name = recentlyPlayed[i].name.substring(0,20) + "...";
+        }
     }
 
+    contentProfil.push(await createTextMesh("Recently Played Songs", textSize, recGroupX, recGroupY, targetPoints.profil,0, 0, 0x000000,1,'Jersey 15_Regular'));
+
+    contentProfil.push(await createBildMesh(recentlyPlayed[0].image, recGroupX + 13, recGroupY - 18, targetPoints.profil, recBildRot, recBildG));
+    contentProfil.push(await createTextMesh(recentlyPlayed[0].name, recText, recGroupX + 1, recGroupY - 34, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+
+    contentProfil.push(await createBildMesh(recentlyPlayed[1].image, recGroupX + 43, recGroupY - 18, targetPoints.profil, recBildRot, recBildG));
+    contentProfil.push(await createTextMesh(recentlyPlayed[1].name, recText, recGroupX + 31, recGroupY - 34, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+
+    contentProfil.push(await createBildMesh(recentlyPlayed[2].image, recGroupX + 13, recGroupY - 48, targetPoints.profil, recBildRot, recBildG));
+    contentProfil.push(await createTextMesh(recentlyPlayed[2].name, recText, recGroupX + 1, recGroupY - 64, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+
+    contentProfil.push(await createBildMesh(recentlyPlayed[3].image, recGroupX + 43, recGroupY - 48, targetPoints.profil, recBildRot, recBildG));
+    contentProfil.push(await createTextMesh(recentlyPlayed[3].name, recText, recGroupX + 31, recGroupY - 64, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+
+    contentProfil.push(await createTextMesh("j", textBigSize, 45, -35, targetPoints.profil+40,0, -25, 0x000000,0.4,'Yarndings 12_Regular'));
+    contentProfil.push(await createTextMesh("k", textSize,-80, -95, targetPoints.profil+20,0, 12, 0x000000,0.4,'Yarndings 12_Regular'));
+    contentProfil.push(await createTextMesh("y", textBigSize-8, -30, 20, targetPoints.profil-40,-5, 15, 0x000000,0.3,'Yarndings 12_Regular'));
+
+    // createGLTFMesh(0, -90, targetPoints.profil, 0, Math.PI, 0, 20, 'DP_Frame_001');
     return contentProfil;
 }
+
+
+// async function createTopArtist() {
+//     let profil = await getMe();
+//     let topArtists = await getTopArtists(timeRange);
+//     let i = 0;
+//     //console.log("createTopArtists, hier sind sie: " + topArtists);
+//     //console.log("Diese Profil gehört: " + profil.name);
+//     createTextMesh(profil.name + "'s", textBigSize, -300, 110, targetPoints.topArtist - 200,0,0,0x000000, 1,'W95FA_Regular.typeface');
+//     let headlineTwo = createTextMesh("\nTop Artists", headlineSize, -300, 110, targetPoints.topArtist - 200,0, 0, 0x000000,1,'Jersey 15_Regular');
+//     while (i < topArtists.length) {
+//         let x = 100 + i * -15;
+//         let y = -60 + i * 25;
+//         let z = targetPoints.topArtist - (100 + i * 55);
+//         let BildMesh = createBildMesh(topArtists[i].imageUrl, x, y, z, 0, 65, 0);
+//         topArtists[i].mesh = BildMesh;//zwischenspeichern des Meshes im Array
+//         let artistName = createTextMesh(topArtists[i].name, textSmallSize, x + 45, y + 17, z,0,0,0x000000, 1,'W95FA_Regular.typeface');
+//         i++;
+//     }
+// }
+
 
 
 /**
@@ -730,10 +927,10 @@ async function createTopArtist() {
     let artistPics = [];
     let contentTopArtist = [];
     let topArtistZ = targetPoints.topArtist - 200;
-    let headlineOne = await createTextMesh("Your", 20, -300, -90, topArtistZ, 0);
-    let headlineTwo = await createTextMesh("\nTop 6 Artists", 40, -300, -80, topArtistZ, 0);
-    topArtistsRank = await createTextMesh("Top 1", 20, 100, 40, topArtistZ, 0);
-    topArtistsName = await createTextMesh(topArtists[0].name, 15, 100, 10, topArtistZ, 0);
+    let headlineOne = await createTextMesh("Your", 20, -300, -90, topArtistZ,0, 0, 0x000000,1,'Jersey 15_Regular');
+    let headlineTwo = await createTextMesh("\nTop 6 Artists", 40, -300, -80, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
+    topArtistsRank = await createTextMesh("Top 1", 20, 100, 40, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
+    topArtistsName = await createTextMesh(topArtists[0].name, 15, 100, 10, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
 
     const cubeOptions = {
         materials: [],
@@ -794,38 +991,115 @@ async function createHeavyRotation() {
         bildMesh.userData.originalZ = z;
         heavyRotCircleGroup.add(bildMesh);
     }
-    contentHeavyRotation.push(await createTextMesh("Your Heavy \nRotation", 40, -350, 100, targetPoints.onRepeat - 20, 30));
-    contentHeavyRotation.push(await createTextMesh("Hover to see more", 20, -350, 0, targetPoints.onRepeat - 20, 30));
+    contentHeavyRotation.push(await createTextMesh("Your Heavy \nRotation", headlineSize, -350, 100, targetPoints.onRepeat - 20, 30, 0, 0x000000,1,'Jersey 15_Regular'));
+    contentHeavyRotation.push(await createTextMesh("Hover to see more", textBigSize, -350, 0, targetPoints.onRepeat - 20, 30,0, 0x000000,1,'Jersey 15_Regular'));
     contentHeavyRotation.push(heavyRotCircleGroup);
 
     return contentHeavyRotation;
 }
 
+async function createGLTFMesh(x, y, z, rotationX, rotationY, rotationZ, scale, name) {
+    return new Promise((resolve, reject) => {
+        const gltfloader = new GLTFLoader();
+        gltfloader.load(
+            `../models/${name}.glb`,
+            (gltf) => {
+                gltf.scene.scale.set(scale, scale, scale);
+                gltf.scene.position.set(x, y, z);
+                gltf.scene.rotateX(rotationX * (Math.PI / 180));
+                gltf.scene.rotateY(rotationY * (Math.PI / 180));
+                gltf.scene.rotateZ(rotationZ * (Math.PI / 180));
+                inhaltGroup.add(gltf.scene);
+                resolve(gltf.scene);
+            },
+            undefined,
+            (error) => {
+                reject(error);
+            }
+        );
+    });
+}
+
+
 // Funktion zu Erstellen aller Hauptgruppen der Szene
 async function createTopSongs() {
     const songs = await getTopSongs(timeRange);
     let contentTopSongs = [];
-
+    
     //console.log(songs);
-    contentTopSongs.push(await createTextMesh("Deine Top 3 Songs", 5, -55, 15, targetPoints.topSong));
-    contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 0, targetPoints.topSong, 0, 20));
-    contentTopSongs.push(await createTextMesh("1: " + songs[0].name, 2, -10, -15, targetPoints.topSong));
-    contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -30, -5, targetPoints.topSong, 0, 20));
-    contentTopSongs.push(await createTextMesh("2: " + songs[1].name, 2, -40, -20, targetPoints.topSong));
-    contentTopSongs.push(await createBildMesh(songs[2].imageUrl, 30, -10, targetPoints.topSong, 0, 20));
-    contentTopSongs.push(await createTextMesh("3: " + songs[2].name, 2, 20, -25, targetPoints.topSong));
+    contentTopSongs.push(await createTextMesh("Your Top Songs", headlineSize, -150, -100, targetPoints.topSong ,0, 0, 0x000000,1,'Jersey 15_Regular'));
+    
+    contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 10, targetPoints.topSong-100, 0, 70));
+    contentTopSongs.push(await createTextMesh("1: " + songs[0].name, textSize, -35, 50, targetPoints.topSong-100,0,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentTopSongs.push(await createGLTFMesh(0, -90, targetPoints.topSong-100, 0, 0, 0, 50));
 
+    contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -120, -5, targetPoints.topSong-55,20, 70));
+    contentTopSongs.push(await createTextMesh("2: " + songs[1].name, textSize, -155, 35, targetPoints.topSong-45,0,20,0x000000, 1,'W95FA_Regular.typeface'));
+    contentTopSongs.push(await createGLTFMesh(-120, -110, targetPoints.topSong-55, 0,20, 0, 50));
+
+    contentTopSongs.push(await createBildMesh(songs[2].imageUrl, 110, -15, targetPoints.topSong-35, -20, 70));
+    contentTopSongs.push(await createTextMesh("3: " + songs[2].name, textSize, 75,25, targetPoints.topSong-35,0,-20,0x000000, 1,'W95FA_Regular.typeface'));
+    contentTopSongs.push(await createGLTFMesh(110, -120, targetPoints.topSong-35, 0, -20, 0, 50));
+    
     return contentTopSongs;
 }
 
-// Funktion zum Erstellen der Playlist
-async function createPlaylist() {
+async function iconAnimationPl(){
+    const elapsedTime = clock.getElapsedTime();
+    const deltaTime = elapsedTime - previousTime;
+    previousTime = elapsedTime;
+
+    // Modelle
+    const iconAl = null;
+    const iconRob = null;
+    
+//     if(iconAl == null && iconRob == null){
+//         console.log("i m a shit in this 1");
+//     const iconAl = await createTextMesh("w", textBigSize-5, 55, 85, targetPoints.playlist,0, -25, 0x000000,0.3,'Yarndings 12_Regular');
+//     const iconRob = await createTextMesh("x", textBigSize-10, -120, -75, targetPoints.playlist,0, 15, 0x000000,0.2,'Yarndings 12_Regular');
+//         //animation der Modelle
+//         // console.log(iconAl);
+//         // console.log(iconRob);
+//         // console.log(iconAl.rotation.y);
+//         // console.log(elapsedTime)
+//         //  iconAl.rotation.y  += Math.sin(elapsedTime) * 0.9;
+//         //iconAl.rotation.x += Math.cos(elapsedTime) * 0.5;
+//         // iconAl.y = Math.sin(elapsedTime) * 5;
+//         console.log(iconAl.x);
+//         iconAl.x = Math.cos(elapsedTime) * -0.5;
+//         // iconRob.rotationY = Math.sin(elapsedTime) * 2;
+//         // iconRob.rotationX = Math.cos(elapsedTime) * 3;   
+//         // iconRob.y = Math.sin(elapsedTime) * 5;
+//         // iconRob.x = Math.cos(elapsedTime) * 5;
+//     }
+} 
+
+async function createPlaylist(){
     let contentPlaylist = [];
-    let playlist = getPlaylist();
-    let i = 0;
-    contentPlaylist.push(await createTextMesh("Your \nunwrapped \nPlaylist", 10, -85, 20, targetPoints.playlist));
+    contentPlaylist.push(await createTextMesh("Deine \nunwrapped \nPlaylist", headlineSize, -250, 85, targetPoints.playlist-40,0,25,0x000000, 1,'Jersey 15_Regular'));
+    contentPlaylist.push(await createTextMesh("w", textBigSize, 55, 85, targetPoints.playlist,0, -25, 0x000000,0.3,'Yarndings 12_Regular'));
+    contentPlaylist.push(await createTextMesh("x", textBigSize,-120, -75, targetPoints.playlist,0, 15, 0x000000,0.2,'Yarndings 12_Regular'));
+    contentPlaylist.push(await createTextMesh("a", 1000, -580,-500, targetPoints.playlist-20,0,0,0x000000,0.1,'Yarndings 12_Regular'));
     
     return contentPlaylist;
+}
+
+function createPlaylistButton(){
+    const button  = document.createElement('button');
+    button.id = 'createPlaylist-btn';
+    button.textContent = 'Create Playlist';
+    button.style.display = 'block';
+    document.getElementById('playlistBttnContainer').appendChild(button);
+    document.getElementById("createPlaylist-btn").addEventListener("click",setFestivalPlaylist);
+}
+
+async function createEND(){
+    let contentEnd = [];
+    contentEnd.push(await createTextMesh("THE END", headlineSize, -40, 0, targetPoints.playlist-500,0, 0, 0x000000,1,'Jersey 15_Regular'));
+    // contentEnd.push(await createRingMesh(15,0,targetPoints.playlist-500,-35,15,0x42887E,150,160));
+    // contentEnd.push(await createQuaderMesh(0,0,targetPoints.playlist-500,20,10, 120, 0xffffff));
+    contentEnd.push(await createTextMesh("v", 150, -150,-100,targetPoints.playlist-470 ,0,0,0x000000,0.1,'Yarndings 12_Regular'));
+    return contentEnd;
 }
 
 async function createAll() {
@@ -842,8 +1116,11 @@ async function createAll() {
     let heavyRotation = await createHeavyRotation();
     heavyRotation.forEach(element => inhaltGroup.add(element));
 
-    // let playlist = await createPlaylist();
-    // playlist.forEach(element => inhaltGroup.add(element));
+    let playlist = await createPlaylist();
+    playlist.forEach(element => inhaltGroup.add(element));
+
+    let end = await createEND();
+    end.forEach(element => inhaltGroup.add(element));
 }
 
 function deleteGroup() {
