@@ -70,6 +70,31 @@ export function getMouse3DPosition(mouse, camera) {
 /**cursor */
 const cursor = {};
 
+const loadingManager = new THREE.LoadingManager();
+const loadingLabel = document.getElementById('progress-bar-label');
+const progressBar = document.getElementById('progress-bar');
+const progressBarContainer = document.querySelector('.progress-bar-container');
+
+loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
+    loadingLabel.innerText = "Nearly done...";
+}
+
+let lastProgress = 0; 
+loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
+    let currentProgress = (itemsLoaded / itemsTotal) * 100;
+
+    if(currentProgress > lastProgress) {
+        progressBar.value = currentProgress;
+        lastProgress = currentProgress;
+    }
+};
+
+loadingManager.onLoad = function() {
+    setTimeout(() => {
+            progressBarContainer.style.display = 'none';
+    }, 1500);
+}
+
 await init(); // Starte die Initialisierung der Szene
 
 
@@ -209,6 +234,7 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+
 /**
  * Überprüft die Position der Kamera und ruft entsprechende Funktionen auf, basierend auf der Position.
  */
@@ -342,7 +368,11 @@ async function handleTopArtistBereich() {
      */
     async function rotateCube(event) {
         if (isAnimating || event.deltaY === 0) return;
-        initialTween.stop();
+        if(initialTween){
+            initialTween.stop();
+            // topArtistsCube.rotation.set(0, Math.PI + (Math.PI / 2), 0);
+        }
+        // console.log(initialTween);
         isAnimating = true;
         topArtistsRotationIndex = (topArtistsRotationIndex + 1) % rotationSequence.length; // Immer zum nächsten Schritt
         if(topArtistsRotationIndex == 0) {
@@ -507,7 +537,7 @@ const tick = () => {
  */
 export async function createTextMesh(text, fontsize, x, y, z, rotationY) {
     return new Promise((resolve, reject) => {
-    const fontLoader = new FontLoader()
+    const fontLoader = new FontLoader(loadingManager)
     fontLoader.load(
         '../fonts/W95FA_Regular.typeface.json',
         (font) => {
@@ -558,7 +588,7 @@ export async function createTextMesh(text, fontsize, x, y, z, rotationY) {
  */
 async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
     return new Promise((resolve, reject) => {
-        new THREE.TextureLoader().load(
+        new THREE.TextureLoader(loadingManager).load(
             bildUrl,
             (texture) => {
                 const geometry = new THREE.PlaneGeometry(bildGroesse, bildGroesse);
@@ -590,9 +620,9 @@ function createCube(options) {
     const geometry = new THREE.BoxGeometry();
     const materials = options.materials.map(material => {
         if (typeof material === 'string' && (material.startsWith('http') || material.match(/\.(jpeg|jpg|gif|png)$/))) {
-            return new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load(material) });
+            return new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader(loadingManager).load(material) });
         } else {
-            return new THREE.MeshBasicMaterial({ color: material,transparent: true, opacity: 1 });
+            return new THREE.MeshBasicMaterial({ color: material, transparent: true, opacity: 1 });
         }
     });
 
