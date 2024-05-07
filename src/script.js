@@ -374,29 +374,35 @@ const tick = () => {
             checkCamPosition();
         }
         
-        // if(lastCamPosition <= targetPoints.onRepeat){
-        //     if(document.getElementById("createPlaylist-btn") == null){
-        //         createPlaylistButton();
-        //     }
-        // }
-
-        if (lastCamPosition >= targetPoints.playlist && lastCamPosition <= targetPoints.onRepeat) {  
-            console.log(lastCamPosition);  
-            createPlaylistButton();
-            document.getElementById("createPlaylist-btn").style.display = "block";
-                console.log("createPlaylistButton");
-            if(document.getElementById("createPlaylist-btn") != null){
-                document.getElementById("createPlaylist-btn").style.display = "none";
-            } else {
-
+        if(lastCamPosition <= targetPoints.onRepeat){
+            if(document.getElementById("createPlaylist-btn") == null){
+                createPlaylistButton();
             }
         }
 
-        // if (lastCamPosition >= targetPoints.onRepeat){    
+        // if (lastCamPosition >= targetPoints.playlist && lastCamPosition <= targetPoints.onRepeat) {  
+        //     console.log(lastCamPosition);  
+        //     createPlaylistButton();
+        //     document.getElementById("createPlaylist-btn").style.display = "block";
+        //         console.log("createPlaylistButton");
         //     if(document.getElementById("createPlaylist-btn") != null){
         //         document.getElementById("createPlaylist-btn").style.display = "none";
+        //     } else {
+
         //     }
-        //     }
+        // }
+
+        if (lastCamPosition >= targetPoints.onRepeat){    
+            if(document.getElementById("createPlaylist-btn") != null){
+                document.getElementById("createPlaylist-btn").style.display = "none";
+            }
+            }
+
+        if (lastCamPosition <= targetPoints.playlist){    
+            if(document.getElementById("createPlaylist-btn") != null){
+                document.getElementById("createPlaylist-btn").style.display = "none";
+            }
+            }
 
     iconAnimationPl()
 
