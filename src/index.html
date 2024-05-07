@@ -11,45 +11,73 @@
     <!--canvas class="webgl"></canvas-->
     <script type="module" src="./script.js"></script>
 
-    <button id="help">?</button>
+    <img id="help"></img>
 
-    <div id="navBar">
+    <div id="navBar" class="windows95edges">
       <div id="navProgress"> </div>
-      <div id="navPlaylist" class="navBarElement">Playlist</div>
-      <div id="navOnRepeat" class="navBarElement">onRepeat</div>
-      <div id="navSongs" class="navBarElement">Songs</div>
-      <div id="navArtists" class="navBarElement">Artists</div>
-      <div id="navProfil" class="navBarElement">Profil</div>
+      <img id="navPlaylist" class="navBarElement" alt="Playlist">
+        <!-- <label id="navPlaylistLabel" class="navBarElementLable">Playlist</label> -->
+      </img>
+      <img id="navOnRepeat" class="navBarElement" alt="heavy Rotation">
+        <!-- <label id="navOnRepeatLabel" class="navBarElementLable">On Repeat</label> -->
+      </img>
+      <img id="navSongs" class="navBarElement" alt="top Songs">
+        <!-- <label id="navSongsLabel" class="navBarElementLable">Songs</label> -->
+      </img>
+      <img id="navArtists" class="navBarElement" alt="top Artists">
+        <!-- <label id="navArtistsLabel" class="navBarElementLable">Artists</label> -->
+      </img>
+      <img id="navProfil" class="navBarElement" alt="Profil">
+        <!-- <label id="navProfilLabel" class="navBarElementLable">Profil</label> -->
+      </img>
     </div>
 
-    <div id="overlay" class="overlay"> 
+    <div id="overlay" class="windows95edges overlay"> 
       <div class="overlaybar">
-        Welcome
-        <div id="xGround">
-          <a id="closebtn" class="closebtn">&times;</a>
-          <!-- <div class="xGround">
-            <div class="x"></div>
-          </div> -->
+        spotify_unwrapped.info
+        <!-- <button id="closebtn" class="closebtn">&times;</button> -->
+        <button id="logoutButton">Logout</button>
+      </div>
+      <div id="fensterInhaltWrap">
+        <h1 id="fensterHeadline">Welcome to unwrapped!</h1>
+        <div id="fensterInhalt">
+          <img id="fensterTutorialImg" class="windows95edgesImage"> </img>
+          <div id="fensterInhaltRechts">
+            <div id="loginStatus">
+              <img id="profilImage"></img>
+              <img id="loginStatusImage"></img>
+              <label id="loginStatusLabel">offline</label>             
+            </div>
+            <p>
+              unwrapped is a tool to visualize your Spotify listening habits.
+              <br />
+              <br />
+              To get started, click the button below to connect your Spotify
+              account.
+              <br />
+              <br />
+              unwrapped will then analyze your listening habits and create
+              visualizations based on your data.
+            </p>
+            <div id="timeRangeDiv">
+              <label for="timeRange">Time Range</label>
+              <select name="timeRange" id="timeRange">
+                <option value="long_term">Long Term</option>
+                <option value="medium_term">Medium Term</option>
+                <option value="short_term">Short Term</option>
+              </select>
+            </div>
+            <button id="spotifyConnectButton">
+              Connect with you Spotify Account
+            </button>
+          </div>
+          <!-- <button id="delete">delete</button>
+          <button id="create">create</button>
+          <button id="auth">Spotify Authorisieren</button>
+          <button id="refreshToken">refreshToken</button>
+          <button id="playlist">Playlist erstellen</button>
+           -->
         </div>
-      </div>
-      <div>
-        <h1>Welcome to the Spotify Festival!</h1>
-        <button id="delete">delete</button>
-        <button id="create">create</button>
-        <button id="auth">Spotify Authorisieren</button>
-        <button id="refreshToken">refreshToken</button>
-        <button id="playlist">Playlist erstellen</button>
-        <label for="timeRange">Time Range</label>
-        <select name="timeRange" id="timeRange">
-          <option value="long_term">Long Term</option>
-          <option value="medium_term">Medium Term</option>
-          <option value="short_term">Short Term</option>
-        </select>
-      </div>
-      <div class="overlay-content">
-        <button id="spotifyConnect-btn">
-          Connect with you Spotify Account
-        </button>
       </div>
     </div>
   </body>
