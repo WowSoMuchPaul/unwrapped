@@ -80,7 +80,7 @@ async function animateAndDisplayText(obj) {
 }
 
 async function displaySongName(obj) {
-    let songNameTextMesh = await createTextMesh(obj.userData.name, 10);
+    let songNameTextMesh = await createTextMesh(obj.userData.name, 10, 0, 0, 0,0,0,0x000000, 1,'W95FA_Regular.typeface');
     storeAndReturnMesh(obj, songNameTextMesh);
     inhaltGroup.add(songNameTextMesh);
     return songNameTextMesh;
@@ -88,7 +88,7 @@ async function displaySongName(obj) {
 
 async function displaySongArtist(obj) {
     const artistsArray = obj.userData.artists.map(artist => artist.name).join(", ");
-    let songArtistTextMesh = await createTextMesh(artistsArray, 8, 0, -15);
+    let songArtistTextMesh = await createTextMesh(artistsArray, 8, 0, -15,0,0,0,0x000000, 1,'W95FA_Regular.typeface');
     storeAndReturnMesh(obj, songArtistTextMesh);
     inhaltGroup.add(songArtistTextMesh);
     return songArtistTextMesh;

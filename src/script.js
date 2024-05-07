@@ -332,6 +332,7 @@ function setProgressBar() {
  * Überprüft die Position der Kamera und ruft entsprechende Funktionen auf, basierend auf der Position.
  */
 function checkCamPosition() {
+    console.log("CheckCamPosition");
     //Aktuelle Kamera Position
     const pos = Math.round(camera.position.z);
 
@@ -368,6 +369,7 @@ function checkCamPosition() {
  * @param {number} tp - Der Ziel-Punkt.
  */
 function handleBereich(pos, tp) {
+    console.log("Bereich: " + tp);
     //Kamera ist im Eintritts-Damping des Bereichs
     if ((pos <= (tp + bereichOffsetVorne)) && (pos >= (tp + bereichOffsetVorne - bereichDampingVorne))) {
         trackControls.zoomSpeed = zoomSpeedBereich + (pos - ((tp + bereichOffsetVorne) - bereichDampingVorne)) * ((zoomSpeedBereich - zoomSpeedNorm) / (-bereichDampingVorne));
@@ -495,8 +497,8 @@ async function handleTopArtistBereich() {
         });
         clearAndRemoveObject(topArtistsRank);
         clearAndRemoveObject(topArtistsName);
-        topArtistsRank = await createTextMesh("Top " + (topArtistsRotationIndex + 1), 20, 100, 40, targetPoints.topArtist -200, 0);
-        topArtistsName = await createTextMesh(topArtistsCube.userData.artistNames[topArtistsRotationIndex], 15, 100, 10, targetPoints.topArtist -200, 0);
+        topArtistsRank = await createTextMesh("Top " + (topArtistsRotationIndex + 1), 20, 100, 40, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
+        topArtistsName = await createTextMesh(topArtistsCube.userData.artistNames[topArtistsRotationIndex], 15, 100, 10, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
         inhaltGroup.add(topArtistsRank);
         inhaltGroup.add(topArtistsName);
     }
@@ -591,14 +593,13 @@ const tick = () => {
     const elapsedTime = clock.getElapsedTime();
     const deltaTime = elapsedTime - previousTime;
     previousTime = elapsedTime;
-    lastCamPosition = Math.round(camera.position.z);
 
     //Animate camera
     const parallaxX = cursor.x * 50;
     const parallaxY = - cursor.y * 50;
     camera.position.x += (parallaxX - camera.position.x) * 5 * deltaTime;
     camera.position.y += (parallaxY - camera.position.y) * 5 * deltaTime;
-
+    
     if (lastCamPosition != Math.round(camera.position.z)) {
         setProgressBar();
         if (freeMovement) {
@@ -606,6 +607,7 @@ const tick = () => {
             //console.log("Es bewegt sich. " + Math.round(camera.position.z));
         }
     }
+    console.log(lastCamPosition);
         
         if(lastCamPosition <= targetPoints.onRepeat){
             if(document.getElementById("createPlaylist-btn") == null){
@@ -637,9 +639,7 @@ const tick = () => {
             }
             }
 
-    iconAnimationPl()
-
-    //console.log(lastCamPosition);
+    iconAnimationPl();
    
 
     lastIntersected = updateRaycasterInteraction(raycaster, mouse, camera, heavyRotCircleGroup, lastIntersected);
@@ -895,28 +895,6 @@ async function createProfil() {
     return contentProfil;
 }
 
-
-// async function createTopArtist() {
-//     let profil = await getMe();
-//     let topArtists = await getTopArtists(timeRange);
-//     let i = 0;
-//     //console.log("createTopArtists, hier sind sie: " + topArtists);
-//     //console.log("Diese Profil gehört: " + profil.name);
-//     createTextMesh(profil.name + "'s", textBigSize, -300, 110, targetPoints.topArtist - 200,0,0,0x000000, 1,'W95FA_Regular.typeface');
-//     let headlineTwo = createTextMesh("\nTop Artists", headlineSize, -300, 110, targetPoints.topArtist - 200,0, 0, 0x000000,1,'Jersey 15_Regular');
-//     while (i < topArtists.length) {
-//         let x = 100 + i * -15;
-//         let y = -60 + i * 25;
-//         let z = targetPoints.topArtist - (100 + i * 55);
-//         let BildMesh = createBildMesh(topArtists[i].imageUrl, x, y, z, 0, 65, 0);
-//         topArtists[i].mesh = BildMesh;//zwischenspeichern des Meshes im Array
-//         let artistName = createTextMesh(topArtists[i].name, textSmallSize, x + 45, y + 17, z,0,0,0x000000, 1,'W95FA_Regular.typeface');
-//         i++;
-//     }
-// }
-
-
-
 /**
  * Erstellt die Top-Künstler-Seite.
  * 
@@ -1031,20 +1009,22 @@ async function createTopSongs() {
     
     contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 10, targetPoints.topSong-100, 0, 70));
     contentTopSongs.push(await createTextMesh("1: " + songs[0].name, textSize, -35, 50, targetPoints.topSong-100,0,0,0x000000, 1,'W95FA_Regular.typeface'));
-    contentTopSongs.push(await createGLTFMesh(0, -90, targetPoints.topSong-100, 0, 0, 0, 50));
+    // contentTopSongs.push(await createGLTFMesh(0, -90, targetPoints.topSong-100, 0, 0, 0, 50));
 
     contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -120, -5, targetPoints.topSong-55,20, 70));
     contentTopSongs.push(await createTextMesh("2: " + songs[1].name, textSize, -155, 35, targetPoints.topSong-45,0,20,0x000000, 1,'W95FA_Regular.typeface'));
-    contentTopSongs.push(await createGLTFMesh(-120, -110, targetPoints.topSong-55, 0,20, 0, 50));
+    // contentTopSongs.push(await createGLTFMesh(-120, -110, targetPoints.topSong-55, 0,20, 0, 50));
 
     contentTopSongs.push(await createBildMesh(songs[2].imageUrl, 110, -15, targetPoints.topSong-35, -20, 70));
     contentTopSongs.push(await createTextMesh("3: " + songs[2].name, textSize, 75,25, targetPoints.topSong-35,0,-20,0x000000, 1,'W95FA_Regular.typeface'));
-    contentTopSongs.push(await createGLTFMesh(110, -120, targetPoints.topSong-35, 0, -20, 0, 50));
+    // contentTopSongs.push(await createGLTFMesh(110, -120, targetPoints.topSong-35, 0, -20, 0, 50));
     
     return contentTopSongs;
 }
 
 async function iconAnimationPl(){
+
+    let contentIconAni = [];
     const elapsedTime = clock.getElapsedTime();
     const deltaTime = elapsedTime - previousTime;
     previousTime = elapsedTime;
@@ -1072,6 +1052,8 @@ async function iconAnimationPl(){
 //         // iconRob.y = Math.sin(elapsedTime) * 5;
 //         // iconRob.x = Math.cos(elapsedTime) * 5;
 //     }
+
+return contentIconAni;
 } 
 
 async function createPlaylist(){
