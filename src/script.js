@@ -53,6 +53,8 @@ const textBigSize = 20;
 const textHeight = 0;
 const textWidth = 0;
 const textDepth = 0;
+
+
 // stats.showPanel(0);
 //document.body.appendChild(stats.dom);
 
@@ -1010,15 +1012,15 @@ async function createTopSongs() {
     
     contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 10, targetPoints.topSong-100, 0, 70));
     contentTopSongs.push(await createTextMesh("1: " + songs[0].name, textSize, -35, 50, targetPoints.topSong-100,0,0,0x000000, 1,'W95FA_Regular.typeface'));
-    // contentTopSongs.push(await createGLTFMesh(0, -90, targetPoints.topSong-100, 0, 0, 0, 50));
+    contentTopSongs.push(await createGLTFMesh(0, -90, targetPoints.topSong-100, 0, 0, 0, 50.0, 'pedestal'));
 
     contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -120, -5, targetPoints.topSong-55,20, 70));
     contentTopSongs.push(await createTextMesh("2: " + songs[1].name, textSize, -155, 35, targetPoints.topSong-45,0,20,0x000000, 1,'W95FA_Regular.typeface'));
-    // contentTopSongs.push(await createGLTFMesh(-120, -110, targetPoints.topSong-55, 0,20, 0, 50));
+    contentTopSongs.push(await createGLTFMesh(-120, -110, targetPoints.topSong-55, 0,20, 0, 50, 'pedestal'));
 
     contentTopSongs.push(await createBildMesh(songs[2].imageUrl, 110, -15, targetPoints.topSong-35, -20, 70));
     contentTopSongs.push(await createTextMesh("3: " + songs[2].name, textSize, 75,25, targetPoints.topSong-35,0,-20,0x000000, 1,'W95FA_Regular.typeface'));
-    // contentTopSongs.push(await createGLTFMesh(110, -120, targetPoints.topSong-35, 0, -20, 0, 50));
+    contentTopSongs.push(await createGLTFMesh(110, -120, targetPoints.topSong-35, 0, -20, 0, 50 , 'pedestal'));
     
     return contentTopSongs;
 }
