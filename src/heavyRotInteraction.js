@@ -17,7 +17,7 @@ function isCameraInBounds(camera) {
     return camera.position.z >= minCameraZ && camera.position.z <= maxCameraZ;
 }
 
-function isMouseNearCenter(intersect, threshold = 1.2) {
+function isMouseNearCenter(intersect, threshold = 1.5) {
     const object = intersect.object;
     const bounds = new THREE.Box3().setFromObject(object); // Bounding Box des Objekts
     const size = bounds.getSize(new THREE.Vector3());
@@ -139,13 +139,13 @@ function moveObject(obj, duration) {
     directionVector.normalize();
 
     // Definiert die Entfernung, die das Objekt bewegt werden soll
-    const moveDistance = 5; // Zum Beispiel 50 Einheiten
+    const moveDistance = 5;
 
     // Berechnet die Zielposition basierend auf dem Richtungsvektor und der Bewegungsdistanz
     const targetPosition = {
-        x: obj.position.x + directionVector.x * moveDistance,
-        y: obj.position.y + directionVector.y * moveDistance,
-        z: obj.position.z + 50 //directionVector.z * moveDistance
+        x: obj.position.x,// + directionVector.x * moveDistance,
+        y: obj.position.y,// + directionVector.y * moveDistance,
+        z: obj.position.z + 30 //directionVector.z * moveDistance
     };
 
     // Erstellt eine Tween-Animation, um das Objekt zu bewegen

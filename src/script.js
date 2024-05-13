@@ -6,7 +6,7 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'stats.js';
-// import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DirectionalLight } from 'three';
 import { AmbientLight } from 'three';
 import { HemisphereLight } from 'three';
@@ -68,29 +68,24 @@ window.addEventListener('mousemove', (event) => {
 }, false);
 
 /**
- * Berechnet die Position der Maus im 3D-Raum relativ zur aktuellen Kameraposition und der Mausposition auf dem Bildschirm.
+ * Berechnet die Position der Maus im 3D-Raum auf der z=0 Ebene.
  * @param {THREE.Vector2} mouse - Der Mausvektor, normalisiert (-1 bis 1 in beiden Achsen).
- * @param {THREE.Camera} camera - Die verwendete Kamera in der Szene.
- * @returns {THREE.Vector3} Die berechnete Position der Maus im 3D-Raum.
+ * @param {THREE.PerspectiveCamera} camera - Die verwendete Kamera in der Szene.
+ * @returns {THREE.Vector3} Die berechnete Position der Maus auf der z=0 Ebene.
  */
 export function getMouse3DPosition(mouse, camera) {
-    // Erstelle einen neuen 3D-Vektor, der den normalisierten Mausvektor aufnimmt
-    const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5); // z=0.5 stellt sicher, dass der Vektor in den Raum vor der Kamera projiziert wird.
+    // Projiziert den normalisierten Gerätekoordinatenvektor (mouse.x, mouse.y) auf die z=0 Ebene
+    const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
 
-    // Die Funktion unproject transformiert den normalisierten Gerätekoordinatenvektor in Weltkoordinaten
-    vector.unproject(camera); 
-
-    // Berechne die Richtung vom Kamerastandpunkt zum Mausvektor
-    const dir = vector.sub(camera.position).normalize(); 
-
-    // Berechne die Distanz zur z=0 Ebene, basierend auf der Annahme, dass die Kamera in Richtung der negativen z-Achse sieht
-    const distance = -camera.position.z / dir.z; 
-
-    // Berechne die genaue Position im 3D-Raum, indem die berechnete Distanz entlang der Richtungsvektor von der aktuellen Kameraposition aus angewendet wird
-    const pos = camera.position.clone().add(dir.multiplyScalar(distance));
-
-    return pos; // Gibt die berechnete 3D-Position der Maus zurück
+    // Finde den Schnittpunkt des Strahls mit der z=0 Ebene
+    const intersects = new THREE.Vector3();
+    raycaster.ray.intersectPlane(planeZ, intersects);
+    // console.log("Maus aus 3D: ", intersects);
+    return intersects; // Gibt die berechnete 3D-Position der Maus zurück
 }
+
 
 /**cursor */
 const cursor = {};
@@ -149,7 +144,7 @@ async function init() {
     /**
      * Camera
      */
-    camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 700 );
+    camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 10, 550 );
     camera.position.z = gesamtTiefe;
     scene.add(camera);
     lastCamPosition = camera.position.z;
@@ -334,7 +329,7 @@ function setProgressBar() {
  * Überprüft die Position der Kamera und ruft entsprechende Funktionen auf, basierend auf der Position.
  */
 function checkCamPosition() {
-    console.log("CheckCamPosition");
+    // console.log("CheckCamPosition");
     //Aktuelle Kamera Position
     const pos = Math.round(camera.position.z);
 
@@ -371,7 +366,7 @@ function checkCamPosition() {
  * @param {number} tp - Der Ziel-Punkt.
  */
 function handleBereich(pos, tp) {
-    console.log("Bereich: " + tp);
+    // console.log("Bereich: " + tp);
     //Kamera ist im Eintritts-Damping des Bereichs
     if ((pos <= (tp + bereichOffsetVorne)) && (pos >= (tp + bereichOffsetVorne - bereichDampingVorne))) {
         trackControls.zoomSpeed = zoomSpeedBereich + (pos - ((tp + bereichOffsetVorne) - bereichDampingVorne)) * ((zoomSpeedBereich - zoomSpeedNorm) / (-bereichDampingVorne));
@@ -609,7 +604,7 @@ const tick = () => {
             //console.log("Es bewegt sich. " + Math.round(camera.position.z));
         }
     }
-    console.log(lastCamPosition);
+    // console.log(lastCamPosition);
         
         if(lastCamPosition <= targetPoints.onRepeat){
             if(document.getElementById("createPlaylist-btn") == null){
@@ -944,7 +939,7 @@ async function createHeavyRotation() {
     let contentHeavyRotation = [];
     heavyRotCircleGroup = new THREE.Group();
     heavyRotCircleGroup.name = "Heavy Rotation Circle";
-    heavyRotCircleGroup.position.set(110, 0, targetPoints.onRepeat - 60);
+    heavyRotCircleGroup.position.set(110, 0, targetPoints.onRepeat - 300);
 
     const baseRadius = 150;
     const radialOffset = 30; // Zusätzliche Radialverschiebung für jedes zweite Element
@@ -971,8 +966,8 @@ async function createHeavyRotation() {
         bildMesh.userData.originalZ = z;
         heavyRotCircleGroup.add(bildMesh);
     }
-    contentHeavyRotation.push(await createTextMesh("Your Heavy \nRotation", headlineSize, -350, 100, targetPoints.onRepeat - 20, 30, 0, 0x000000,1,'Jersey 15_Regular'));
-    contentHeavyRotation.push(await createTextMesh("Hover to see more", textBigSize, -350, 0, targetPoints.onRepeat - 20, 30,0, 0x000000,1,'Jersey 15_Regular'));
+    contentHeavyRotation.push(await createTextMesh("Your Heavy \nRotation", headlineSize, -350, 150, targetPoints.onRepeat - 250, 10, 30, 0x000000, 1, 'Jersey 15_Regular'));
+    contentHeavyRotation.push(await createTextMesh("Hover to see more", textBigSize, -350, 50, targetPoints.onRepeat - 250, 10, 30, 0x000000, 1, 'Jersey 15_Regular'));
     contentHeavyRotation.push(heavyRotCircleGroup);
 
     return contentHeavyRotation;
@@ -1007,19 +1002,19 @@ async function createTopSongs() {
     let contentTopSongs = [];
     
     //console.log(songs);
-    contentTopSongs.push(await createTextMesh("Your Top Songs", headlineSize, -150, -100, targetPoints.topSong ,0, 0, 0x000000,1,'Jersey 15_Regular'));
+    contentTopSongs.push(await createTextMesh("Your Top Songs", headlineSize, -150, -100, targetPoints.topSong - 85 ,0, 0, 0x000000,1,'Jersey 15_Regular'));
     
-    contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 10, targetPoints.topSong-100, 0, 70));
-    contentTopSongs.push(await createTextMesh("1: " + songs[0].name, textSize, -35, 50, targetPoints.topSong-100,0,0,0x000000, 1,'W95FA_Regular.typeface'));
-    contentTopSongs.push(await createGLTFMesh(0, -90, targetPoints.topSong-100, 0, 0, 0, 50.0, 'pedestal'));
+    contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 10, targetPoints.topSong - 200, 0, 70));
+    contentTopSongs.push(await createTextMesh("1: " + songs[0].name, textSize, -35, 50, targetPoints.topSong - 200,0,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentTopSongs.push(await createGLTFMesh(0, -90, targetPoints.topSong - 200, 0, 0, 0, 50.0, 'pedestal'));
 
-    contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -120, -5, targetPoints.topSong-55,20, 70));
-    contentTopSongs.push(await createTextMesh("2: " + songs[1].name, textSize, -155, 35, targetPoints.topSong-45,0,20,0x000000, 1,'W95FA_Regular.typeface'));
-    contentTopSongs.push(await createGLTFMesh(-120, -110, targetPoints.topSong-55, 0,20, 0, 50, 'pedestal'));
+    contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -120, -5, targetPoints.topSong - 155, 20, 70));
+    contentTopSongs.push(await createTextMesh("2: " + songs[1].name, textSize, -155, 35, targetPoints.topSong - 145 ,0,20,0x000000, 1,'W95FA_Regular.typeface'));
+    contentTopSongs.push(await createGLTFMesh(-120, -110, targetPoints.topSong - 155, 0,20, 0, 50, 'pedestal'));
 
-    contentTopSongs.push(await createBildMesh(songs[2].imageUrl, 110, -15, targetPoints.topSong-35, -20, 70));
-    contentTopSongs.push(await createTextMesh("3: " + songs[2].name, textSize, 75,25, targetPoints.topSong-35,0,-20,0x000000, 1,'W95FA_Regular.typeface'));
-    contentTopSongs.push(await createGLTFMesh(110, -120, targetPoints.topSong-35, 0, -20, 0, 50 , 'pedestal'));
+    contentTopSongs.push(await createBildMesh(songs[2].imageUrl, 110, -15, targetPoints.topSong - 135, -20, 70));
+    contentTopSongs.push(await createTextMesh("3: " + songs[2].name, textSize, 75,25, targetPoints.topSong - 135, 0,-20,0x000000, 1,'W95FA_Regular.typeface'));
+    contentTopSongs.push(await createGLTFMesh(110, -120, targetPoints.topSong - 135, 0, -20, 0, 50 , 'pedestal'));
     
     return contentTopSongs;
 }
