@@ -57,6 +57,13 @@ body {
   animation: WindowsBlurr 30s ease infinite;
 }
 
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -10;
+}
+
 .progress-bar-container {
   position: absolute;
   left: 50%;
@@ -255,16 +262,13 @@ h1 {
 
 .navBarElement {
   position: absolute;
-  -ms-transform: translate(0%, 50%);
-  transform: translate(0%, 50%);
-  object-fit: cover;
-  max-width: 25px;
-  max-height: 25px;
-  right: 150%;
-  color: #ffffff;
+  z-index: 1;
+  right: 2rem;
   display: flex;
   align-items: center;
-  justify-content: right;
+  -ms-transform: translate(0%, 50%);
+  transform: translate(0%, 50%);
+  color: #ffffff;
   cursor: pointer;
   transition: .2s ease;
 }
@@ -272,6 +276,14 @@ h1 {
 .navBarElement:hover {
   max-width: 30px;
   max-height: 30px;
+}
+
+.navBarElementImg {
+  /* position: absolute; */
+  object-fit: cover;
+  max-width: 25px;
+  max-height: 25px;
+  /* right: 150%; */
 }
 
 .navBarElementLable {
@@ -346,12 +358,12 @@ h1 {
 }
 
 #navBar {
-    display: none;
-    position: absolute;
-    top: 50%;
-    right: 1rem;
+    position: fixed;
     display: flex;
     flex-direction: column;
+    /* align-items: center; */
+    top: 50%;
+    right: 1.5rem;
     height: 60vh;
     width: 1.2rem;
     -ms-transform: translate(-50%, -50%);
@@ -361,7 +373,7 @@ h1 {
 
 #navProgress {
   position: absolute;
-  z-index: -1;
+  z-index: 1;
   left: 20%;
   height: 0%;
   width: 60%;

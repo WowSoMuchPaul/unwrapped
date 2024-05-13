@@ -129,7 +129,7 @@ await init(); // Starte die Initialisierung der Szene
  * @returns {Promise<void>}
  */
 async function init() {
-
+    console.log("Init");
     /**
      * Sizes
      */
@@ -203,11 +203,11 @@ async function init() {
     /**
      * Renderer
      */
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, canvas: canvas});
     renderer.setClearColor(0xffffff, 0);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(sizes.width, sizes.height);
-    document.body.appendChild(renderer.domElement);
+    //document.body.appendChild(renderer.domElement);
 
     //Track Controls
     trackControls = new TrackballControls(camera, renderer.domElement);
@@ -225,16 +225,17 @@ async function init() {
     //Nav Bar
     document.getElementById("navProgress").style.bottom = progBarBottom + "%";
     document.getElementById("navBar").style.display = "none";
+
     document.getElementById("navProfil").style.bottom = (1 - (targetPoints.profil + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
-    document.getElementById("navProfil").src = profilImage;
+    document.getElementById("navProfilImg").src = profilImage;
     document.getElementById("navArtists").style.bottom = (1 - (targetPoints.topArtist + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
-    document.getElementById("navArtists").src = profilImage;
+    document.getElementById("navArtistsImg").src = profilImage;
     document.getElementById("navSongs").style.bottom = (1 - (targetPoints.topSong + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
-    document.getElementById("navSongs").src = profilImage;
+    document.getElementById("navSongsImg").src = profilImage;
     document.getElementById("navOnRepeat").style.bottom = (1 - (targetPoints.onRepeat + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
-    document.getElementById("navOnRepeat").src = profilImage;
+    document.getElementById("navOnRepeatImg").src = profilImage;
     document.getElementById("navPlaylist").style.bottom = (1 - (targetPoints.playlist + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
-    document.getElementById("navPlaylist").src = profilImage;
+    document.getElementById("navPlaylistImg").src = profilImage;
 
 
     //Erstelle alle Geometrien, wenn Nutzer bereits authentifiziert ist
@@ -332,7 +333,7 @@ function setProgressBar() {
  * Überprüft die Position der Kamera und ruft entsprechende Funktionen auf, basierend auf der Position.
  */
 function checkCamPosition() {
-    console.log("CheckCamPosition");
+    //console.log("CheckCamPosition");
     //Aktuelle Kamera Position
     const pos = Math.round(camera.position.z);
 
@@ -369,7 +370,7 @@ function checkCamPosition() {
  * @param {number} tp - Der Ziel-Punkt.
  */
 function handleBereich(pos, tp) {
-    console.log("Bereich: " + tp);
+    //console.log("Bereich: " + tp);
     //Kamera ist im Eintritts-Damping des Bereichs
     if ((pos <= (tp + bereichOffsetVorne)) && (pos >= (tp + bereichOffsetVorne - bereichDampingVorne))) {
         trackControls.zoomSpeed = zoomSpeedBereich + (pos - ((tp + bereichOffsetVorne) - bereichDampingVorne)) * ((zoomSpeedBereich - zoomSpeedNorm) / (-bereichDampingVorne));
@@ -394,7 +395,7 @@ function handleBereich(pos, tp) {
                     if(tp == targetPoints.topArtist) {
                         handleTopArtistBereich();
                     } else {
-                        console.log("TWEEN abgeschlossen");
+                        //console.log("TWEEN abgeschlossen");
                         TrackballControls.noZoom = false;
                     }
                 })
@@ -408,7 +409,7 @@ function handleBereich(pos, tp) {
     }
     //Kamera ist im Austritts-Damping
     if ((pos >= (tp - bereichOffsetHinten)) && (pos <= (tp - bereichOffsetHinten + bereichDampingHinten))) {
-        console.log("Austritts-Damping");
+        //console.log("Austritts-Damping");
         trackControls.zoomSpeed = zoomSpeedBereich - (pos - ((tp - bereichOffsetHinten) + bereichDampingHinten)) * ((zoomSpeedBereich - zoomSpeedNorm) / (-bereichDampingHinten));
     }
 }
@@ -607,7 +608,7 @@ const tick = () => {
             //console.log("Es bewegt sich. " + Math.round(camera.position.z));
         }
     }
-    console.log(lastCamPosition);
+    //console.log(lastCamPosition);
         
         if(lastCamPosition <= targetPoints.onRepeat){
             if(document.getElementById("createPlaylist-btn") == null){
