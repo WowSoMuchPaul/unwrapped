@@ -6,8 +6,8 @@ export default {
     base: './',
     server:
     {
-        host: true,
-        open: !isCodeSandbox // Open if it's not a CodeSandbox
+        host: 'localhost',
+        // open: !isCodeSandbox // Open if it's not a CodeSandbox
     },
     build:
     {

@@ -1,5 +1,5 @@
 import { THREE, TWEEN } from './imports.js';
-import { createTextMesh, heavyRotGroup, inhaltGroup, camera, mouse, getMouse3DPosition } from './script.js';
+import { createTextMesh, heavyRotGroup, inhaltGroup, camera, mouse, getMouse3DPosition} from './script.js';
 
 const textMeshMap = new Map();
 
