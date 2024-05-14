@@ -416,6 +416,9 @@ function handleBereich(pos, tp) {
     }
 }
 
+let initialTween = new TWEEN.Tween(topArtistsCube.rotation);q
+let topArtCubeAnimating;
+
 /**
  * Behandelt den Bereich der Top-Künstler.
  * Wird aufgerufen wenn die Kamera in den Bereich der Top-Künstler eintritt.
@@ -426,15 +429,15 @@ function handleBereich(pos, tp) {
  * @returns {Promise<void>}
  */
 async function handleTopArtistBereich() {
-    window.addEventListener('wheel', rotateCube, { passive: true });
-    let initialTween = new TWEEN.Tween(topArtistsCube.rotation);
+    window.addEventListener('wheel', rotateCube);
+    // let initialTween = new TWEEN.Tween(topArtistsCube.rotation);
     topArtistsCube.rotation.set(0, Math.PI + (Math.PI / 2), 0);
     if (!initCubeAnimationPlayed) {
         initialAnimation();
         initCubeAnimationPlayed = true;
     }
     topArtistsRotationIndex = 0;
-    let isAnimating = false;
+    topArtCubeAnimating = false;
     trackControls.noZoom = true; // Verhindert Zoom während der Rotation
     let rotationSequence = [
         [ //Auf 1
@@ -459,80 +462,6 @@ async function handleTopArtistBereich() {
     ];
 
     /**
-     * Dreht den Würfel und aktualisiert die angezeigten Informationen.
-     * 
-     * @param {Event} event - Das Ereignis, das den Funktionsaufruf ausgelöst hat.
-     * @returns {Promise<void>} Ein Promise, das gelöst wird, wenn die Animation abgeschlossen ist.
-     */
-    async function rotateCube(event) {
-        if (isAnimating || event.deltaY === 0) return;
-        if(initialTween.isPlaying()){
-            initialTween.stop();
-            // Würfel auf ausgangspoition zurücksetzen
-            let resetTween = new TWEEN.Tween(topArtistsCube.rotation)
-            .to({ x: 0, y: Math.PI + (Math.PI / 2), z: 0 }, 300)
-            .easing(TWEEN.Easing.Cubic.InOut)
-            .start();
-        }
-        isAnimating = true;
-        topArtistsRotationIndex = (topArtistsRotationIndex + 1) % rotationSequence.length; // Immer zum nächsten Schritt
-        if(topArtistsRotationIndex == 0) {
-            trackControls.noZoom = false;
-            clearAndRemoveObject(topArtistsRank);
-            clearAndRemoveObject(topArtistsName);
-            cleanup();
-        }
-        let steps = rotationSequence[topArtistsRotationIndex];
-        let tween;
-        // Führt jede Rotation aus dem Schritt in der Sequenz aus
-        steps.forEach(async (step, index) => {
-            console.log("Schritt: ", step.axis, step.angle);
-            let rotation = {};
-            rotation[step.axis] = topArtistsCube.rotation[step.axis] + step.angle;
-            tween = new TWEEN.Tween(topArtistsCube.rotation)
-                .to(rotation, 800)
-                .easing(TWEEN.Easing.Cubic.InOut);                
-            
-            if (index === steps.length - 1) { // Nur die letzte Animation setzt den onComplete-Handler
-                tween.onComplete(() => {
-                    setTimeout(() => {
-                        isAnimating = false;
-                    }, 800);
-                });
-            }
-            tween.start();
-        });
-        clearAndRemoveObject(topArtistsRank);
-        clearAndRemoveObject(topArtistsName);
-        topArtistsRank = await createTextMesh("Top " + (topArtistsRotationIndex + 1), 20, 100, 40, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
-        topArtistsName = await createTextMesh(topArtistsCube.userData.artistNames[topArtistsRotationIndex], 15, 100, 10, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
-        inhaltGroup.add(topArtistsRank);
-        inhaltGroup.add(topArtistsName);
-    }
-
-    /**
-     * Funktion zum Aufräumen und Zurücksetzen des Würfels.
-     * Entfernt den Event-Listener für das Scrollen und setzt den Würfel auf die erste Rotation aus der Sequenz zurück.
-     * @async
-     * @function cleanup
-     * @returns {Promise<void>}
-     */
-    async function cleanup() {
-        window.removeEventListener('wheel', rotateCube);
-        // Setze den Würfel auf die erste Rotation aus der Sequenz zurück
-        let firstStep = rotationSequence[0];
-        let rotation = {};
-        firstStep.forEach(step => {
-            rotation[step.axis] = step.angle; // Setze die Winkel direkt aus der ersten Sequenz
-        });
-        
-        new TWEEN.Tween(topArtistsCube.rotation)
-            .to(rotation, 500)
-            .easing(TWEEN.Easing.Cubic.InOut)
-            .start();
-    };
-
-    /**
      * Initiale Würfel-Animation beim ersten Betreten des Top-Artists-Bereichs.
      */
     function initialAnimation() {
@@ -542,7 +471,7 @@ async function handleTopArtistBereich() {
             .yoyo(true) // Rückkehr zur Ausgangsposition
             .repeat(2) // Wiederhole die Bewegung einmal
             .onComplete(() => {
-                if (!isAnimating) { // Wenn keine andere Animation aktiv ist, führe Rückbewegung aus
+                if (!topArtCubeAnimating) { // Wenn keine andere Animation aktiv ist, führe Rückbewegung aus
                     new TWEEN.Tween(topArtistsCube.rotation)
                         .to({ x: topArtistsCube.rotation.x + Math.PI / 10 }, 600)
                         .easing(TWEEN.Easing.Cubic.InOut)
@@ -553,6 +482,77 @@ async function handleTopArtistBereich() {
         initialTween.start();
     }
 }
+
+/**
+     * Dreht den Würfel und aktualisiert die angezeigten Informationen.
+     * 
+     * @param {Event} event - Das Ereignis, das den Funktionsaufruf ausgelöst hat.
+     * @returns {Promise<void>} Ein Promise, das gelöst wird, wenn die Animation abgeschlossen ist.
+     */
+async function rotateCube(event) {
+    if (topArtCubeAnimating || event.deltaY === 0) return;
+    if(initialTween.isPlaying()){
+        initialTween.stop();
+        // Würfel auf ausgangspoition zurücksetzen
+        let resetTween = new TWEEN.Tween(topArtistsCube.rotation)
+        .to({ x: 0, y: Math.PI + (Math.PI / 2), z: 0 }, 300)
+        .easing(TWEEN.Easing.Cubic.InOut)
+        .start();
+    }
+    topArtCubeAnimating = true;
+    topArtistsRotationIndex = (topArtistsRotationIndex + 1) % rotationSequence.length; // Immer zum nächsten Schritt
+    if(topArtistsRotationIndex == 0) {
+        trackControls.noZoom = false;
+        clearAndRemoveObject(topArtistsRank);
+        clearAndRemoveObject(topArtistsName);
+        cleanup();
+    }
+    let steps = rotationSequence[topArtistsRotationIndex];
+    let tween;
+    // Führt jede Rotation aus dem Schritt in der Sequenz aus
+    steps.forEach((step) => {
+        console.log(step);
+        let rotation = {};
+        rotation[step.axis] = topArtistsCube.rotation[step.axis] + step.angle;
+        tween = new TWEEN.Tween(topArtistsCube.rotation)
+            .to(rotation, 800)
+            .easing(TWEEN.Easing.Cubic.InOut)                
+            .onComplete(() => {
+                setTimeout(() => {
+                    topArtCubeAnimating = false;
+                }, 800);
+            })
+            .start();
+    });
+    clearAndRemoveObject(topArtistsRank);
+    clearAndRemoveObject(topArtistsName);
+    topArtistsRank = await createTextMesh("Top " + (topArtistsRotationIndex + 1), 20, 100, 40, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
+    topArtistsName = await createTextMesh(topArtistsCube.userData.artistNames[topArtistsRotationIndex], 15, 100, 10, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
+    inhaltGroup.add(topArtistsRank);
+    inhaltGroup.add(topArtistsName);
+}
+
+/**
+ * Funktion zum Aufräumen und Zurücksetzen des Würfels.
+ * Entfernt den Event-Listener für das Scrollen und setzt den Würfel auf die erste Rotation aus der Sequenz zurück.
+ * @async
+ * @function cleanup
+ * @returns {Promise<void>}
+ */
+async function cleanup() {
+    window.removeEventListener('wheel', rotateCube);
+    // Setze den Würfel auf die erste Rotation aus der Sequenz zurück
+    let firstStep = rotationSequence[0];
+    let rotation = {};
+    firstStep.forEach(step => {
+        rotation[step.axis] = step.angle; // Setze die Winkel direkt aus der ersten Sequenz
+    });
+    
+    new TWEEN.Tween(topArtistsCube.rotation)
+        .to(rotation, 500)
+        .easing(TWEEN.Easing.Cubic.InOut)
+        .start();
+};
 
 
 function bringeZumBereich(tp) {
@@ -1218,7 +1218,7 @@ async function animateAndDisplayText(obj) {
         centerTextMesh(songName);
         let songArtists = await displaySongArtist(obj);
         centerTextMesh(songArtists, -15);
-        console.log(songName, songArtists);
+        // console.log(songName, songArtists);
         scaleObject(obj, 1.6); // Vergrößern des Objekts beim Hover
 
         moveObject(obj, 200);
