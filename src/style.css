@@ -136,7 +136,7 @@ button:hover {
   width: 60%;
   position: fixed;
   /* display: none; */
-  z-index: 1;
+  z-index: 2;
   top: 50%;
   left: 50%;
   -ms-transform: translate(-50%, -50%);
@@ -228,7 +228,8 @@ h1 {
     z-index: 100;
 } 
 
-#createPlaylist-btn{
+#playlistButton{
+  display: none;
   /* justify-self: center; */
   background-color: #c0c0c0;
   /* position: absolute; */
@@ -249,12 +250,12 @@ h1 {
 
 
 
-#createPlaylist-btn:hover {
+#playlistButton:hover {
   background-color: #676666;
   color: #ffffff;
 }
 
-#createPlaylist-btn:active {
+#playlistButton:active {
    background-color: #676666; 
   color: #ffffff; 
   scale: 0.9;
@@ -302,6 +303,18 @@ h1 {
   text-align: right;
   visibility: hidden;
   opacity: 0%;
+  transition: .2s ease;
+}
+
+#pageBlocker {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  /* background-color: rgba(0, 0, 0, 0.5); */
+  backdrop-filter: blur(8px);
+  z-index: 1;
   transition: .2s ease;
 }
 
@@ -393,4 +406,5 @@ h1 {
   width: 60%;
   background-color: var(--blue);
 }
+
 

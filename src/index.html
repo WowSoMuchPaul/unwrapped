@@ -41,52 +41,56 @@
       <label for="progress-bar" id="progress-bar-label">Loading...</label>
       <progress id="progress-bar" value="0" max="100"></progress>
     </div> --> 
-    <div id="playlistBttnContainer"></div>
-    <div id="overlay" class="windows95edges overlay"> 
-      <div class="overlaybar">
-        spotify_unwrapped.info
-        <!-- <button id="closebtn" class="closebtn">&times;</button> -->
-        <button id="logoutButton">Logout</button>
-      </div>
-      <div id="fensterInhaltWrap">
-        <h1 id="fensterHeadline">Welcome to unwrapped!</h1>
-        <div id="fensterInhalt">
-          <img id="fensterTutorialImg" class="windows95edgesImage"> </img>
-          <div id="fensterInhaltRechts">
-            <div id="loginStatus">
-              <img id="profilImage"></img>
-              <img id="loginStatusImage"></img>
-              <label id="loginStatusLabel">offline</label>             
+    <div id="playlistBttnContainer">
+      <button id="playlistButton">Create Playlist</button>
+    </div>
+    <div id="pageBlocker">
+      <div id="overlay" class="windows95edges overlay"> 
+        <div class="overlaybar">
+          spotify_unwrapped.info
+          <!-- <button id="closebtn" class="closebtn">&times;</button> -->
+          <button id="logoutButton">Logout</button>
+        </div>
+        <div id="fensterInhaltWrap">
+          <h1 id="fensterHeadline">Welcome to unwrapped!</h1>
+          <div id="fensterInhalt">
+            <img id="fensterTutorialImg" class="windows95edgesImage"> </img>
+            <div id="fensterInhaltRechts">
+              <div id="loginStatus">
+                <img id="profilImage"></img>
+                <img id="loginStatusImage"></img>
+                <label id="loginStatusLabel">offline</label>             
+              </div>
+              <p>
+                unwrapped is a tool to visualize your Spotify listening habits.
+                <br />
+                <br />
+                To get started, click the button below to connect your Spotify
+                account.
+                <br />
+                <br />
+                unwrapped will then analyze your listening habits and create
+                visualizations based on your data.
+              </p>
+              <div id="timeRangeDiv">
+                <label for="timeRange">Time Range</label>
+                <select name="timeRange" id="timeRange">
+                  <option value="long_term">Long Term</option>
+                  <option value="medium_term">Medium Term</option>
+                  <option value="short_term">Short Term</option>
+                </select>
+              </div>
+              <button id="spotifyConnectButton">
+                Connect with you Spotify Account
+              </button>
             </div>
-            <p>
-              unwrapped is a tool to visualize your Spotify listening habits.
-              <br />
-              <br />
-              To get started, click the button below to connect your Spotify
-              account.
-              <br />
-              <br />
-              unwrapped will then analyze your listening habits and create
-              visualizations based on your data.
-            </p>
-            <div id="timeRangeDiv">
-              <label for="timeRange">Time Range</label>
-              <select name="timeRange" id="timeRange">
-                <option value="long_term">Long Term</option>
-                <option value="medium_term">Medium Term</option>
-                <option value="short_term">Short Term</option>
-              </select>
-            </div>
-            <button id="spotifyConnectButton">
-              Connect with you Spotify Account
-            </button>
+            <!-- <button id="delete">delete</button>
+            <button id="create">create</button>
+            <button id="auth">Spotify Authorisieren</button>
+            <button id="refreshToken">refreshToken</button>
+            <button id="playlist">Playlist erstellen</button>
+            -->
           </div>
-          <!-- <button id="delete">delete</button>
-          <button id="create">create</button>
-          <button id="auth">Spotify Authorisieren</button>
-          <button id="refreshToken">refreshToken</button>
-          <button id="playlist">Playlist erstellen</button>
-           -->
         </div>
       </div>
     </div>
