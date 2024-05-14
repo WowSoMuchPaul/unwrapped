@@ -153,9 +153,13 @@ async function init() {
     camera.position.z = gesamtTiefe;
     scene.add(camera);
     lastCamPosition = camera.position.z;
-    // let light = new THREE.DirectionalLight(0xffff00, 5);
-    //   scene.add(light);
-    // let ambientLight = new THREE.AmbientLight(0x404040, 2);
+
+    //Lights
+    let light = new THREE.DirectionalLight(0xffffff, 2);
+    light.position.set( gesamtTiefe/2, gesamtTiefe/2, gesamtTiefe ).normalize();
+    light.target.position.set(0, 0, 0);
+    scene.add(light);
+    // let ambientLight = new THREE.AmbientLight(0x404040, 0.5);
     // scene.add(ambientLight);
 
     //Inhalt Group definieren
@@ -177,9 +181,9 @@ async function init() {
     //     });
 
     //Hemisphären Licht
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 3, 1);
-    hemiLight.position.set(0, 20, 0);
-    scene.add(hemiLight);
+    // const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 3, 1);
+    // hemiLight.position.set(0, 20, 0);
+    //scene.add(hemiLight);
 
     // helper = new THREE.CameraHelper(camera);
     // scene.add(helper);
@@ -305,13 +309,13 @@ async function init() {
 }
 
 function closeOverlay() {
-    document.getElementById("overlay").style.display = "none";
+    document.getElementById("pageBlocker").style.display = "none";
     document.getElementById("help").style.display = "block";
     document.getElementById("navBar").style.display = "block";
 }
 
 function openOverlay() {
-    document.getElementById("overlay").style.display = "block";
+    document.getElementById("pageBlocker").style.display = "block";
     document.getElementById("help").style.display = "none";
     document.getElementById("navBar").style.display = "none";
 }
@@ -362,6 +366,9 @@ function checkCamPosition() {
     //Bereich Playlist
     if ((pos <= (targetPoints.playlist + bereichOffsetVorne)) && (pos >= (targetPoints.playlist - bereichOffsetHinten))) {
         handleBereich(pos, targetPoints.playlist);
+        document.getElementById("playlistButton").style.display = "block";
+    }else{
+        document.getElementById("playlistButton").style.display = "none";
     }
 }
 
@@ -603,39 +610,9 @@ const tick = () => {
             checkCamPosition();
             //console.log("Es bewegt sich. " + Math.round(camera.position.z));
         }
+        lastCamPosition = Math.round(camera.position.z);
     }
-    //console.log(lastCamPosition);
-        
-        if(lastCamPosition <= targetPoints.onRepeat){
-            if(document.getElementById("createPlaylist-btn") == null){
-                createPlaylistButton();
-            }
-        }
-
-        // if (lastCamPosition >= targetPoints.playlist && lastCamPosition <= targetPoints.onRepeat) {  
-        //     console.log(lastCamPosition);  
-        //     createPlaylistButton();
-        //     document.getElementById("createPlaylist-btn").style.display = "block";
-        //         console.log("createPlaylistButton");
-        //     if(document.getElementById("createPlaylist-btn") != null){
-        //         document.getElementById("createPlaylist-btn").style.display = "none";
-        //     } else {
-
-        //     } 
-        // }
-
-        if (lastCamPosition >= targetPoints.onRepeat){    
-            if(document.getElementById("createPlaylist-btn") != null){
-                document.getElementById("createPlaylist-btn").style.display = "none";
-            }
-            }
-
-        if (lastCamPosition <= targetPoints.playlist){    
-            if(document.getElementById("createPlaylist-btn") != null){
-                document.getElementById("createPlaylist-btn").style.display = "none";
-            }
-            }
-
+    
     iconAnimationPl();
    
 
@@ -675,7 +652,7 @@ export async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotati
                 text, {
                     font: font,
                     size: fontsize,
-                    height: 1,
+                    height: (fontsize / 5 ),
                     curveSegments: 12,
                     bevelEnabled: true,
                     bevelThickness: 0.03,
@@ -684,7 +661,12 @@ export async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotati
                     bevelSegments: 5
                 }
             )
-            const textMaterial = new THREE.MeshBasicMaterial();
+            textGeometry.computeBoundingBox();
+            //const textMaterial = new THREE.MeshBasicMaterial();
+            const textMaterial = [
+                new THREE.MeshPhongMaterial( { color: 0xffffff, flatShading: true } ), // front
+                new THREE.MeshPhongMaterial( { color: 0xffffff } ) // side
+            ];
             let textMesh = new THREE.Mesh(textGeometry, textMaterial);
             // Positionierung des TextMeshes
             textMesh.position.x = x;
@@ -730,6 +712,16 @@ async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
             (texture) => {
                 const geometry = new THREE.PlaneGeometry(bildGroesse, bildGroesse);
                 const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+
+                const aspect = bildGroesse / bildGroesse;
+                var imageAspect = texture.image.width / texture.image.height;
+                texture.matrixAutoUpdate = false;
+                if ( aspect < imageAspect ) {
+                    texture.matrix.setUvTransform( 0, 0, aspect / imageAspect, 1, 0, 0.5, 0.5 );
+                } else if (aspect > imageAspect) {
+                    texture.matrix.setUvTransform( 0, 0, 1, imageAspect / aspect, 0, 0.5, 0.5 );
+                }
+
                 let bildMesh = new THREE.Mesh(geometry, material);
                 bildMesh.position.set(x, y, z);
                 bildMesh.rotateY(rotationY * (Math.PI / 180));
@@ -1357,8 +1349,9 @@ function removeTextMeshes(obj) {
     if (textMeshes) {
         textMeshes.forEach(textMesh => {
             inhaltGroup.remove(textMesh);
-            textMesh.geometry?.dispose();
-            textMesh.material?.dispose();
+            clearAndRemoveObject(textMesh);
+            //textMesh.geometry?.dispose();
+            //textMesh.material?.dispose();
         });
         textMeshMap.delete(obj);
     }
