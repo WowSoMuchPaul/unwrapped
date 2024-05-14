@@ -14,10 +14,15 @@ import { PMREMGenerator } from 'three';
 
 import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
 import fensterTutorialImg from '../static/images/vapor.png';
-import profilImage from '../static/images/profil_icon.png';
+import profilPlaceholder from '../static/images/profil_placeholder.png';
 import offlineImage from '../static/images/offline.png';
 import onlineImage from '../static/images/online.png';
 import help from '../static/images/help.png';
+import navProfilIcon from '../static/images/nav_profil_icon.png';
+import navArtistsIcon from '../static/images/nav_artists_icon.png';
+import navSongsIcon from '../static/images/nav_songs_icon.png';
+import navRotationIcon from '../static/images/nav_rotation_icon.png';
+import navPlaylistIcon from '../static/images/nav_playlist_icon.png';
 import { log } from 'three/examples/jsm/nodes/Nodes.js';
 
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, topArtistCountText;
@@ -126,7 +131,7 @@ await init(); // Starte die Initialisierung der Szene
  * @returns {Promise<void>}
  */
 async function init() {
-
+    console.log("Init");
     /**
      * Sizes
      */
@@ -200,11 +205,11 @@ async function init() {
     /**
      * Renderer
      */
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, canvas: canvas});
     renderer.setClearColor(0xffffff, 0);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(sizes.width, sizes.height);
-    document.body.appendChild(renderer.domElement);
+    //document.body.appendChild(renderer.domElement);
 
     //Track Controls
     trackControls = new TrackballControls(camera, renderer.domElement);
@@ -222,16 +227,17 @@ async function init() {
     //Nav Bar
     document.getElementById("navProgress").style.bottom = progBarBottom + "%";
     document.getElementById("navBar").style.display = "none";
+
     document.getElementById("navProfil").style.bottom = (1 - (targetPoints.profil + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
-    document.getElementById("navProfil").src = profilImage;
+    document.getElementById("navProfilImg").src = navProfilIcon;
     document.getElementById("navArtists").style.bottom = (1 - (targetPoints.topArtist + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
-    document.getElementById("navArtists").src = profilImage;
+    document.getElementById("navArtistsImg").src = navArtistsIcon;
     document.getElementById("navSongs").style.bottom = (1 - (targetPoints.topSong + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
-    document.getElementById("navSongs").src = profilImage;
+    document.getElementById("navSongsImg").src = navSongsIcon;
     document.getElementById("navOnRepeat").style.bottom = (1 - (targetPoints.onRepeat + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
-    document.getElementById("navOnRepeat").src = profilImage;
+    document.getElementById("navOnRepeatImg").src = navRotationIcon;
     document.getElementById("navPlaylist").style.bottom = (1 - (targetPoints.playlist + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
-    document.getElementById("navPlaylist").src = profilImage;
+    document.getElementById("navPlaylistImg").src = navPlaylistIcon;
 
 
     //Erstelle alle Geometrien, wenn Nutzer bereits authentifiziert ist
@@ -254,7 +260,7 @@ async function init() {
         await createAll();
     }else{
        document.getElementById("fensterTutorialImg").src = fensterTutorialImg;
-       document.getElementById("profilImage").src = profilImage;
+       document.getElementById("profilImage").src = profilPlaceholder;
        document.getElementById("loginStatusImage").src = offlineImage;
        document.getElementById("loginStatusLabel").innerText = "offline";
        document.getElementById("spotifyConnectButton").addEventListener("click", loginWithSpotifyClick);
@@ -274,20 +280,20 @@ async function init() {
     // });
     
     //Nav Bar Listener
-    document.getElementById("navPlaylist").addEventListener("click", e => {
-        bringeZumBereich(e.target);
+    document.getElementById("navPlaylist").addEventListener("click", () => {
+        bringeZumBereich(targetPoints.playlist);
     });
-    document.getElementById("navOnRepeat").addEventListener("click", e => {
-        bringeZumBereich(e.target);
+    document.getElementById("navOnRepeat").addEventListener("click", () => {
+        bringeZumBereich(targetPoints.onRepeat);
     });
-    document.getElementById("navSongs").addEventListener("click", e => {
-        bringeZumBereich(e.target);
+    document.getElementById("navSongs").addEventListener("click", () => {
+        bringeZumBereich(targetPoints.topSong);
     });
-    document.getElementById("navArtists").addEventListener("click", e => {
-        bringeZumBereich(e.target);
+    document.getElementById("navArtists").addEventListener("click", () => {
+        bringeZumBereich(targetPoints.topArtist);
     });
-    document.getElementById("navProfil").addEventListener("click", e => {
-        bringeZumBereich(e.target);
+    document.getElementById("navProfil").addEventListener("click", () => {
+        bringeZumBereich(targetPoints.profil);
     });
 
 
@@ -329,7 +335,7 @@ function setProgressBar() {
  * Überprüft die Position der Kamera und ruft entsprechende Funktionen auf, basierend auf der Position.
  */
 function checkCamPosition() {
-    // console.log("CheckCamPosition");
+    //console.log("CheckCamPosition");
     //Aktuelle Kamera Position
     const pos = Math.round(camera.position.z);
 
@@ -366,7 +372,7 @@ function checkCamPosition() {
  * @param {number} tp - Der Ziel-Punkt.
  */
 function handleBereich(pos, tp) {
-    // console.log("Bereich: " + tp);
+    //console.log("Bereich: " + tp);
     //Kamera ist im Eintritts-Damping des Bereichs
     if ((pos <= (tp + bereichOffsetVorne)) && (pos >= (tp + bereichOffsetVorne - bereichDampingVorne))) {
         trackControls.zoomSpeed = zoomSpeedBereich + (pos - ((tp + bereichOffsetVorne) - bereichDampingVorne)) * ((zoomSpeedBereich - zoomSpeedNorm) / (-bereichDampingVorne));
@@ -391,7 +397,7 @@ function handleBereich(pos, tp) {
                     if(tp == targetPoints.topArtist) {
                         handleTopArtistBereich();
                     } else {
-                        console.log("TWEEN abgeschlossen");
+                        //console.log("TWEEN abgeschlossen");
                         TrackballControls.noZoom = false;
                     }
                 })
@@ -405,7 +411,7 @@ function handleBereich(pos, tp) {
     }
     //Kamera ist im Austritts-Damping
     if ((pos >= (tp - bereichOffsetHinten)) && (pos <= (tp - bereichOffsetHinten + bereichDampingHinten))) {
-        console.log("Austritts-Damping");
+        //console.log("Austritts-Damping");
         trackControls.zoomSpeed = zoomSpeedBereich - (pos - ((tp - bereichOffsetHinten) + bereichDampingHinten)) * ((zoomSpeedBereich - zoomSpeedNorm) / (-bereichDampingHinten));
     }
 }
@@ -549,21 +555,8 @@ async function handleTopArtistBereich() {
 }
 
 
-function bringeZumBereich(origin) {
-    let target;
-    if(origin.id == "navPlaylist") {
-        target = targetPoints.playlist;
-    } else if (origin.id == "navOnRepeat") {
-        target = targetPoints.onRepeat;
-    } else if (origin.id == "navSongs") {
-        target = targetPoints.topSong;
-    } else if (origin.id == "navArtists") {
-        target = targetPoints.topArtist;
-    } else if (origin.id == "navProfil") {
-        target = targetPoints.profil;
-    }
-    target += cameraTargetDistance;
-
+function bringeZumBereich(tp) {
+    let target = tp + cameraTargetDistance;
     freeMovement = false;
     trackControls.noZoom = true;
 
@@ -576,6 +569,9 @@ function bringeZumBereich(origin) {
     .onComplete(() => {
         trackControls.noZoom = false;
         freeMovement = true;
+        if(tp == targetPoints.topArtist) {
+            handleTopArtistBereich();
+        }
     })
     .start();
 }
@@ -608,7 +604,7 @@ const tick = () => {
             //console.log("Es bewegt sich. " + Math.round(camera.position.z));
         }
     }
-    // console.log(lastCamPosition);
+    //console.log(lastCamPosition);
         
         if(lastCamPosition <= targetPoints.onRepeat){
             if(document.getElementById("createPlaylist-btn") == null){

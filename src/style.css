@@ -57,6 +57,13 @@ body {
   animation: WindowsBlurr 30s ease infinite;
 }
 
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -10;
+}
+
 .progress-bar-container {
   position: absolute;
   left: 50%;
@@ -182,7 +189,7 @@ button:hover {
 
 h1 {
   font-size: 20px;
-  color: #ffffff;
+  color: #000000;
   margin-left: 10px;
   margin-top: 2px;
 }
@@ -255,28 +262,47 @@ h1 {
 
 .navBarElement {
   position: absolute;
+  max-width: 25rem;
+  z-index: 1;
+  right: 2rem;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 1rem;
   -ms-transform: translate(0%, 50%);
   transform: translate(0%, 50%);
-  object-fit: cover;
-  max-width: 25px;
-  max-height: 25px;
-  right: 150%;
   color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: right;
   cursor: pointer;
   transition: .2s ease;
 }
 
-.navBarElement:hover {
-  max-width: 30px;
-  max-height: 30px;
+.navBarElement:hover .navBarElementLable {
+  visibility: visible;
+  width: 7rem;
+  opacity: 100%;
+  right: 3rem;
+  font-size: inherit;
+}
+
+
+.navBarElementImg {
+  /* position: absolute; */
+  object-fit: cover;
+  width: 25px;
+  height: 25px;
+  /* right: 150%; */
 }
 
 .navBarElementLable {
   position: absolute;
-  left: 20px;
+  right: 0rem;
+  z-index: -3;
+  width: 0rem;
+  font-size: 0.01rem;
+  text-align: right;
+  visibility: hidden;
+  opacity: 0%;
+  transition: .2s ease;
 }
 
 #fensterInhaltWrap {
@@ -346,12 +372,12 @@ h1 {
 }
 
 #navBar {
-    display: none;
-    position: absolute;
-    top: 50%;
-    right: 1rem;
+    position: fixed;
     display: flex;
     flex-direction: column;
+    /* align-items: center; */
+    top: 50%;
+    right: 1.5rem;
     height: 60vh;
     width: 1.2rem;
     -ms-transform: translate(-50%, -50%);
@@ -361,7 +387,7 @@ h1 {
 
 #navProgress {
   position: absolute;
-  z-index: -1;
+  z-index: 1;
   left: 20%;
   height: 0%;
   width: 60%;
