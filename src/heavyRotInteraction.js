@@ -73,7 +73,7 @@ async function animateAndDisplayText(obj) {
         console.log(songName, songArtists);
         scaleObject(obj, 1.6); // Vergrößern des Objekts beim Hover
 
-        moveObject(obj, 300);
+        moveObject(obj, 200);
     }
 }
 
@@ -132,12 +132,12 @@ function moveObject(obj, duration) {
     // Normalisiert den Richtungsvektor, um die Bewegung in die Richtung der Mausposition zu ermöglichen
     directionVector.normalize();
     // Definiert die Entfernung, die das Objekt bewegt werden soll
-    const moveDistance = 5;
+    const moveDistance = 25;
     // Berechnet die Zielposition basierend auf dem Richtungsvektor und der Bewegungsdistanz
     const targetPosition = {
         x: obj.position.x,// + directionVector.x * moveDistance,
         y: obj.position.y,// + directionVector.y * moveDistance,
-        z: obj.position.z + 30 //directionVector.z * moveDistance
+        z: obj.position.z + moveDistance //directionVector.z * moveDistance
     };
     const tween = new TWEEN.Tween(obj.position)
         .to(targetPosition, duration)
@@ -193,7 +193,7 @@ function resetObject(obj) {
         scaleObject(obj, 1.0); // Zurücksetzen auf die ursprüngliche Skalierung
 
         removeTextMeshes(obj);
-        moveObject(obj, 300);
+        moveObject(obj, 100);
     }
 }
 

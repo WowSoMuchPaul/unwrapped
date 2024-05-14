@@ -957,9 +957,9 @@ async function createHeavyRotation() {
         // Berechnet z-Position basierend auf der Position des Elements
         let z = - 5;
         if (e % 3 === 1) {
-            z = 20; // Zweites Element, 20 Einheiten nach vorne
+            z = 10; // Zweites Element, 20 Einheiten nach vorne
         } else if (e % 3 === 2) {
-            z = 10; // Drittes Element, 10 Einheiten nach vorne
+            z = 5; // Drittes Element, 10 Einheiten nach vorne
         }
         let bildMesh = await createBildMesh(heavyRotation[e].image, x, y, z, -2, 60);
         heavyRotation[e].mesh = bildMesh;
