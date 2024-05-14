@@ -215,7 +215,10 @@ async function callApi(method, url, body) {
         //Bei erfolgreichem call die erfragten Daten returnen
         return response.json();
     }else if (status == 401 ){
-        await refreshToken();
+        console.log("Token expired, please refresh token");
+        logoutClick();
+        return response;
+        //await refreshToken();
         //callApi(method, url, body);
     }else if (status == 202){
         //Erfolgreicher Request, Cover wurde gesetzt

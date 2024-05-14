@@ -712,6 +712,16 @@ async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
             (texture) => {
                 const geometry = new THREE.PlaneGeometry(bildGroesse, bildGroesse);
                 const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+
+                const aspect = bildGroesse / bildGroesse;
+                var imageAspect = texture.image.width / texture.image.height;
+                texture.matrixAutoUpdate = false;
+                if ( aspect < imageAspect ) {
+                    texture.matrix.setUvTransform( 0, 0, aspect / imageAspect, 1, 0, 0.5, 0.5 );
+                } else if (aspect > imageAspect) {
+                    texture.matrix.setUvTransform( 0, 0, 1, imageAspect / aspect, 0, 0.5, 0.5 );
+                }
+
                 let bildMesh = new THREE.Mesh(geometry, material);
                 bildMesh.position.set(x, y, z);
                 bildMesh.rotateY(rotationY * (Math.PI / 180));
