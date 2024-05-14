@@ -14,10 +14,15 @@ import { PMREMGenerator } from 'three';
 
 import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
 import fensterTutorialImg from '../static/images/vapor.png';
-import profilImage from '../static/images/profil_icon.png';
+import profilPlaceholder from '../static/images/profil_placeholder.png';
 import offlineImage from '../static/images/offline.png';
 import onlineImage from '../static/images/online.png';
 import help from '../static/images/help.png';
+import navProfilIcon from '../static/images/nav_profil_icon.png';
+import navArtistsIcon from '../static/images/nav_artists_icon.png';
+import navSongsIcon from '../static/images/nav_songs_icon.png';
+import navRotationIcon from '../static/images/nav_rotation_icon.png';
+import navPlaylistIcon from '../static/images/nav_playlist_icon.png';
 import { log } from 'three/examples/jsm/nodes/Nodes.js';
 
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, topArtistCountText;
@@ -229,15 +234,15 @@ async function init() {
     document.getElementById("navBar").style.display = "none";
 
     document.getElementById("navProfil").style.bottom = (1 - (targetPoints.profil + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
-    document.getElementById("navProfilImg").src = profilImage;
+    document.getElementById("navProfilImg").src = navProfilIcon;
     document.getElementById("navArtists").style.bottom = (1 - (targetPoints.topArtist + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
-    document.getElementById("navArtistsImg").src = profilImage;
+    document.getElementById("navArtistsImg").src = navArtistsIcon;
     document.getElementById("navSongs").style.bottom = (1 - (targetPoints.topSong + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
-    document.getElementById("navSongsImg").src = profilImage;
+    document.getElementById("navSongsImg").src = navSongsIcon;
     document.getElementById("navOnRepeat").style.bottom = (1 - (targetPoints.onRepeat + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
-    document.getElementById("navOnRepeatImg").src = profilImage;
+    document.getElementById("navOnRepeatImg").src = navRotationIcon;
     document.getElementById("navPlaylist").style.bottom = (1 - (targetPoints.playlist + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
-    document.getElementById("navPlaylistImg").src = profilImage;
+    document.getElementById("navPlaylistImg").src = navPlaylistIcon;
 
 
     //Erstelle alle Geometrien, wenn Nutzer bereits authentifiziert ist
@@ -260,7 +265,7 @@ async function init() {
         await createAll();
     }else{
        document.getElementById("fensterTutorialImg").src = fensterTutorialImg;
-       document.getElementById("profilImage").src = profilImage;
+       document.getElementById("profilImage").src = profilPlaceholder;
        document.getElementById("loginStatusImage").src = offlineImage;
        document.getElementById("loginStatusLabel").innerText = "offline";
        document.getElementById("spotifyConnectButton").addEventListener("click", loginWithSpotifyClick);
@@ -280,20 +285,20 @@ async function init() {
     // });
     
     //Nav Bar Listener
-    document.getElementById("navPlaylist").addEventListener("click", e => {
-        bringeZumBereich(e.target);
+    document.getElementById("navPlaylist").addEventListener("click", () => {
+        bringeZumBereich(targetPoints.playlist);
     });
-    document.getElementById("navOnRepeat").addEventListener("click", e => {
-        bringeZumBereich(e.target);
+    document.getElementById("navOnRepeat").addEventListener("click", () => {
+        bringeZumBereich(targetPoints.onRepeat);
     });
-    document.getElementById("navSongs").addEventListener("click", e => {
-        bringeZumBereich(e.target);
+    document.getElementById("navSongs").addEventListener("click", () => {
+        bringeZumBereich(targetPoints.topSong);
     });
-    document.getElementById("navArtists").addEventListener("click", e => {
-        bringeZumBereich(e.target);
+    document.getElementById("navArtists").addEventListener("click", () => {
+        bringeZumBereich(targetPoints.topArtist);
     });
-    document.getElementById("navProfil").addEventListener("click", e => {
-        bringeZumBereich(e.target);
+    document.getElementById("navProfil").addEventListener("click", () => {
+        bringeZumBereich(targetPoints.profil);
     });
 
 
@@ -466,7 +471,7 @@ async function handleTopArtistBereich() {
      */
     async function rotateCube(event) {
         if (isAnimating || event.deltaY === 0) return;
-        if(initialTween){
+        if(initialTween.isPlaying()){
             initialTween.stop();
             // topArtistsCube.rotation.set(0, Math.PI + (Math.PI / 2), 0);
         }
@@ -551,21 +556,8 @@ async function handleTopArtistBereich() {
 }
 
 
-function bringeZumBereich(origin) {
-    let target;
-    if(origin.id == "navPlaylist") {
-        target = targetPoints.playlist;
-    } else if (origin.id == "navOnRepeat") {
-        target = targetPoints.onRepeat;
-    } else if (origin.id == "navSongs") {
-        target = targetPoints.topSong;
-    } else if (origin.id == "navArtists") {
-        target = targetPoints.topArtist;
-    } else if (origin.id == "navProfil") {
-        target = targetPoints.profil;
-    }
-    target += cameraTargetDistance;
-
+function bringeZumBereich(tp) {
+    let target = tp + cameraTargetDistance;
     freeMovement = false;
     trackControls.noZoom = true;
 
@@ -578,6 +570,9 @@ function bringeZumBereich(origin) {
     .onComplete(() => {
         trackControls.noZoom = false;
         freeMovement = true;
+        if(tp == targetPoints.topArtist) {
+            handleTopArtistBereich();
+        }
     })
     .start();
 }

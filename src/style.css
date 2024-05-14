@@ -189,7 +189,7 @@ button:hover {
 
 h1 {
   font-size: 20px;
-  color: #ffffff;
+  color: #000000;
   margin-left: 10px;
   margin-top: 2px;
 }
@@ -262,10 +262,13 @@ h1 {
 
 .navBarElement {
   position: absolute;
+  max-width: 25rem;
   z-index: 1;
   right: 2rem;
   display: flex;
+  flex-direction: row-reverse;
   align-items: center;
+  gap: 1rem;
   -ms-transform: translate(0%, 50%);
   transform: translate(0%, 50%);
   color: #ffffff;
@@ -273,22 +276,33 @@ h1 {
   transition: .2s ease;
 }
 
-.navBarElement:hover {
-  max-width: 30px;
-  max-height: 30px;
+.navBarElement:hover .navBarElementLable {
+  visibility: visible;
+  width: 7rem;
+  opacity: 100%;
+  right: 3rem;
+  font-size: inherit;
 }
+
 
 .navBarElementImg {
   /* position: absolute; */
   object-fit: cover;
-  max-width: 25px;
-  max-height: 25px;
+  width: 25px;
+  height: 25px;
   /* right: 150%; */
 }
 
 .navBarElementLable {
   position: absolute;
-  left: 20px;
+  right: 0rem;
+  z-index: -3;
+  width: 0rem;
+  font-size: 0.01rem;
+  text-align: right;
+  visibility: hidden;
+  opacity: 0%;
+  transition: .2s ease;
 }
 
 #fensterInhaltWrap {
