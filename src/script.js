@@ -1147,7 +1147,7 @@ function clearAndRemoveObject(obj) {
     obj.parent?.remove(obj);
 }
 
-
+// ---------------------------- Interaktionen aus der alten heavyRotInteraction ----------------------------
 
 const textMeshMap = new Map(); 
 
