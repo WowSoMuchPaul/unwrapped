@@ -1,6 +1,6 @@
 import { THREE, TWEEN } from './imports.js';
 
-import { updateRaycasterInteraction } from './heavyRotInteraction.js';
+// import { updateRaycasterInteraction } from './heavyRotInteraction.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
@@ -8,7 +8,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'stats.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DirectionalLight } from 'three';
-import { AmbientLight } from 'three';
+import { AmbientLight } from 'three'; 
 import { HemisphereLight } from 'three';
 import { PMREMGenerator } from 'three';
 
@@ -23,13 +23,13 @@ import navArtistsIcon from '../static/images/nav_artists_icon.png';
 import navSongsIcon from '../static/images/nav_songs_icon.png';
 import navRotationIcon from '../static/images/nav_rotation_icon.png';
 import navPlaylistIcon from '../static/images/nav_playlist_icon.png';
-import { log } from 'three/examples/jsm/nodes/Nodes.js';
+import { log } from 'three/examples/jsm/nodes/Nodes.js'; 
 
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, topArtistCountText;
-export {camera, heavyRotCircleGroup as heavyRotGroup, inhaltGroup, scene};
+// export {camera, heavyRotCircleGroup as heavyRotCircleGroup, inhaltGroup, scene};
 export const targetPoints = {};
 let inEinemBereich = false;
-let tweenAktiviert = false;
+let tweenAktiviert = false; 
 let freeMovement = true;
 let timeRange = "long_term";
 let topArtistsRotationIndex;
@@ -61,7 +61,7 @@ const textDepth = 0;
 
 
 // stats.showPanel(0);
-//document.body.appendChild(stats.dom);
+//document.body.appendChild(stats.dom); 
 
 /** Raycaster */
 export const raycaster = new THREE.Raycaster();
@@ -73,29 +73,24 @@ window.addEventListener('mousemove', (event) => {
 }, false);
 
 /**
- * Berechnet die Position der Maus im 3D-Raum relativ zur aktuellen Kameraposition und der Mausposition auf dem Bildschirm.
+ * Berechnet die Position der Maus im 3D-Raum auf der z=0 Ebene.
  * @param {THREE.Vector2} mouse - Der Mausvektor, normalisiert (-1 bis 1 in beiden Achsen).
- * @param {THREE.Camera} camera - Die verwendete Kamera in der Szene.
- * @returns {THREE.Vector3} Die berechnete Position der Maus im 3D-Raum.
+ * @param {THREE.PerspectiveCamera} camera - Die verwendete Kamera in der Szene.
+ * @returns {THREE.Vector3} Die berechnete Position der Maus auf der z=0 Ebene.
  */
 export function getMouse3DPosition(mouse, camera) {
-    // Erstelle einen neuen 3D-Vektor, der den normalisierten Mausvektor aufnimmt
-    const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5); // z=0.5 stellt sicher, dass der Vektor in den Raum vor der Kamera projiziert wird.
+    // Projiziert den normalisierten Gerätekoordinatenvektor (mouse.x, mouse.y) auf die z=0 Ebene
+    const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
 
-    // Die Funktion unproject transformiert den normalisierten Gerätekoordinatenvektor in Weltkoordinaten
-    vector.unproject(camera); 
-
-    // Berechne die Richtung vom Kamerastandpunkt zum Mausvektor
-    const dir = vector.sub(camera.position).normalize(); 
-
-    // Berechne die Distanz zur z=0 Ebene, basierend auf der Annahme, dass die Kamera in Richtung der negativen z-Achse sieht
-    const distance = -camera.position.z / dir.z; 
-
-    // Berechne die genaue Position im 3D-Raum, indem die berechnete Distanz entlang der Richtungsvektor von der aktuellen Kameraposition aus angewendet wird
-    const pos = camera.position.clone().add(dir.multiplyScalar(distance));
-
-    return pos; // Gibt die berechnete 3D-Position der Maus zurück
+    // Finde den Schnittpunkt des Strahls mit der z=0 Ebene
+    const intersects = new THREE.Vector3();
+    raycaster.ray.intersectPlane(planeZ, intersects);
+    // console.log("Maus aus 3D: ", intersects);
+    return intersects; // Gibt die berechnete 3D-Position der Maus zurück
 }
+
 
 /**cursor */
 const cursor = {};
@@ -154,7 +149,7 @@ async function init() {
     /**
      * Camera
      */
-    camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 700 );
+    camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 10, 550 );
     camera.position.z = gesamtTiefe;
     scene.add(camera);
     lastCamPosition = camera.position.z;
@@ -480,9 +475,12 @@ async function handleTopArtistBereich() {
         if (isAnimating || event.deltaY === 0) return;
         if(initialTween.isPlaying()){
             initialTween.stop();
-            // topArtistsCube.rotation.set(0, Math.PI + (Math.PI / 2), 0);
+            // Würfel auf ausgangspoition zurücksetzen
+            let resetTween = new TWEEN.Tween(topArtistsCube.rotation)
+            .to({ x: 0, y: Math.PI + (Math.PI / 2), z: 0 }, 300)
+            .easing(TWEEN.Easing.Cubic.InOut)
+            .start();
         }
-        // console.log(initialTween);
         isAnimating = true;
         topArtistsRotationIndex = (topArtistsRotationIndex + 1) % rotationSequence.length; // Immer zum nächsten Schritt
         if(topArtistsRotationIndex == 0) {
@@ -493,8 +491,9 @@ async function handleTopArtistBereich() {
         }
         let steps = rotationSequence[topArtistsRotationIndex];
         let tween;
-        // Führe jede Rotation aus dem Schritt in der Sequenz aus
+        // Führt jede Rotation aus dem Schritt in der Sequenz aus
         steps.forEach(async (step, index) => {
+            console.log("Schritt: ", step.axis, step.angle);
             let rotation = {};
             rotation[step.axis] = topArtistsCube.rotation[step.axis] + step.angle;
             tween = new TWEEN.Tween(topArtistsCube.rotation)
@@ -505,7 +504,7 @@ async function handleTopArtistBereich() {
                 tween.onComplete(() => {
                     setTimeout(() => {
                         isAnimating = false;
-                    }, 800); // Wartezeit zur nächsten Animation
+                    }, 800);
                 });
             }
             tween.start();
@@ -546,14 +545,14 @@ async function handleTopArtistBereich() {
     function initialAnimation() {
             initialTween
             .to({ x: topArtistsCube.rotation.x - Math.PI / 10 }, 600)
-            .easing(TWEEN.Easing.Quadratic.InOut)
+            .easing(TWEEN.Easing.Cubic.InOut)
             .yoyo(true) // Rückkehr zur Ausgangsposition
             .repeat(2) // Wiederhole die Bewegung einmal
             .onComplete(() => {
                 if (!isAnimating) { // Wenn keine andere Animation aktiv ist, führe Rückbewegung aus
                     new TWEEN.Tween(topArtistsCube.rotation)
                         .to({ x: topArtistsCube.rotation.x + Math.PI / 10 }, 600)
-                        .easing(TWEEN.Easing.Quadratic.InOut)
+                        .easing(TWEEN.Easing.Cubic.InOut)
                         .start();
                 }
             });
@@ -617,7 +616,8 @@ const tick = () => {
     iconAnimationPl();
    
 
-    lastIntersected = updateRaycasterInteraction(raycaster, mouse, camera, heavyRotCircleGroup, lastIntersected);
+    lastIntersected = updateRaycasterInteraction();
+    // lastIntersected = updateRaycasterInteraction(raycaster, mouse, camera, heavyRotCircleGroup, lastIntersected);
     
     // aktualiseren der TrackballControls und der TWEEN-Animationen
     trackControls.update();
@@ -774,7 +774,7 @@ function createRingMesh(x,y,z,rotationY,rotationX, farbe, inRad, outRad ){
 }
 
 function createQuaderMesh(x,y,z,rotationX, rotationY, size, color){
-   // Square frame geometry
+   // Square frame geometry 
    const frameGeometry = new THREE.BufferGeometry();
     let outSqu = size;
     let inSqu = outSqu-(outSqu/10);
@@ -922,7 +922,7 @@ async function createHeavyRotation() {
     let contentHeavyRotation = [];
     heavyRotCircleGroup = new THREE.Group();
     heavyRotCircleGroup.name = "Heavy Rotation Circle";
-    heavyRotCircleGroup.position.set(110, 0, targetPoints.onRepeat - 60);
+    heavyRotCircleGroup.position.set(110, 0, targetPoints.onRepeat - 300);
 
     const baseRadius = 150;
     const radialOffset = 30; // Zusätzliche Radialverschiebung für jedes zweite Element
@@ -936,9 +936,9 @@ async function createHeavyRotation() {
         // Berechnet z-Position basierend auf der Position des Elements
         let z = - 5;
         if (e % 3 === 1) {
-            z = 20; // Zweites Element, 20 Einheiten nach vorne
+            z = 10; // Zweites Element, 20 Einheiten nach vorne
         } else if (e % 3 === 2) {
-            z = 10; // Drittes Element, 10 Einheiten nach vorne
+            z = 5; // Drittes Element, 10 Einheiten nach vorne
         }
         let bildMesh = await createBildMesh(heavyRotation[e].image, x, y, z, -2, 60);
         heavyRotation[e].mesh = bildMesh;
@@ -949,8 +949,8 @@ async function createHeavyRotation() {
         bildMesh.userData.originalZ = z;
         heavyRotCircleGroup.add(bildMesh);
     }
-    contentHeavyRotation.push(await createTextMesh("Your Heavy \nRotation", headlineSize, -350, 100, targetPoints.onRepeat - 20, 30, 0, 0x000000,1,'Jersey 15_Regular'));
-    contentHeavyRotation.push(await createTextMesh("Hover to see more", textBigSize, -350, 0, targetPoints.onRepeat - 20, 30,0, 0x000000,1,'Jersey 15_Regular'));
+    contentHeavyRotation.push(await createTextMesh("Your Heavy \nRotation", headlineSize, -350, 150, targetPoints.onRepeat - 250, 10, 30, 0x000000, 1, 'Jersey 15_Regular'));
+    contentHeavyRotation.push(await createTextMesh("Hover to see more", textBigSize, -350, 50, targetPoints.onRepeat - 250, 10, 30, 0x000000, 1, 'Jersey 15_Regular'));
     contentHeavyRotation.push(heavyRotCircleGroup);
 
     return contentHeavyRotation;
@@ -985,19 +985,19 @@ async function createTopSongs() {
     let contentTopSongs = [];
     
     //console.log(songs);
-    contentTopSongs.push(await createTextMesh("Your Top Songs", headlineSize, -150, -100, targetPoints.topSong ,0, 0, 0x000000,1,'Jersey 15_Regular'));
+    contentTopSongs.push(await createTextMesh("Your Top Songs", headlineSize, -150, -100, targetPoints.topSong - 85 ,0, 0, 0x000000,1,'Jersey 15_Regular'));
     
-    contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 10, targetPoints.topSong-100, 0, 70));
-    contentTopSongs.push(await createTextMesh("1: " + songs[0].name, textSize, -35, 50, targetPoints.topSong-100,0,0,0x000000, 1,'W95FA_Regular.typeface'));
-    contentTopSongs.push(await createGLTFMesh(0, -90, targetPoints.topSong-100, 0, 0, 0, 50.0, 'pedestal'));
+    contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 10, targetPoints.topSong - 200, 0, 70));
+    contentTopSongs.push(await createTextMesh("1: " + songs[0].name, textSize, -35, 50, targetPoints.topSong - 200,0,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentTopSongs.push(await createGLTFMesh(0, -90, targetPoints.topSong - 200, 0, 0, 0, 50.0, 'pedestal'));
 
-    contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -120, -5, targetPoints.topSong-55,20, 70));
-    contentTopSongs.push(await createTextMesh("2: " + songs[1].name, textSize, -155, 35, targetPoints.topSong-45,0,20,0x000000, 1,'W95FA_Regular.typeface'));
-    contentTopSongs.push(await createGLTFMesh(-120, -110, targetPoints.topSong-55, 0,20, 0, 50, 'pedestal'));
+    contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -120, -5, targetPoints.topSong - 155, 20, 70));
+    contentTopSongs.push(await createTextMesh("2: " + songs[1].name, textSize, -155, 35, targetPoints.topSong - 145 ,0,20,0x000000, 1,'W95FA_Regular.typeface'));
+    contentTopSongs.push(await createGLTFMesh(-120, -110, targetPoints.topSong - 155, 0,20, 0, 50, 'pedestal'));
 
-    contentTopSongs.push(await createBildMesh(songs[2].imageUrl, 110, -15, targetPoints.topSong-35, -20, 70));
-    contentTopSongs.push(await createTextMesh("3: " + songs[2].name, textSize, 75,25, targetPoints.topSong-35,0,-20,0x000000, 1,'W95FA_Regular.typeface'));
-    contentTopSongs.push(await createGLTFMesh(110, -120, targetPoints.topSong-35, 0, -20, 0, 50 , 'pedestal'));
+    contentTopSongs.push(await createBildMesh(songs[2].imageUrl, 110, -15, targetPoints.topSong - 135, -20, 70));
+    contentTopSongs.push(await createTextMesh("3: " + songs[2].name, textSize, 75,25, targetPoints.topSong - 135, 0,-20,0x000000, 1,'W95FA_Regular.typeface'));
+    contentTopSongs.push(await createGLTFMesh(110, -120, targetPoints.topSong - 135, 0, -20, 0, 50 , 'pedestal'));
     
     return contentTopSongs;
 }
@@ -1127,6 +1127,223 @@ function clearAndRemoveObject(obj) {
         clearAndRemoveObject(obj.children[obj.children.length - 1]);
     }
     obj.parent?.remove(obj);
+}
+
+// ---------------------------- Interaktionen aus der alten heavyRotInteraction ----------------------------
+
+const textMeshMap = new Map(); 
+
+function updateRaycasterInteraction() {
+    if (!isCameraInBounds(camera)) return lastIntersected;
+    
+    raycaster.setFromCamera(mouse, camera);
+    let intersects = raycaster.intersectObjects(heavyRotCircleGroup.children);
+    return processIntersects(intersects, lastIntersected);
+}
+
+function isCameraInBounds() {
+    let minCameraZ = 1000;
+    let maxCameraZ = 1500;
+    return camera.position.z >= minCameraZ && camera.position.z <= maxCameraZ;
+}
+
+function isMouseNearCenter(intersect, threshold = 1.5) {
+    const object = intersect.object;
+    const bounds = new THREE.Box3().setFromObject(object); // Bounding Box des Objekts
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    const distance = intersect.point.distanceTo(center);
+    const maxDistance = Math.min(size.x, size.y) * threshold / 2;
+
+    return distance <= maxDistance; // Prüft, ob die Distanz innerhalb des gewünschten Bereichs ist
+}
+
+let lastHovered = null;
+
+/**
+ * Verarbeitet die Intersects und aktualisiert den letzten intersected  Zustand.
+ * 
+ * @param {Array} intersects - Ein Array von Schnittpunkten.
+ * @param {Object} lastIntersected - Das zuletzt überlappende Objekt.
+ * @returns {Object} - Das aktualisierte letzte überlappende Objekt.
+ */
+function processIntersects(intersects, lastIntersected) {
+    if (intersects.length > 0) {
+        const intersected = intersects[0].object;
+        // Prüft, ob das Objekt gehovert wird und ob es nicht durch bestimmte Bedingungen blockiert ist
+        if (isMouseNearCenter(intersects[0]) && lastIntersected !== intersected && intersected !== lastHovered && !intersected.userData.interactionBlocked && !intersected.userData.isAnimating) {
+            resetObject(lastIntersected);
+            animateAndDisplayText(intersected);
+            lastIntersected = intersected;
+            lastHovered = intersected; // Setzt lastHovered auf das aktuelle BildMesh
+        }
+    } else {
+        resetObject(lastIntersected);
+        lastIntersected = null;
+        lastHovered = null; // Setzt lastHovered auf null, wenn kein BildMesh gehovert wird
+    }
+    return lastIntersected;
+}
+
+/**
+ * Animiert ein Objekt und zeigt den Text für ein Objekt an.
+ * 
+ * @param {Object} obj - Das Objekt, für das der Text animiert und angezeigt werden soll.
+ * @returns {Promise<void>} Ein Promise, das nach Abschluss der Animation aufgelöst wird.
+ */
+async function animateAndDisplayText(obj) {
+    if (!obj.userData.isHovered && !obj.userData.animationActive) {
+        obj.userData.isHovered = true;
+        obj.userData.animationActive = true;
+
+        let songName = await displaySongName(obj);
+        centerTextMesh(songName);
+        let songArtists = await displaySongArtist(obj);
+        centerTextMesh(songArtists, -15);
+        console.log(songName, songArtists);
+        scaleObject(obj, 1.6); // Vergrößern des Objekts beim Hover
+
+        moveObject(obj, 200);
+    }
+}
+
+async function displaySongName(obj) {
+    let songNameTextMesh = await createTextMesh(obj.userData.name, 10, 0, 0, 0,0,0,0x000000, 1,'W95FA_Regular.typeface');
+    storeAndReturnMesh(obj, songNameTextMesh);
+    inhaltGroup.add(songNameTextMesh);
+    return songNameTextMesh;
+}
+
+async function displaySongArtist(obj) {
+    const artistsArray = obj.userData.artists.map(artist => artist.name).join(", ");
+    let songArtistTextMesh = await createTextMesh(artistsArray, 8, 0, -15,0,0,0,0x000000, 1,'W95FA_Regular.typeface');
+    storeAndReturnMesh(obj, songArtistTextMesh);
+    inhaltGroup.add(songArtistTextMesh);
+    return songArtistTextMesh;
+}
+
+function centerTextMesh(textMesh, yOffset = 0) {
+    textMesh.geometry.computeBoundingBox();
+    let size = new THREE.Vector3();
+    textMesh.geometry.boundingBox.getSize(size);
+    textMesh.position.set(
+        heavyRotCircleGroup.position.x - size.x / 2,
+        heavyRotCircleGroup.position.y - size.y / 2 + yOffset,
+        heavyRotCircleGroup.position.z
+    );
+}
+
+function storeAndReturnMesh(obj, mesh) {
+    if (!textMeshMap.has(obj)) {
+        textMeshMap.set(obj, []);
+    }
+    textMeshMap.get(obj).push(mesh);
+}
+
+/**
+ * Bewegt ein Objekt zu einer Zielposition.
+ * 
+ * @param {Object3D} obj - Das zu bewegende Objekt.
+ * @param {number} duration - Die Dauer der Animation in Millisekunden.
+ */
+function moveObject(obj, duration) {
+    if (obj.userData.animation) {
+        obj.userData.animation.stop();
+    }
+    obj.userData.isAnimating = true;
+    // Holen der 3D-Mausposition
+    const mouse3DPosition = getMouse3DPosition(mouse, camera);
+    // Berechnung des Richtungsvektors von der aktuellen Position des Objekts zur Mausposition
+    const directionVector = new THREE.Vector3(
+        mouse3DPosition.x - obj.position.x,
+        mouse3DPosition.y - obj.position.y,
+        mouse3DPosition.z - obj.position.z
+    );
+    // Normalisiert den Richtungsvektor, um die Bewegung in die Richtung der Mausposition zu ermöglichen
+    directionVector.normalize();
+    // Definiert die Entfernung, die das Objekt bewegt werden soll
+    const moveDistance = 25;
+    // Berechnet die Zielposition basierend auf dem Richtungsvektor und der Bewegungsdistanz
+    const targetPosition = {
+        x: obj.position.x,// + directionVector.x * moveDistance,
+        y: obj.position.y,// + directionVector.y * moveDistance,
+        z: obj.position.z + moveDistance //directionVector.z * moveDistance
+    };
+    const tween = new TWEEN.Tween(obj.position)
+        .to(targetPosition, duration)
+        .easing(TWEEN.Easing.Exponential.Out)
+        .onUpdate(() => {
+            if (!obj.userData.isHovered) {
+                tween.stop();
+                obj.userData.animationActive = false;
+                obj.userData.animation = null;
+                removeTextMeshes(obj);
+                resetObjectToOrigin(obj);
+            }
+        })
+        .onComplete(() => {
+            obj.userData.isAnimating = false;
+            if (obj.userData.isHovered) {
+                obj.userData.animationActive = false;
+                obj.userData.animation = null;
+            }
+        })
+        .start();
+    obj.userData.animation = tween;
+}
+
+function resetObjectToOrigin(obj, duration) {
+    obj.userData.isAnimating = true;
+
+    const resetTween = new TWEEN.Tween(obj.position)
+        .to({ 
+            x : obj.userData.originalX,
+            y : obj.userData.originalY,
+            z: obj.userData.originalZ }, duration)
+        .easing(TWEEN.Easing.Exponential.Out)
+        .onComplete(() => {
+            obj.userData.isAnimating = false;
+        })
+        .start();
+        scaleObject(obj, 1.0); // Zurücksetzen auf die ursprüngliche Skalierung
+
+}
+
+function resetObject(obj) {
+    if(obj === undefined) return;
+    if (obj && obj.userData.isHovered) {
+        obj.userData.isHovered = false;
+        
+        if (obj.userData.animation) {
+            obj.userData.animation.stop();
+        }
+
+        obj.userData.animationActive = true;
+
+        scaleObject(obj, 1.0); // Zurücksetzen auf die ursprüngliche Skalierung
+
+        removeTextMeshes(obj);
+        moveObject(obj, 100);
+    }
+}
+
+function scaleObject(obj, scale) {
+    if (obj.userData.originalScale === undefined) {
+        obj.userData.originalScale = obj.scale.clone(); // Speichert die ursprüngliche Skalierung des Objekts
+    }
+    obj.scale.set(obj.userData.originalScale.x * scale, obj.userData.originalScale.y * scale, obj.userData.originalScale.z * scale);
+}
+
+function removeTextMeshes(obj) {
+    const textMeshes = textMeshMap.get(obj);
+    if (textMeshes) {
+        textMeshes.forEach(textMesh => {
+            inhaltGroup.remove(textMesh);
+            textMesh.geometry?.dispose();
+            textMesh.material?.dispose();
+        });
+        textMeshMap.delete(obj);
+    }
 }
 
 tick();

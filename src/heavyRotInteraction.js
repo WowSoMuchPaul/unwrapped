@@ -1,5 +1,5 @@
 import { THREE, TWEEN } from './imports.js';
-import { createTextMesh, heavyRotGroup, inhaltGroup, camera, mouse, getMouse3DPosition } from './script.js';
+import { createTextMesh, heavyRotGroup, inhaltGroup, camera, mouse, getMouse3DPosition} from './script.js';
 
 const textMeshMap = new Map();
 
@@ -17,7 +17,7 @@ function isCameraInBounds(camera) {
     return camera.position.z >= minCameraZ && camera.position.z <= maxCameraZ;
 }
 
-function isMouseNearCenter(intersect, threshold = 1.2) {
+function isMouseNearCenter(intersect, threshold = 1.5) {
     const object = intersect.object;
     const bounds = new THREE.Box3().setFromObject(object); // Bounding Box des Objekts
     const size = bounds.getSize(new THREE.Vector3());
@@ -27,7 +27,6 @@ function isMouseNearCenter(intersect, threshold = 1.2) {
 
     return distance <= maxDistance; // Prüft, ob die Distanz innerhalb des gewünschten Bereichs ist
 }
-
 
 let lastHovered = null;
 
@@ -56,7 +55,6 @@ function processIntersects(intersects, lastIntersected) {
     return lastIntersected;
 }
 
-
 /**
  * Animiert ein Objekt und zeigt den Text für ein Objekt an.
  * 
@@ -75,7 +73,7 @@ async function animateAndDisplayText(obj) {
         console.log(songName, songArtists);
         scaleObject(obj, 1.6); // Vergrößern des Objekts beim Hover
 
-        moveObject(obj, 300);
+        moveObject(obj, 200);
     }
 }
 
@@ -122,33 +120,25 @@ function moveObject(obj, duration) {
     if (obj.userData.animation) {
         obj.userData.animation.stop();
     }
-
     obj.userData.isAnimating = true;
-
     // Holen der 3D-Mausposition
     const mouse3DPosition = getMouse3DPosition(mouse, camera);
-
     // Berechnung des Richtungsvektors von der aktuellen Position des Objekts zur Mausposition
     const directionVector = new THREE.Vector3(
         mouse3DPosition.x - obj.position.x,
         mouse3DPosition.y - obj.position.y,
         mouse3DPosition.z - obj.position.z
     );
-
     // Normalisiert den Richtungsvektor, um die Bewegung in die Richtung der Mausposition zu ermöglichen
     directionVector.normalize();
-
     // Definiert die Entfernung, die das Objekt bewegt werden soll
-    const moveDistance = 5; // Zum Beispiel 50 Einheiten
-
+    const moveDistance = 25;
     // Berechnet die Zielposition basierend auf dem Richtungsvektor und der Bewegungsdistanz
     const targetPosition = {
-        x: obj.position.x + directionVector.x * moveDistance,
-        y: obj.position.y + directionVector.y * moveDistance,
-        z: obj.position.z + 50 //directionVector.z * moveDistance
+        x: obj.position.x,// + directionVector.x * moveDistance,
+        y: obj.position.y,// + directionVector.y * moveDistance,
+        z: obj.position.z + moveDistance //directionVector.z * moveDistance
     };
-
-    // Erstellt eine Tween-Animation, um das Objekt zu bewegen
     const tween = new TWEEN.Tween(obj.position)
         .to(targetPosition, duration)
         .easing(TWEEN.Easing.Exponential.Out)
@@ -169,7 +159,6 @@ function moveObject(obj, duration) {
             }
         })
         .start();
-
     obj.userData.animation = tween;
 }
 
@@ -204,7 +193,7 @@ function resetObject(obj) {
         scaleObject(obj, 1.0); // Zurücksetzen auf die ursprüngliche Skalierung
 
         removeTextMeshes(obj);
-        moveObject(obj, 300);
+        moveObject(obj, 100);
     }
 }
 

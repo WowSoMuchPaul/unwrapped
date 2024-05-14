@@ -4,12 +4,10 @@ export default {
     root: 'src/',
     publicDir: '../static/',
     base: './',
-    server: {
-        host: true,
-        open: !isCodeSandbox, // Open if it's not a CodeSandbox
-        headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate' // Verhindert Caching
-        }
+    server:
+    {
+        host: 'localhost',
+        // open: !isCodeSandbox // Open if it's not a CodeSandbox
     },
     build:
     {
