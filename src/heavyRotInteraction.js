@@ -28,7 +28,6 @@ function isMouseNearCenter(intersect, threshold = 1.5) {
     return distance <= maxDistance; // Prüft, ob die Distanz innerhalb des gewünschten Bereichs ist
 }
 
-
 let lastHovered = null;
 
 /**
@@ -55,7 +54,6 @@ function processIntersects(intersects, lastIntersected) {
     }
     return lastIntersected;
 }
-
 
 /**
  * Animiert ein Objekt und zeigt den Text für ein Objekt an.
@@ -122,33 +120,25 @@ function moveObject(obj, duration) {
     if (obj.userData.animation) {
         obj.userData.animation.stop();
     }
-
     obj.userData.isAnimating = true;
-
     // Holen der 3D-Mausposition
     const mouse3DPosition = getMouse3DPosition(mouse, camera);
-
     // Berechnung des Richtungsvektors von der aktuellen Position des Objekts zur Mausposition
     const directionVector = new THREE.Vector3(
         mouse3DPosition.x - obj.position.x,
         mouse3DPosition.y - obj.position.y,
         mouse3DPosition.z - obj.position.z
     );
-
     // Normalisiert den Richtungsvektor, um die Bewegung in die Richtung der Mausposition zu ermöglichen
     directionVector.normalize();
-
     // Definiert die Entfernung, die das Objekt bewegt werden soll
     const moveDistance = 5;
-
     // Berechnet die Zielposition basierend auf dem Richtungsvektor und der Bewegungsdistanz
     const targetPosition = {
         x: obj.position.x,// + directionVector.x * moveDistance,
         y: obj.position.y,// + directionVector.y * moveDistance,
         z: obj.position.z + 30 //directionVector.z * moveDistance
     };
-
-    // Erstellt eine Tween-Animation, um das Objekt zu bewegen
     const tween = new TWEEN.Tween(obj.position)
         .to(targetPosition, duration)
         .easing(TWEEN.Easing.Exponential.Out)
@@ -169,7 +159,6 @@ function moveObject(obj, duration) {
             }
         })
         .start();
-
     obj.userData.animation = tween;
 }
 

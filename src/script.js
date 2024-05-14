@@ -460,11 +460,14 @@ async function handleTopArtistBereich() {
      */
     async function rotateCube(event) {
         if (isAnimating || event.deltaY === 0) return;
-        if(initialTween){
+        if(initialTween.isPlaying()){
             initialTween.stop();
-            // topArtistsCube.rotation.set(0, Math.PI + (Math.PI / 2), 0);
+            // Würfel auf ausgangspoition zurücksetzen
+            let resetTween = new TWEEN.Tween(topArtistsCube.rotation)
+            .to({ x: 0, y: Math.PI + (Math.PI / 2), z: 0 }, 300)
+            .easing(TWEEN.Easing.Cubic.InOut)
+            .start();
         }
-        // console.log(initialTween);
         isAnimating = true;
         topArtistsRotationIndex = (topArtistsRotationIndex + 1) % rotationSequence.length; // Immer zum nächsten Schritt
         if(topArtistsRotationIndex == 0) {
@@ -475,8 +478,9 @@ async function handleTopArtistBereich() {
         }
         let steps = rotationSequence[topArtistsRotationIndex];
         let tween;
-        // Führe jede Rotation aus dem Schritt in der Sequenz aus
+        // Führt jede Rotation aus dem Schritt in der Sequenz aus
         steps.forEach(async (step, index) => {
+            console.log("Schritt: ", step.axis, step.angle);
             let rotation = {};
             rotation[step.axis] = topArtistsCube.rotation[step.axis] + step.angle;
             tween = new TWEEN.Tween(topArtistsCube.rotation)
@@ -487,7 +491,7 @@ async function handleTopArtistBereich() {
                 tween.onComplete(() => {
                     setTimeout(() => {
                         isAnimating = false;
-                    }, 800); // Wartezeit zur nächsten Animation
+                    }, 800);
                 });
             }
             tween.start();
@@ -528,14 +532,14 @@ async function handleTopArtistBereich() {
     function initialAnimation() {
             initialTween
             .to({ x: topArtistsCube.rotation.x - Math.PI / 10 }, 600)
-            .easing(TWEEN.Easing.Quadratic.InOut)
+            .easing(TWEEN.Easing.Cubic.InOut)
             .yoyo(true) // Rückkehr zur Ausgangsposition
             .repeat(2) // Wiederhole die Bewegung einmal
             .onComplete(() => {
                 if (!isAnimating) { // Wenn keine andere Animation aktiv ist, führe Rückbewegung aus
                     new TWEEN.Tween(topArtistsCube.rotation)
                         .to({ x: topArtistsCube.rotation.x + Math.PI / 10 }, 600)
-                        .easing(TWEEN.Easing.Quadratic.InOut)
+                        .easing(TWEEN.Easing.Cubic.InOut)
                         .start();
                 }
             });
