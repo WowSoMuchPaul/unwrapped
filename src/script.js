@@ -1339,8 +1339,9 @@ function removeTextMeshes(obj) {
     if (textMeshes) {
         textMeshes.forEach(textMesh => {
             inhaltGroup.remove(textMesh);
-            textMesh.geometry?.dispose();
-            textMesh.material?.dispose();
+            clearAndRemoveObject(textMesh);
+            //textMesh.geometry?.dispose();
+            //textMesh.material?.dispose();
         });
         textMeshMap.delete(obj);
     }
