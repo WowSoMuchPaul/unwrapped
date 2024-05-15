@@ -34,6 +34,17 @@ let freeMovement = true;
 let timeRange = document.getElementById("timeRange").value;
 let topArtistsRotationIndex;
 let initCubeAnimationPlayed = false;
+let bereichInfo = {
+    currentIndex : 0,
+    bereich : [
+        {name: "unwrapped", text:"This window will guide you through the unwrapped experience. You can navigate through the different sections by scrolling or using the navigation bar. Enjoy the ride!"},
+        {name: "Profil", text: "This is your Spotify profile. Have a look at your profile picture and your recently played songs."},
+        {name: "Top Artists", text: "These are your most listened to artists. Scroll to see more."}, 
+        {name: "Top Songs", text: "These are your most listened to songs. Congratilations to your top hits!"}, 
+        {name: "Heavy Rotation", text: "These are the songs you can't stop listening to. Hover over the covers to reveal more details. Keep on repeating!"}, 
+        {name: "Playlist", text: "This is your chance to create your personal unwrapped playlist. Press the button to save the playlist to your profile. Enjoy the music!"}
+    ],
+};
 const gesamtTiefe = 3000;
 const bereichOffsetVorne = 400;
 const bereichDampingVorne = bereichOffsetVorne / 2;
@@ -253,7 +264,7 @@ async function init() {
         document.getElementById("profilImage").classList.add("windows95edgesImage");
         document.getElementById("loginStatusImage").src = onlineImage;
         document.getElementById("loginStatusLabel").innerText = "online";
-        document.getElementById("spotifyConnectButton").innerText = "Start unwrapped!"
+        document.getElementById("spotifyConnectButton").innerText = "Start unwrapped!";
         document.getElementById("spotifyConnectButton").addEventListener("click", closeOverlay);
         document.getElementById("logoutButton").addEventListener("click", logoutClick);
         document.getElementById("timeRange").addEventListener("change", function() {
@@ -274,7 +285,9 @@ async function init() {
 
     //Listener setzen
     window.addEventListener('resize', onWindowResize);
-    document.getElementById("help").addEventListener("click", openOverlay);
+    document.getElementById("help").addEventListener("click", openHelp);
+    document.getElementById("closeHelpButton").addEventListener("click", closeHelp);
+    document.getElementById("helpToStartButton").addEventListener("click", openOverlay);
     document.getElementById("playlistButton").addEventListener("click", createPlaylistResponse);
     
     
@@ -307,12 +320,30 @@ function closeOverlay() {
     document.getElementById("pageBlocker").style.display = "none";
     document.getElementById("help").style.display = "block";
     document.getElementById("navBar").style.display = "block";
+    document.getElementById("spotifyConnectButton").innerText = "Return to unwrapped!"
 }
 
 function openOverlay() {
     document.getElementById("pageBlocker").style.display = "block";
     document.getElementById("help").style.display = "none";
     document.getElementById("navBar").style.display = "none";
+    document.getElementById("helpWindow").style.display = "none";
+}
+
+function openHelp() {
+    document.getElementById("helpWindow").style.display = "block";
+    setHelpText();
+    
+}
+
+function closeHelp() {
+    document.getElementById("helpWindow").style.display = "none";
+}
+
+function setHelpText() {
+    document.getElementById("helpBereichInfo").innerText = bereichInfo.bereich[bereichInfo.currentIndex].text;
+    document.getElementById("helpHeadline").innerText = bereichInfo.bereich[bereichInfo.currentIndex].name;
+    document.getElementById("helpOverlayHeadline").innerText = bereichInfo.bereich[bereichInfo.currentIndex].name.toLowerCase() + ".help";
 }
 
 function onWindowResize() {
@@ -340,27 +371,57 @@ function checkCamPosition() {
 
     //Bereich Profil
     if ((pos <= (targetPoints.profil + bereichOffsetVorne)) && (pos >= (targetPoints.profil - bereichOffsetHinten))) {
-        handleBereich(pos, targetPoints.profil);
+        if (bereichInfo.currentIndex != 1) {
+            bereichInfo.currentIndex = 1;
+            setHelpText();
+        }
+        if (freeMovement) {
+            handleBereich(pos, targetPoints.profil);
+        }
     }
 
     //Bereich Artists
     if ((pos <= (targetPoints.topArtist + bereichOffsetVorne)) && (pos >= (targetPoints.topArtist - bereichOffsetHinten))) {
-        handleBereich(pos, targetPoints.topArtist);
+        if (bereichInfo.currentIndex != 2) {
+            bereichInfo.currentIndex = 2;
+            setHelpText();
+        }
+        if (freeMovement) {
+            handleBereich(pos, targetPoints.topArtist);
+        }
     }
 
     //Bereich Songs
     if((pos <= (targetPoints.topSong + bereichOffsetVorne)) && (pos >= (targetPoints.topSong - bereichOffsetHinten))){
-        handleBereich(pos, targetPoints.topSong);
+        if (bereichInfo.currentIndex != 3) {
+            bereichInfo.currentIndex = 3;
+            setHelpText();
+        }
+        if (freeMovement) {
+            handleBereich(pos, targetPoints.topSong);
+        }
     }
 
     //Bereich OnRepeat
     if ((pos <= (targetPoints.onRepeat + bereichOffsetVorne)) && (pos >= (targetPoints.onRepeat - bereichOffsetHinten))) {
-        handleBereich(pos, targetPoints.onRepeat);
+        if (bereichInfo.currentIndex != 4) {
+            bereichInfo.currentIndex = 4;
+            setHelpText();
+        }
+        if (freeMovement) {
+            handleBereich(pos, targetPoints.onRepeat);
+        }
     }
 
     //Bereich Playlist
     if ((pos <= (targetPoints.playlist + bereichOffsetVorne)) && (pos >= (targetPoints.playlist - bereichOffsetHinten))) {
-        handleBereich(pos, targetPoints.playlist);
+        if (bereichInfo.currentIndex != 5) {
+            bereichInfo.currentIndex = 5;
+            setHelpText();
+        }
+        if (freeMovement) {
+            handleBereich(pos, targetPoints.playlist);
+        }
         document.getElementById("playlistButton").style.display = "block";
     }else{
         document.getElementById("playlistButton").style.display = "none";
@@ -601,10 +662,7 @@ const tick = () => {
     
     if (lastCamPosition != Math.round(camera.position.z)) {
         setProgressBar();
-        if (freeMovement) {
-            checkCamPosition();
-            //console.log("Es bewegt sich. " + Math.round(camera.position.z));
-        }
+        checkCamPosition();
         lastCamPosition = Math.round(camera.position.z);
     }
     
