@@ -351,6 +351,8 @@ function checkCamPosition() {
     //Bereich Artists
     if ((pos <= (targetPoints.topArtist + bereichOffsetVorne)) && (pos >= (targetPoints.topArtist - bereichOffsetHinten))) {
         handleBereich(pos, targetPoints.topArtist);
+    } else {
+        cleanupTopArtistsCube();
     }
 
     //Bereich Songs
@@ -423,8 +425,30 @@ function handleBereich(pos, tp) {
     }
 }
 
-let initialTween = new TWEEN.Tween(topArtistsCube.rotation);q
+let initialTween = new TWEEN.Tween(topArtistsCube.rotation);
 let topArtCubeAnimating;
+
+let rotationSequence = [
+    [ //Auf 1
+        { axis: 'y', angle: Math.PI / 2 }    
+    ],
+    [ // Von 1 auf 2
+        { axis: 'y', angle: -Math.PI }
+    ],
+    [ // Von 2 auf 3
+        { axis: 'y', angle: -Math.PI / 2 },
+        { axis: 'x', angle: Math.PI / 2 }
+    ],
+    [ // Von 3 auf 4
+        { axis: 'x', angle: Math.PI}
+    ],
+    [ // Von 4 auf 5
+        { axis: 'x', angle: Math.PI / 2}   
+    ],
+    [ // Von 5 auf 6
+        { axis: 'y', angle: Math.PI },
+    ]
+];
 
 /**
  * Behandelt den Bereich der Top-Künstler.
@@ -436,9 +460,12 @@ let topArtCubeAnimating;
  * @returns {Promise<void>}
  */
 async function handleTopArtistBereich() {
+    topArtistsRank = await createTextMesh("Top 1", 20, 100, 40, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
+    topArtistsName = await createTextMesh(topArtistsCube.userData.artistNames[0], 15, 100, 10, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
+    inhaltGroup.add(topArtistsRank);
+    inhaltGroup.add(topArtistsName);
     window.addEventListener('wheel', rotateCube);
-    // let initialTween = new TWEEN.Tween(topArtistsCube.rotation);
-    topArtistsCube.rotation.set(0, Math.PI + (Math.PI / 2), 0);
+    // topArtistsCube.rotation.set(0, Math.PI + (Math.PI / 2), 0);
     if (!initCubeAnimationPlayed) {
         initialAnimation();
         initCubeAnimationPlayed = true;
@@ -446,48 +473,27 @@ async function handleTopArtistBereich() {
     topArtistsRotationIndex = 0;
     topArtCubeAnimating = false;
     trackControls.noZoom = true; // Verhindert Zoom während der Rotation
-    let rotationSequence = [
-        [ //Auf 1
-            { axis: 'y', angle: Math.PI / 2 }    
-        ],
-        [ // Von 1 auf 2
-            { axis: 'y', angle: -Math.PI }
-        ],
-        [ // Von 2 auf 3
-            { axis: 'y', angle: -Math.PI / 2 },
-            { axis: 'x', angle: Math.PI / 2 }
-        ],
-        [ // Von 3 auf 4
-            { axis: 'x', angle: Math.PI}
-        ],
-        [ // Von 4 auf 5
-            { axis: 'x', angle: Math.PI / 2}   
-        ],
-        [ // Von 5 auf 6
-            { axis: 'y', angle: Math.PI },
-        ]
-    ];
+}
 
-    /**
+/**
      * Initiale Würfel-Animation beim ersten Betreten des Top-Artists-Bereichs.
      */
-    function initialAnimation() {
-            initialTween
-            .to({ x: topArtistsCube.rotation.x - Math.PI / 10 }, 600)
-            .easing(TWEEN.Easing.Cubic.InOut)
-            .yoyo(true) // Rückkehr zur Ausgangsposition
-            .repeat(2) // Wiederhole die Bewegung einmal
-            .onComplete(() => {
-                if (!topArtCubeAnimating) { // Wenn keine andere Animation aktiv ist, führe Rückbewegung aus
-                    new TWEEN.Tween(topArtistsCube.rotation)
-                        .to({ x: topArtistsCube.rotation.x + Math.PI / 10 }, 600)
-                        .easing(TWEEN.Easing.Cubic.InOut)
-                        .start();
-                }
-            });
-    
-        initialTween.start();
-    }
+function initialAnimation() {
+    initialTween
+        .to({ x: topArtistsCube.rotation.x - Math.PI / 10 }, 600)
+        .easing(TWEEN.Easing.Cubic.InOut)
+        .yoyo(true) // Rückkehr zur Ausgangsposition
+        .repeat(2) // Wiederhole die Bewegung einmal
+        .onComplete(() => {
+            if (!topArtCubeAnimating) { // Wenn keine andere Animation aktiv ist, führe Rückbewegung aus
+                new TWEEN.Tween(topArtistsCube.rotation)
+                    .to({ x: topArtistsCube.rotation.x + Math.PI / 10 }, 600)
+                    .easing(TWEEN.Easing.Cubic.InOut)
+                    .start();
+            }
+        });
+
+    initialTween.start();
 }
 
 /**
@@ -512,7 +518,7 @@ async function rotateCube(event) {
         trackControls.noZoom = false;
         clearAndRemoveObject(topArtistsRank);
         clearAndRemoveObject(topArtistsName);
-        cleanup();
+        cleanupTopArtistsCube();
     }
     let steps = rotationSequence[topArtistsRotationIndex];
     let tween;
@@ -525,6 +531,7 @@ async function rotateCube(event) {
             .to(rotation, 800)
             .easing(TWEEN.Easing.Cubic.InOut)                
             .onComplete(() => {
+                console.log("Rotation nach Animation: ", topArtistsCube.rotation);
                 setTimeout(() => {
                     topArtCubeAnimating = false;
                 }, 800);
@@ -543,11 +550,13 @@ async function rotateCube(event) {
  * Funktion zum Aufräumen und Zurücksetzen des Würfels.
  * Entfernt den Event-Listener für das Scrollen und setzt den Würfel auf die erste Rotation aus der Sequenz zurück.
  * @async
- * @function cleanup
  * @returns {Promise<void>}
  */
-async function cleanup() {
+async function cleanupTopArtistsCube() {
     window.removeEventListener('wheel', rotateCube);
+    topArtistsCube.rotation.set(0, Math.PI + (Math.PI / 2), 0);
+    clearAndRemoveObject(topArtistsRank);
+    clearAndRemoveObject(topArtistsName);
     // Setze den Würfel auf die erste Rotation aus der Sequenz zurück
     let firstStep = rotationSequence[0];
     let rotation = {};
@@ -555,11 +564,17 @@ async function cleanup() {
         rotation[step.axis] = step.angle; // Setze die Winkel direkt aus der ersten Sequenz
     });
     
+    console.log("Ursprungs Rotation: ", topArtistsCube.userData.rotation);
+    console.log("Aktuelle  Rotation: ", topArtistsCube.rotation);
+    if(topArtistsCube.userData.rotation !== topArtistsCube.rotation) {
     new TWEEN.Tween(topArtistsCube.rotation)
         .to(rotation, 500)
         .easing(TWEEN.Easing.Cubic.InOut)
         .start();
-};
+        console.log("gedreht");
+    }
+
+}
 
 
 function bringeZumBereich(tp) {
@@ -761,6 +776,8 @@ function createCube(options) {
     cube.rotation.z = 0;
     cube.scale.set(options.scale, options.scale, options.scale);
     cube.position.z = options.positionZ;
+    cube.userData.rotation = cube.rotation;
+    console.log("Rotation: ", cube.rotation);
     cube.name = "TopArtists Cube";
 
     return cube;
