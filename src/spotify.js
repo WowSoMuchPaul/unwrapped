@@ -424,4 +424,6 @@ export async function setFestivalPlaylist(timeRange){
     while(coverRes.status != 202){
         coverRes = await (callApi("PUT", "https://api.spotify.com/v1/playlists/" + playlistId + "/images", base64Cover));
     }
+
+    return coverRes.status == 202;
 }

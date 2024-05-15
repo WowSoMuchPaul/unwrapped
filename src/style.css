@@ -225,7 +225,7 @@ h1 {
     left: 50%;
     bottom: 30%;
     transform: translateX(-50%);
-    z-index: 100;
+    z-index: 1;
 } 
 
 #playlistButton{
@@ -294,6 +294,11 @@ h1 {
   /* right: 150%; */
 }
 
+.navBarElementImg:hover {
+  height: 30px;
+  width: 30px;
+}
+
 .navBarElementLable {
   position: absolute;
   right: 0rem;
@@ -357,8 +362,8 @@ h1 {
 #profilImage {
   /* border-width: 2px;
   border-style: inset; */
-  max-height: 50px;
-  max-width: 50px;
+  height: 50px;
+  width: 50px;
   object-fit: cover;
 }
 

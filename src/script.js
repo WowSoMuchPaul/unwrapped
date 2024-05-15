@@ -31,7 +31,7 @@ export const targetPoints = {};
 let inEinemBereich = false;
 let tweenAktiviert = false; 
 let freeMovement = true;
-let timeRange = "long_term";
+let timeRange = document.getElementById("timeRange").value;
 let topArtistsRotationIndex;
 let initCubeAnimationPlayed = false;
 const gesamtTiefe = 3000;
@@ -274,14 +274,9 @@ async function init() {
 
     //Listener setzen
     window.addEventListener('resize', onWindowResize);
-    // document.getElementById("closebtn").addEventListener("click", closeOverlay);
     document.getElementById("help").addEventListener("click", openOverlay);
-    // document.getElementById("delete").addEventListener("click", deleteGroup);
-    // document.getElementById("create").addEventListener("click", createAll);
-    // document.getElementById("refreshToken").addEventListener("click", refreshToken);
-    // document.getElementById("playlist").addEventListener("click", () => {
-    //     setFestivalPlaylist(timeRange);
-    // });
+    document.getElementById("playlistButton").addEventListener("click", createPlaylistResponse);
+    
     
     //Nav Bar Listener
     document.getElementById("navPlaylist").addEventListener("click", () => {
@@ -1029,6 +1024,13 @@ async function createTopSongs() {
     return contentTopSongs;
 }
 
+async function createPlaylistResponse() {
+    if (await setFestivalPlaylist(timeRange)) {
+        console.log("Festival Playlist erstellt!");
+        //document.getElementById("playlistButton").innerText = "Playlist erstellt!";
+    }
+}
+
 async function iconAnimationPl(){
 
     let contentIconAni = [];
@@ -1071,15 +1073,6 @@ async function createPlaylist(){
     contentPlaylist.push(await createTextMesh("a", 1000, -580,-500, targetPoints.playlist-20,0,0,0x000000,0.1,'Yarndings 12_Regular'));
     
     return contentPlaylist;
-}
-
-function createPlaylistButton(){
-    const button  = document.createElement('button');
-    button.id = 'createPlaylist-btn';
-    button.textContent = 'Create Playlist';
-    button.style.display = 'block';
-    document.getElementById('playlistBttnContainer').appendChild(button);
-    document.getElementById("createPlaylist-btn").addEventListener("click",setFestivalPlaylist);
 }
 
 async function createEND(){
