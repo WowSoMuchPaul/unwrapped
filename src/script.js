@@ -25,7 +25,7 @@ import navRotationIcon from '../static/images/nav_rotation_icon.png';
 import navPlaylistIcon from '../static/images/nav_playlist_icon.png';
 import { log } from 'three/examples/jsm/nodes/Nodes.js'; 
 
-let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, topArtistCountText;
+let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, topArtistCountText, arrowModel;
 // export {camera, heavyRotCircleGroup as heavyRotCircleGroup, inhaltGroup, scene};
 export const targetPoints = {};
 let inEinemBereich = false;
@@ -46,7 +46,7 @@ let bereichInfo = {
         {name: "Playlist", text: "This is your chance to create your personal unwrapped playlist. Press the button to save the playlist to your profile. Enjoy the music!"}
     ],
 };
-const gesamtTiefe = 3000;
+const gesamtTiefe = 5000;
 const bereichOffsetVorne = 400;
 const bereichDampingVorne = bereichOffsetVorne / 2;
 const bereichOffsetHinten = 100;
@@ -63,9 +63,9 @@ let topArtistsName = new THREE.Mesh;
 const stats = new Stats();
 // Textgrößen Konstanten
 const headlineSize = 40;
+const textBigSize = 20;
 const textSize = 10;
 const textSmallSize = 5;
-const textBigSize = 20;
 
 const textHeight = 0;
 const textWidth = 0;
@@ -109,28 +109,33 @@ const cursor = {};
 
 const loadingManager = new THREE.LoadingManager();
 const loadingLabel = document.getElementById('progress-bar-label');
-const progressBar = document.getElementById('progress-bar');
+const progressBar = document.getElementById('progress-bar-blocks');
 const progressBarContainer = document.querySelector('.progress-bar-container');
 
-// loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
-//     loadingLabel.innerText = "Nearly done...";
-// }
+loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
+    // loadingLabel.innerText = "Nearly done...";
+    setTimeout(() => {
+        loadingLabel.innerText = "Nearly done...";
+    }, 1000);
+}
 
-// let lastProgress = 0; 
-// loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
-//     let currentProgress = (itemsLoaded / itemsTotal) * 100;
+let lastProgress = 0; 
+loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
+    console.log("Progress: ", itemsLoaded, itemsTotal);
+    console.log(url);
+    let currentProgress = (itemsLoaded / itemsTotal) * 100;
 
-//     if(currentProgress > lastProgress) {
-//         progressBar.value = currentProgress;
-//         lastProgress = currentProgress;
-//     }
-// };
+    // if(currentProgress > lastProgress) {
+        progressBar.value = currentProgress;
+    //     lastProgress = currentProgress;
+    // }
+};
 
-// loadingManager.onLoad = function() {
-//     setTimeout(() => {
-//             progressBarContainer.style.display = 'none';
-//     }, 1500);
-// }
+loadingManager.onLoad = function() {
+    setTimeout(() => {
+            progressBarContainer.style.display = 'none';
+    }, 2000);
+}
 
 await init(); // Starte die Initialisierung der Szene
 
@@ -143,7 +148,7 @@ await init(); // Starte die Initialisierung der Szene
  * @returns {Promise<void>}
  */
 async function init() {
-    console.log("Init");
+    // console.log("Init");
     /**
      * Sizes
      */
@@ -167,7 +172,7 @@ async function init() {
     lastCamPosition = camera.position.z;
 
     //Lights
-    let light = new THREE.DirectionalLight(0xffffff, 2);
+    let light = new THREE.DirectionalLight(0xffffff, 1.2);
     light.position.set( gesamtTiefe/2, gesamtTiefe/2, gesamtTiefe ).normalize();
     light.target.position.set(0, 0, 0);
     scene.add(light);
@@ -235,6 +240,8 @@ async function init() {
     trackControls.zoomSpeed = zoomSpeedNorm;
     trackControls.staticMoving = false;
     trackControls.dynamicDampingFactor = 0.04;
+    trackControls.minDistance = targetPoints.playlist - 400;
+    trackControls.maxDistance = gesamtTiefe + 10;
 
     //Help Button
     document.getElementById("help").src = help;
@@ -293,6 +300,7 @@ async function init() {
     window.addEventListener('resize', onWindowResize);
     document.getElementById("help").addEventListener("click", openHelp);
     document.getElementById("closeHelpButton").addEventListener("click", closeHelp);
+    document.getElementById("helpToStartButton").addEventListener("click", switchHelpToStart);
     document.getElementById("helpToStartButton").addEventListener("click", openOverlay);
     document.getElementById("playlistButton").addEventListener("click", createPlaylistResponse);
     
@@ -323,10 +331,12 @@ async function init() {
 }
 
 function closeOverlay() {
+    playButtonSound();
     document.getElementById("pageBlocker").style.display = "none";
     document.getElementById("help").style.display = "block";
     document.getElementById("navBar").style.display = "block";
     document.getElementById("spotifyConnectButton").innerText = "Return to unwrapped!"
+    handleStartPosition();
 }
 
 function openOverlay() {
@@ -337,12 +347,18 @@ function openOverlay() {
 }
 
 function openHelp() {
+    playButtonSound();
     document.getElementById("helpWindow").style.display = "block";
     setHelpText();
     
 }
 
+function switchHelpToStart() {
+    playButtonSound();
+}
+
 function closeHelp() {
+    playButtonSound();
     document.getElementById("helpWindow").style.display = "none";
 }
 
@@ -377,7 +393,6 @@ function checkCamPosition() {
 
     document.getElementById("playlistButton").style.display = "none";
 
-    
     if ((pos <= (targetPoints.profil + bereichOffsetVorne)) && (pos >= (targetPoints.profil - bereichOffsetHinten))) {
         //Bereich Profil
         if (bereichInfo.currentIndex != 1) {
@@ -431,6 +446,8 @@ function checkCamPosition() {
         if (bereichInfo.currentIndex != 0) {
             bereichInfo.currentIndex = 0;
             setHelpText();
+            // console.log("Cleanup außerhalb der Bereiche aufgerufen :"); 
+            cleanupTopArtistsCube(); // Zurücksetzen, bevor der Bereich erneut initialisiert wird 
         }
     }
 }
@@ -465,7 +482,10 @@ function handleBereich(pos, tp) {
                 .easing(TWEEN.Easing.Exponential.Out)
                 .onComplete(() => {
                     if(tp == targetPoints.topArtist) {
-                        handleTopArtistBereich();
+                        if(!topArtistBereichInitialized){
+                            // cleanupTopArtistsCube(); // Zurücksetzen, bevor der Bereich erneut initialisiert wird  
+                            handleTopArtistBereich();
+                        }
                     } else {
                         //console.log("TWEEN abgeschlossen");
                         TrackballControls.noZoom = false;
@@ -478,6 +498,7 @@ function handleBereich(pos, tp) {
     if (((pos > (tp + bereichOffsetVorne - bereichDampingVorne)) || (pos < (tp - bereichOffsetHinten + bereichDampingHinten))) && inEinemBereich) {
         inEinemBereich = false;
         tweenAktiviert = false;
+        console.log("Bereich verlassen");
     }
     //Kamera ist im Austritts-Damping
     if ((pos >= (tp - bereichOffsetHinten)) && (pos <= (tp - bereichOffsetHinten + bereichDampingHinten))) {
@@ -486,142 +507,193 @@ function handleBereich(pos, tp) {
     }
 }
 
+let initialTween = new TWEEN.Tween(topArtistsCube.rotation);
+let topArtCubeAnimating;
+
+let rotationSequence = [
+    [ //Auf 1
+        { axis: 'y', angle: Math.PI / 2 }    
+    ],
+    [ // Von 1 auf 2
+        { axis: 'y', angle: -Math.PI }
+    ],
+    [ // Von 2 auf 3
+        { axis: 'y', angle: -Math.PI / 2 },
+        { axis: 'x', angle: Math.PI / 2 }
+    ],
+    [ // Von 3 auf 4
+        { axis: 'x', angle: Math.PI}
+    ],
+    [ // Von 4 auf 5
+        { axis: 'x', angle: Math.PI / 2}   
+    ],
+    [ // Von 5 auf 6
+        { axis: 'y', angle: Math.PI },
+    ]
+];
+
+let topArtistBereichInitialized = false;
+
 /**
  * Behandelt den Bereich der Top-Künstler.
  * Wird aufgerufen wenn die Kamera in den Bereich der Top-Künstler eintritt.
  * Steuert die Rotation des Würfels und die Anzeige der Künstlerinformationen.
- * 
  * @async
  * @function handleTopArtistBereich
  * @returns {Promise<void>}
  */
 async function handleTopArtistBereich() {
-    window.addEventListener('wheel', rotateCube, { passive: true });
-    let initialTween = new TWEEN.Tween(topArtistsCube.rotation);
-    topArtistsCube.rotation.set(0, Math.PI + (Math.PI / 2), 0);
+    console.log("Handle Top Artist Bereich erreicht");
+    if (topArtistBereichInitialized) {
+        return; // Beende die Funktion, wenn sie bereits ausgeführt wurde
+    }
+    topArtistBereichInitialized = true;
+    topArtistsRotationIndex = 0;
+
+    // Bereinige eventuell vorhandene Text-Meshes, bevor neue erstellt werden
+    // clearAndRemoveObject(topArtistsRank);
+    // clearAndRemoveObject(topArtistsName);
+
+    // await initTopArtistsCube();
+    topArtistBereichInitialized = false;
+
+
+    window.addEventListener('wheel', rotateCube);
     if (!initCubeAnimationPlayed) {
         initialAnimation();
-        initCubeAnimationPlayed = true;
+        // initCubeAnimationPlayed = true;
     }
-    topArtistsRotationIndex = 0;
-    let isAnimating = false;
+    // topArtistsRotationIndex = 0;
+    topArtCubeAnimating = false;
     trackControls.noZoom = true; // Verhindert Zoom während der Rotation
-    let rotationSequence = [
-        [ //Auf 1
-            { axis: 'y', angle: Math.PI / 2 }    
-        ],
-        [ // Von 1 auf 2
-            { axis: 'y', angle: -Math.PI }
-        ],
-        [ // Von 2 auf 3
-            { axis: 'y', angle: -Math.PI / 2 },
-            { axis: 'x', angle: Math.PI / 2 }
-        ],
-        [ // Von 3 auf 4
-            { axis: 'x', angle: Math.PI}
-        ],
-        [ // Von 4 auf 5
-            { axis: 'x', angle: Math.PI / 2}   
-        ],
-        [ // Von 5 auf 6
-            { axis: 'y', angle: Math.PI },
-        ]
-    ];
+}
 
-    /**
-     * Dreht den Würfel und aktualisiert die angezeigten Informationen.
-     * 
-     * @param {Event} event - Das Ereignis, das den Funktionsaufruf ausgelöst hat.
-     * @returns {Promise<void>} Ein Promise, das gelöst wird, wenn die Animation abgeschlossen ist.
-     */
-    async function rotateCube(event) {
-        if (isAnimating || event.deltaY === 0) return;
-        if(initialTween.isPlaying()){
-            initialTween.stop();
-            // Würfel auf ausgangspoition zurücksetzen
-            let resetTween = new TWEEN.Tween(topArtistsCube.rotation)
-            .to({ x: 0, y: Math.PI + (Math.PI / 2), z: 0 }, 300)
-            .easing(TWEEN.Easing.Cubic.InOut)
-            .start();
-        }
-        isAnimating = true;
-        topArtistsRotationIndex = (topArtistsRotationIndex + 1) % rotationSequence.length; // Immer zum nächsten Schritt
-        if(topArtistsRotationIndex == 0) {
-            trackControls.noZoom = false;
-            clearAndRemoveObject(topArtistsRank);
-            clearAndRemoveObject(topArtistsName);
-            cleanup();
-        }
-        let steps = rotationSequence[topArtistsRotationIndex];
-        let tween;
-        // Führt jede Rotation aus dem Schritt in der Sequenz aus
-        steps.forEach(async (step, index) => {
-            console.log("Schritt: ", step.axis, step.angle);
-            let rotation = {};
-            rotation[step.axis] = topArtistsCube.rotation[step.axis] + step.angle;
-            tween = new TWEEN.Tween(topArtistsCube.rotation)
-                .to(rotation, 800)
-                .easing(TWEEN.Easing.Cubic.InOut);                
-            
-            if (index === steps.length - 1) { // Nur die letzte Animation setzt den onComplete-Handler
-                tween.onComplete(() => {
-                    setTimeout(() => {
-                        isAnimating = false;
-                    }, 800);
-                });
-            }
-            tween.start();
-        });
-        clearAndRemoveObject(topArtistsRank);
-        clearAndRemoveObject(topArtistsName);
-        topArtistsRank = await createTextMesh("Top " + (topArtistsRotationIndex + 1), 20, 100, 40, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
-        topArtistsName = await createTextMesh(topArtistsCube.userData.artistNames[topArtistsRotationIndex], 15, 100, 10, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
-        inhaltGroup.add(topArtistsRank);
-        inhaltGroup.add(topArtistsName);
-    }
 
-    /**
-     * Funktion zum Aufräumen und Zurücksetzen des Würfels.
-     * Entfernt den Event-Listener für das Scrollen und setzt den Würfel auf die erste Rotation aus der Sequenz zurück.
-     * @async
-     * @function cleanup
-     * @returns {Promise<void>}
-     */
-    async function cleanup() {
-        window.removeEventListener('wheel', rotateCube);
-        // Setze den Würfel auf die erste Rotation aus der Sequenz zurück
-        let firstStep = rotationSequence[0];
-        let rotation = {};
-        firstStep.forEach(step => {
-            rotation[step.axis] = step.angle; // Setze die Winkel direkt aus der ersten Sequenz
-        });
-        
-        new TWEEN.Tween(topArtistsCube.rotation)
-            .to(rotation, 500)
-            .easing(TWEEN.Easing.Cubic.InOut)
-            .start();
-    };
-
-    /**
+/**
      * Initiale Würfel-Animation beim ersten Betreten des Top-Artists-Bereichs.
      */
-    function initialAnimation() {
-            initialTween
-            .to({ x: topArtistsCube.rotation.x - Math.PI / 10 }, 600)
-            .easing(TWEEN.Easing.Cubic.InOut)
-            .yoyo(true) // Rückkehr zur Ausgangsposition
-            .repeat(2) // Wiederhole die Bewegung einmal
-            .onComplete(() => {
-                if (!isAnimating) { // Wenn keine andere Animation aktiv ist, führe Rückbewegung aus
-                    new TWEEN.Tween(topArtistsCube.rotation)
-                        .to({ x: topArtistsCube.rotation.x + Math.PI / 10 }, 600)
-                        .easing(TWEEN.Easing.Cubic.InOut)
-                        .start();
-                }
-            });
-    
-        initialTween.start();
+function initialAnimation() {
+    initialTween
+        .to({ x: topArtistsCube.rotation.x - Math.PI / 10 }, 600)
+        .easing(TWEEN.Easing.Cubic.InOut)
+        .yoyo(true) // Rückkehr zur Ausgangsposition
+        .repeat(2) // Wiederhole die Bewegung einmal
+        .onComplete(() => {
+            if (!topArtCubeAnimating) { // Wenn keine andere Animation aktiv ist, führe Rückbewegung aus
+                new TWEEN.Tween(topArtistsCube.rotation)
+                    .to({ x: topArtistsCube.rotation.x + Math.PI / 10 }, 600)
+                    .easing(TWEEN.Easing.Cubic.InOut)
+                    .start();
+            }
+        })
+        .start();
+        initCubeAnimationPlayed = true;
+
+}
+
+/**
+ * Dreht den Würfel und aktualisiert die angezeigten Informationen.
+ * 
+ * @param {Event} event - Das Ereignis, das den Funktionsaufruf ausgelöst hat.
+ * @returns {Promise<void>} Ein Promise, das gelöst wird, wenn die Animation abgeschlossen ist.
+ */
+async function rotateCube(event) {
+    if (topArtCubeAnimating || event.deltaY === 0) return;
+    if(initialTween.isPlaying()){
+        initialTween.stop();
+        let resetTween = new TWEEN.Tween(topArtistsCube.rotation)
+        .to({ x: 0, y: Math.PI + (Math.PI / 2), z: 0 }, 300)
+        .easing(TWEEN.Easing.Cubic.InOut)
+        .start();
     }
+    topArtCubeAnimating = true;
+    topArtistsRotationIndex = (topArtistsRotationIndex + 1) % rotationSequence.length; // Immer zum nächsten Schritt
+    if(topArtistsRotationIndex == 0) {
+        trackControls.noZoom = false;
+        // cleanupTopArtistsCube();
+        // clearAndRemoveObject(topArtistsRank);
+        // clearAndRemoveObject(topArtistsName);
+    }
+    let steps = rotationSequence[topArtistsRotationIndex];
+    let tween;
+    steps.forEach((step) => {
+        playHoverSound();
+        let rotation = {};
+        rotation[step.axis] = topArtistsCube.rotation[step.axis] + step.angle;
+        tween = new TWEEN.Tween(topArtistsCube.rotation)
+            .to(rotation, 800)
+            .easing(TWEEN.Easing.Cubic.InOut)                
+            .onComplete(() => {
+                setTimeout(() => {
+                    topArtCubeAnimating = false;
+                }, 800);
+            })
+            .start();
+    });
+    clearAndRemoveObject(topArtistsRank);
+    clearAndRemoveObject(topArtistsName);
+    topArtistsRank = await createTextMesh("Top " + (topArtistsRotationIndex + 1), 20, 100, 40, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
+    topArtistsName = await createTextMesh(topArtistsCube.userData.artistNames[topArtistsRotationIndex], 15, 100, 10, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
+    inhaltGroup.add(topArtistsRank);
+    inhaltGroup.add(topArtistsName);
+}
+
+
+/**
+ * Initialisiert den Top-Artists-Würfel.
+ * Setzt die Ursprungsrotation und erstellt die ersten Text-Meshes.
+ * @async
+ * @function initTopArtistsCube
+ * @returns {Promise<void>}
+ */
+async function initTopArtistsCube() {
+    // Bereinige eventuell vorhandene Text-Meshes, bevor neue erstellt werden
+    clearAndRemoveObject(topArtistsRank);
+    clearAndRemoveObject(topArtistsName);
+
+    topArtistsRotationIndex = 0;
+
+    // Setze den Würfel auf die Ursprungsrotation
+    new TWEEN.Tween(topArtistsCube.rotation)
+        .to({ x: 0, y: Math.PI + (Math.PI / 2), z: 0 }, 600)
+        .easing(TWEEN.Easing.Cubic.InOut)
+        .start();
+    
+    // Erstelle die ersten Text-Meshes
+    topArtistsRank = await createTextMesh("Top 1", 20, 100, 40, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
+    topArtistsName = await createTextMesh(topArtistsCube.userData.artistNames[0], 15, 100, 10, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
+    
+    // Füge die Text-Meshes zur Gruppe hinzu
+    inhaltGroup.add(topArtistsRank);
+    inhaltGroup.add(topArtistsName);
+}
+
+
+/**
+ * Funktion zum Aufräumen und Zurücksetzen des Würfels.
+ * Entfernt den Event-Listener für das Scrollen und setzt den Würfel auf die erste Rotation aus der Sequenz zurück.
+ * @function cleanupTopArtistsCube
+ */
+async function cleanupTopArtistsCube() {
+    console.log("Cleanup wurde aufgerufen");
+    window.removeEventListener('wheel', rotateCube);
+    // clearAndRemoveObject(topArtistsRank);
+    // clearAndRemoveObject(topArtistsName);
+
+    // Setze den Index für die Rotation zurück
+    topArtistsRotationIndex = 0;
+
+    // Setze den Würfel auf die erste Rotation der Sequenz zurück
+    new TWEEN.Tween(topArtistsCube.rotation)
+        .to({ x: 0, y: Math.PI + (Math.PI / 2), z: 0 }, 300)
+        .easing(TWEEN.Easing.Cubic.InOut)
+        .start();
+    topArtistBereichInitialized = false;
+    // topArtistsRank = await createTextMesh("Top " + (topArtistsRotationIndex + 1), 20, 100, 40, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
+    // topArtistsName = await createTextMesh(topArtistsCube.userData.artistNames[topArtistsRotationIndex], 15, 100, 10, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
+    // inhaltGroup.add(topArtistsRank);
+    // inhaltGroup.add(topArtistsName);
+    await initTopArtistsCube();
 }
 
 
@@ -640,7 +712,11 @@ function bringeZumBereich(tp) {
         trackControls.noZoom = false;
         freeMovement = true;
         if(tp == targetPoints.topArtist) {
-            handleTopArtistBereich();
+            if(!topArtistBereichInitialized){
+            // console.log("Cleanup aus bringeZumBereich aufgerufen:");
+            // cleanupTopArtistsCube(); // Zurücksetzen, bevor der Bereich erneut initialisiert wird
+            // handleTopArtistBereich();
+            }
         }
     })
     .start();
@@ -672,9 +748,6 @@ const tick = () => {
         checkCamPosition();
         lastCamPosition = Math.round(camera.position.z);
     }
-    
-    iconAnimationPl();
-   
 
     lastIntersected = updateRaycasterInteraction();
     // lastIntersected = updateRaycasterInteraction(raycaster, mouse, camera, heavyRotCircleGroup, lastIntersected);
@@ -765,13 +838,13 @@ export async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotati
  * @param {number} bildGroesse - Die Größe des Meshes.
  * @returns {Promise<THREE.Mesh>} Ein Promise, das das erstellte Bild-Mesh enthält.
  */
-async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
+async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse, mitFrame) {
     return new Promise((resolve, reject) => {
         new THREE.TextureLoader(loadingManager).load(
             bildUrl,
             (texture) => {
                 const geometry = new THREE.PlaneGeometry(bildGroesse, bildGroesse);
-                const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+                const material = new THREE.MeshPhongMaterial({ map: texture, side: THREE.DoubleSide });
 
                 const aspect = bildGroesse / bildGroesse;
                 var imageAspect = texture.image.width / texture.image.height;
@@ -786,6 +859,7 @@ async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
                 bildMesh.position.set(x, y, z);
                 bildMesh.rotateY(rotationY * (Math.PI / 180));
                 bildMesh.isHovered = false;
+                inhaltGroup.add(bildMesh);
                 resolve(bildMesh);
             },
             undefined,
@@ -793,6 +867,25 @@ async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
                 reject(error);
             }
         );
+        if(mitFrame==true) {
+            // Create GLTF mesh
+            const gltfLoader = new GLTFLoader(loadingManager);
+            gltfLoader.load(
+                `../models/DP_Frame_001.glb`,
+                (gltf) => {
+                const mesh = gltf.scene;
+                mesh.position.set(x, y-1.3, z);
+                mesh.rotateY(rotationY * (Math.PI / 180));
+                mesh.scale.set(bildGroesse/2, bildGroesse/2, bildGroesse/4);
+                inhaltGroup.add(mesh);
+                resolve(mesh);
+                },
+                undefined,
+                (error) => {
+                reject(error);
+                }
+            );
+        }
     });
 }
 
@@ -809,9 +902,9 @@ function createCube(options) {
     const geometry = new THREE.BoxGeometry();
     const materials = options.materials.map(material => {
         if (typeof material === 'string' && (material.startsWith('http') || material.match(/\.(jpeg|jpg|gif|png)$/))) {
-            return new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader(loadingManager).load(material) });
+            return new THREE.MeshPhongMaterial({ map: new THREE.TextureLoader(loadingManager).load(material) });
         } else {
-            return new THREE.MeshBasicMaterial({ color: material, transparent: true, opacity: 1 });
+            return new THREE.MeshPhongMaterial({ color: material, transparent: true, opacity: 1 });
         }
     });
 
@@ -821,6 +914,8 @@ function createCube(options) {
     cube.rotation.z = 0;
     cube.scale.set(options.scale, options.scale, options.scale);
     cube.position.z = options.positionZ;
+    cube.userData.rotation = cube.rotation;
+    // console.log("Rotation: ", cube.rotation);
     cube.name = "TopArtists Cube";
 
     return cube;
@@ -903,12 +998,15 @@ async function createProfil() {
     let winkel = 0;
     let contentProfil = [];
 
-    contentProfil.push(await createBildMesh(profil.imageUrl, + 80, 0, targetPoints.profil, winkel, 50));
-    contentProfil.push(await createTextMesh("Hey \n" + profil.name + " !", textBigSize, -80, 30, targetPoints.profil,0,0,0x000000, 1,'Jersey 15_Regular'));
-    contentProfil.push(await createTextMesh("Followers: " + profil.follower.toString(), textSmallSize, 55, -30, targetPoints.profil,winkel,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createBildMesh(profil.imageUrl, 80, 0, targetPoints.profil, winkel, 50, true));
+    // contentProfil.push( await createGLTFMesh(80, -25, targetPoints.profil-23, 0, 0, 0, 25, 'DP_Frame_001'));
+
+    contentProfil.push(await createTextMesh("Hey" , textBigSize, -80, 35, targetPoints.profil,0,0,0x000000, 1,'Jersey 15_Regular'));
+    contentProfil.push(await createTextMesh(profil.name + " !", textBigSize, -80, 15, targetPoints.profil,0,0,0x000000, 1,'Jersey 15_Regular'));
+    contentProfil.push(await createTextMesh("Followers: " + profil.follower.toString(), textSmallSize, 55, -31, targetPoints.profil,winkel,0,0x000000, 1,'W95FA_Regular.typeface'));
     
     let recGroupX = -80;
-    let recGroupY = 0;
+    let recGroupY = -2;
     let recText = 2;
     let recBildG = 25;
     let recBildRot = 0;
@@ -925,23 +1023,27 @@ async function createProfil() {
 
     contentProfil.push(await createTextMesh("Recently Played Songs", textSize, recGroupX, recGroupY, targetPoints.profil,0, 0, 0x000000,1,'Jersey 15_Regular'));
 
-    contentProfil.push(await createBildMesh(recentlyPlayed[0].image, recGroupX + 13, recGroupY - 18, targetPoints.profil, recBildRot, recBildG));
-    contentProfil.push(await createTextMesh(recentlyPlayed[0].name, recText, recGroupX + 1, recGroupY - 34, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createBildMesh(recentlyPlayed[0].image, recGroupX + 13, recGroupY - 19, targetPoints.profil, recBildRot, recBildG, true));
+    contentProfil.push(await createTextMesh(recentlyPlayed[0].name, recText, recGroupX + 1, recGroupY - 34.3, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createTextMesh(recentlyPlayed[0].artists[0].name + ".jpg", recText-1, recGroupX+1 + 1, recGroupY -6.5, targetPoints.profil+0.5, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+    
+    contentProfil.push(await createBildMesh(recentlyPlayed[1].image, recGroupX + 43, recGroupY - 19, targetPoints.profil, recBildRot, recBildG, true));
+    contentProfil.push(await createTextMesh(recentlyPlayed[1].name, recText, recGroupX + 31, recGroupY - 34.3, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createTextMesh(recentlyPlayed[1].artists[0].name + ".jpg", recText-1, recGroupX+32, recGroupY -6.5, targetPoints.profil+0.5, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
 
-    contentProfil.push(await createBildMesh(recentlyPlayed[1].image, recGroupX + 43, recGroupY - 18, targetPoints.profil, recBildRot, recBildG));
-    contentProfil.push(await createTextMesh(recentlyPlayed[1].name, recText, recGroupX + 31, recGroupY - 34, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createBildMesh(recentlyPlayed[2].image, recGroupX + 13, recGroupY - 50, targetPoints.profil, recBildRot, recBildG, true));
+    contentProfil.push(await createTextMesh(recentlyPlayed[2].name, recText, recGroupX + 1, recGroupY - 66, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createTextMesh(recentlyPlayed[2].artists[0].name + ".jpg", recText-1, recGroupX+2, recGroupY -37.3, targetPoints.profil+0.5, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
 
-    contentProfil.push(await createBildMesh(recentlyPlayed[2].image, recGroupX + 13, recGroupY - 48, targetPoints.profil, recBildRot, recBildG));
-    contentProfil.push(await createTextMesh(recentlyPlayed[2].name, recText, recGroupX + 1, recGroupY - 64, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
-
-    contentProfil.push(await createBildMesh(recentlyPlayed[3].image, recGroupX + 43, recGroupY - 48, targetPoints.profil, recBildRot, recBildG));
-    contentProfil.push(await createTextMesh(recentlyPlayed[3].name, recText, recGroupX + 31, recGroupY - 64, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createBildMesh(recentlyPlayed[3].image, recGroupX + 43, recGroupY - 50, targetPoints.profil, recBildRot, recBildG, true));
+    contentProfil.push(await createTextMesh(recentlyPlayed[3].name, recText, recGroupX + 31, recGroupY - 66, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createTextMesh(recentlyPlayed[3].artists[0].name + ".jpg", recText-1, recGroupX+32, recGroupY -37.3, targetPoints.profil+0.5, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
 
     contentProfil.push(await createTextMesh("j", textBigSize, 45, -35, targetPoints.profil+40,0, -25, 0x000000,0.4,'Yarndings 12_Regular'));
     contentProfil.push(await createTextMesh("k", textSize,-80, -95, targetPoints.profil+20,0, 12, 0x000000,0.4,'Yarndings 12_Regular'));
     contentProfil.push(await createTextMesh("y", textBigSize-8, -30, 20, targetPoints.profil-40,-5, 15, 0x000000,0.3,'Yarndings 12_Regular'));
 
-    // createGLTFMesh(0, -90, targetPoints.profil, 0, Math.PI, 0, 20, 'DP_Frame_001');
+    
     return contentProfil;
 }
 
@@ -955,17 +1057,17 @@ async function createTopArtist() {
     let artistPics = [];
     let contentTopArtist = [];
     let topArtistZ = targetPoints.topArtist - 200;
-    let headlineOne = await createTextMesh("Your", 20, -300, -90, topArtistZ,0, 0, 0x000000,1,'Jersey 15_Regular');
-    let headlineTwo = await createTextMesh("\nTop 6 Artists", 40, -300, -80, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
-    topArtistsRank = await createTextMesh("Top 1", 20, 100, 40, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
-    topArtistsName = await createTextMesh(topArtists[0].name, 15, 100, 10, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
+    let headlineOne = await createTextMesh("Your", headlineSize, -300, -90, topArtistZ,0, 0, 0x000000,1,'Jersey 15_Regular');
+    let headlineTwo = await createTextMesh("\nTop 6 Artists", headlineSize, -300, -80, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
+    // topArtistsRank = await createTextMesh("Top 1", 20, 100, 40, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
+    // topArtistsName = await createTextMesh(topArtists[0].name, 15, 100, 10, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
 
     const cubeOptions = {
         materials: [],
         positionZ: topArtistZ,
         scale: 100,
-        rotationY: 2,
-        rotationX: -8,
+        // rotationY: 2,
+        // rotationX: -8,
     };
     for (let i = 0; i < topArtists.length; i++) {
         artistPics.push(topArtists[i].imageUrl);
@@ -1019,8 +1121,8 @@ async function createHeavyRotation() {
         bildMesh.userData.originalZ = z;
         heavyRotCircleGroup.add(bildMesh);
     }
-    contentHeavyRotation.push(await createTextMesh("Your Heavy \nRotation", headlineSize, -350, 150, targetPoints.onRepeat - 250, 10, 30, 0x000000, 1, 'Jersey 15_Regular'));
-    contentHeavyRotation.push(await createTextMesh("Hover to see more", textBigSize, -350, 50, targetPoints.onRepeat - 250, 10, 30, 0x000000, 1, 'Jersey 15_Regular'));
+    contentHeavyRotation.push(await createTextMesh("Your \nHeavy Rotation", headlineSize, -325, -100, targetPoints.onRepeat - 200, 0, 0, 0x000000, 1, 'Jersey 15_Regular'));
+    contentHeavyRotation.push(await createTextMesh("The Songs you listen to the most right now.", textBigSize -5 , -325, -200, targetPoints.onRepeat - 200, 0, 0, 0x000000, 1, 'Jersey 15_Regular'));
     contentHeavyRotation.push(heavyRotCircleGroup);
 
     return contentHeavyRotation;
@@ -1028,7 +1130,7 @@ async function createHeavyRotation() {
 
 async function createGLTFMesh(x, y, z, rotationX, rotationY, rotationZ, scale, name) {
     return new Promise((resolve, reject) => {
-        const gltfloader = new GLTFLoader();
+        const gltfloader = new GLTFLoader(loadingManager);
         gltfloader.load(
             `../models/${name}.glb`,
             (gltf) => {
@@ -1052,21 +1154,28 @@ async function createGLTFMesh(x, y, z, rotationX, rotationY, rotationZ, scale, n
 // Funktion zu Erstellen aller Hauptgruppen der Szene
 async function createTopSongs() {
     const songs = await getTopSongs(timeRange);
+
+    for (let i = 0; i < songs.length; i++) {
+        if(songs[i].name.length >= 20){
+            songs[i].name = songs[i].name.substring(0,20) + "...";
+        }
+    }
+
     let contentTopSongs = [];
     
     //console.log(songs);
     contentTopSongs.push(await createTextMesh("Your Top Songs", headlineSize, -150, -100, targetPoints.topSong - 85 ,0, 0, 0x000000,1,'Jersey 15_Regular'));
     
-    contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 10, targetPoints.topSong - 200, 0, 70));
-    contentTopSongs.push(await createTextMesh("1: " + songs[0].name, textSize, -35, 50, targetPoints.topSong - 200,0,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 10, targetPoints.topSong - 200, 0, 70, true));
+    contentTopSongs.push(await createTextMesh("1: " + songs[0].name, textSize, -40, 55, targetPoints.topSong - 200,0,0,0x000000, 1,'W95FA_Regular.typeface'));
     contentTopSongs.push(await createGLTFMesh(0, -90, targetPoints.topSong - 200, 0, 0, 0, 50.0, 'pedestal'));
 
-    contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -120, -5, targetPoints.topSong - 155, 20, 70));
-    contentTopSongs.push(await createTextMesh("2: " + songs[1].name, textSize, -155, 35, targetPoints.topSong - 145 ,0,20,0x000000, 1,'W95FA_Regular.typeface'));
+    contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -120, -5, targetPoints.topSong - 155, 20, 70, true));
+    contentTopSongs.push(await createTextMesh("2: " + songs[1].name, textSize, -155, 40, targetPoints.topSong - 135 ,0,20,0x000000, 1,'W95FA_Regular.typeface'));
     contentTopSongs.push(await createGLTFMesh(-120, -110, targetPoints.topSong - 155, 0,20, 0, 50, 'pedestal'));
 
-    contentTopSongs.push(await createBildMesh(songs[2].imageUrl, 110, -15, targetPoints.topSong - 135, -20, 70));
-    contentTopSongs.push(await createTextMesh("3: " + songs[2].name, textSize, 75,25, targetPoints.topSong - 135, 0,-20,0x000000, 1,'W95FA_Regular.typeface'));
+    contentTopSongs.push(await createBildMesh(songs[2].imageUrl, 110, -15, targetPoints.topSong - 135, -20, 70, true));
+    contentTopSongs.push(await createTextMesh("3: " + songs[2].name, textSize, 70,30, targetPoints.topSong - 145, 0,-20,0x000000, 1,'W95FA_Regular.typeface'));
     contentTopSongs.push(await createGLTFMesh(110, -120, targetPoints.topSong - 135, 0, -20, 0, 50 , 'pedestal'));
     
     return contentTopSongs;
@@ -1080,40 +1189,6 @@ async function createPlaylistResponse() {
     playlistButtonAktiviert = false;
     document.getElementById("playlistButton").style.display = "none";
 }
-
-async function iconAnimationPl(){
-
-    let contentIconAni = [];
-    const elapsedTime = clock.getElapsedTime();
-    const deltaTime = elapsedTime - previousTime;
-    previousTime = elapsedTime;
-
-    // Modelle
-    const iconAl = null;
-    const iconRob = null;
-    
-//     if(iconAl == null && iconRob == null){
-//         console.log("i m a shit in this 1");
-//     const iconAl = await createTextMesh("w", textBigSize-5, 55, 85, targetPoints.playlist,0, -25, 0x000000,0.3,'Yarndings 12_Regular');
-//     const iconRob = await createTextMesh("x", textBigSize-10, -120, -75, targetPoints.playlist,0, 15, 0x000000,0.2,'Yarndings 12_Regular');
-//         //animation der Modelle
-//         // console.log(iconAl);
-//         // console.log(iconRob);
-//         // console.log(iconAl.rotation.y);
-//         // console.log(elapsedTime)
-//         //  iconAl.rotation.y  += Math.sin(elapsedTime) * 0.9;
-//         //iconAl.rotation.x += Math.cos(elapsedTime) * 0.5;
-//         // iconAl.y = Math.sin(elapsedTime) * 5;
-//         console.log(iconAl.x);
-//         iconAl.x = Math.cos(elapsedTime) * -0.5;
-//         // iconRob.rotationY = Math.sin(elapsedTime) * 2;
-//         // iconRob.rotationX = Math.cos(elapsedTime) * 3;   
-//         // iconRob.y = Math.sin(elapsedTime) * 5;
-//         // iconRob.x = Math.cos(elapsedTime) * 5;
-//     }
-
-return contentIconAni;
-} 
 
 async function createPlaylist(){
     let contentPlaylist = [];
@@ -1134,7 +1209,32 @@ async function createEND(){
     return contentEnd;
 }
 
+async function createStart(){
+    let contentStart = [];
+    arrowModel = await createGLTFMesh(0, -40, gesamtTiefe -100, -80, -10, -40, 4.0, '3d_mouse_cursor');
+    contentStart.push(await createTextMesh("scroll to start", textSize, -35, -60, gesamtTiefe - 90,-20, 0, 0x000000, 1, 'Jersey 15_Regular'));
+    contentStart.push(arrowModel);
+    console.log("Content Start: ", contentStart);
+    return contentStart;
+}
+
+function handleStartPosition(){
+    setTimeout(() => {
+    new TWEEN.Tween(arrowModel.position)
+            .to({z: arrowModel.position.z - 20 }, 500)
+            .easing(TWEEN.Easing.Cubic.InOut)
+            .yoyo(true) // Rückkehr zur Ausgangsposition
+            .repeat(3)
+            .start();
+    }, 1250);
+}
+
 async function createAll() {
+    let inhaltStart = await createStart();
+    inhaltStart.forEach(element => inhaltGroup.add(element));
+    // let initCursor = await createGLTFMesh(0, -50, gesamtTiefe -100, -80, -10, -40, 5.0, '3d_mouse_cursor');
+    // inhaltGroup.add(initCursor);
+
     let inhaltProfil = await createProfil();
     inhaltProfil.forEach(element => inhaltGroup.add(element));
 
@@ -1199,6 +1299,18 @@ function clearAndRemoveObject(obj) {
     obj.parent?.remove(obj);
 }
 
+function playButtonSound(){
+    const buttonAudio = new Audio("../sounds/closeSound.mp3");
+    buttonAudio.play();
+}
+
+function playHoverSound(){
+    const soundOne = new Audio("../sounds/moveSoundOne.mp3");
+    const soundTwo = new Audio("../sounds/moveSoundTwo.mp3");
+    let movAudio = Math.random() < 0.5 ? soundOne : soundTwo;
+    movAudio.play();
+}
+
 // ---------------------------- Interaktionen aus der alten heavyRotInteraction ----------------------------
 
 const textMeshMap = new Map(); 
@@ -1212,8 +1324,8 @@ function updateRaycasterInteraction() {
 }
 
 function isCameraInBounds() {
-    let minCameraZ = 1000;
-    let maxCameraZ = 1500;
+    let minCameraZ = targetPoints.onRepeat - 100;
+    let maxCameraZ = targetPoints.onRepeat + cameraTargetDistance + 45;
     return camera.position.z >= minCameraZ && camera.position.z <= maxCameraZ;
 }
 
@@ -1243,6 +1355,7 @@ function processIntersects(intersects, lastIntersected) {
         // Prüft, ob das Objekt gehovert wird und ob es nicht durch bestimmte Bedingungen blockiert ist
         if (isMouseNearCenter(intersects[0]) && lastIntersected !== intersected && intersected !== lastHovered && !intersected.userData.interactionBlocked && !intersected.userData.isAnimating) {
             resetObject(lastIntersected);
+            playHoverSound();
             animateAndDisplayText(intersected);
             lastIntersected = intersected;
             lastHovered = intersected; // Setzt lastHovered auf das aktuelle BildMesh
@@ -1270,7 +1383,7 @@ async function animateAndDisplayText(obj) {
         centerTextMesh(songName);
         let songArtists = await displaySongArtist(obj);
         centerTextMesh(songArtists, -15);
-        console.log(songName, songArtists);
+        // console.log(songName, songArtists);
         scaleObject(obj, 1.6); // Vergrößern des Objekts beim Hover
 
         moveObject(obj, 200);

@@ -7,7 +7,7 @@ export default {
     server:
     {
         host: 'localhost',
-        // open: !isCodeSandbox // Open if it's not a CodeSandbox
+        open: !isCodeSandbox // Open if it's not a CodeSandbox
     },
     build:
     {
