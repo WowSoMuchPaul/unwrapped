@@ -610,7 +610,7 @@ async function rotateCube(event) {
     topArtistsRotationIndex = (topArtistsRotationIndex + 1) % rotationSequence.length; // Immer zum nächsten Schritt
     if(topArtistsRotationIndex == 0) {
         trackControls.noZoom = false;
-        // cleanupTopArtistsCube();
+        //cleanupTopArtistsCube();
         // clearAndRemoveObject(topArtistsRank);
         // clearAndRemoveObject(topArtistsName);
     }
@@ -621,7 +621,7 @@ async function rotateCube(event) {
         let rotation = {};
         rotation[step.axis] = topArtistsCube.rotation[step.axis] + step.angle;
         tween = new TWEEN.Tween(topArtistsCube.rotation)
-            .to(rotation, 800)
+            .to(rotation, 1000)
             .easing(TWEEN.Easing.Cubic.InOut)                
             .onComplete(() => {
                 setTimeout(() => {
