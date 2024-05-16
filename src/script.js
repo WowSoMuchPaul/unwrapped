@@ -309,6 +309,7 @@ loadingManager.onLoad = function() {
         document.getElementById("timeRange").addEventListener("change", function() {
             deleteGroup();
             timeRange = this.value;
+            progressBarContainer.style.zIndex = 10;
             progressBarContainer.style.display = 'flex';
 
             createAll();
@@ -540,7 +541,7 @@ function handleBereich(pos, tp) {
     }
 }
 
-let initialTween = new TWEEN.Tween(topArtistsCube.rotation);
+let initialTween;
 let topArtCubeAnimating;
 
 let rotationSequence = [
@@ -606,7 +607,7 @@ async function handleTopArtistBereich() {
      * Initiale Würfel-Animation beim ersten Betreten des Top-Artists-Bereichs.
      */
 function initialAnimation() {
-    initialTween
+    initialTween.TWEEN.Tween(topArtistsCube.rotation)
         .to({ x: topArtistsCube.rotation.x - Math.PI / 10 }, 600)
         .easing(TWEEN.Easing.Cubic.InOut)
         .yoyo(true) // Rückkehr zur Ausgangsposition
@@ -660,7 +661,7 @@ async function rotateCube(event) {
             .onComplete(() => {
                 setTimeout(() => {
                     topArtCubeAnimating = false;
-                }, 800);
+                }, 1000);
             })
             .start();
     });
