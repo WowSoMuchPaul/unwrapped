@@ -112,7 +112,10 @@ const progressBar = document.getElementById('progress-bar-blocks');
 const progressBarContainer = document.querySelector('.progress-bar-container');
 
 loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
-    loadingLabel.innerText = "Nearly done...";
+    // loadingLabel.innerText = "Nearly done...";
+    setTimeout(() => {
+        loadingLabel.innerText = "Nearly done...";
+    }, 1000);
 }
 
 let lastProgress = 0; 
@@ -236,6 +239,8 @@ async function init() {
     trackControls.zoomSpeed = zoomSpeedNorm;
     trackControls.staticMoving = false;
     trackControls.dynamicDampingFactor = 0.04;
+    trackControls.minDistance = targetPoints.playlist - 400;
+    trackControls.maxDistance = gesamtTiefe + 10;
 
     //Help Button
     document.getElementById("help").src = help;
@@ -381,19 +386,7 @@ function checkCamPosition() {
 
     document.getElementById("playlistButton").style.display = "none";
 
-    if (( pos <= (gesamtTiefe + 100)) && (pos >= (gesamtTiefe - 100))) {
-        console.log("Start Position"); 
-        // new TWEEN.Tween(arrowModel.position)
-        //     .to({z: arrowModel.position.z - 100 }, 1000)
-        //     .easing(TWEEN.Easing.Cubic.InOut)
-        //     .yoyo(true) // Rückkehr zur Ausgangsposition
-        //     .repeat(3) // Wiederhole die Bewegung einmal
-        //     .onComplete(() => {
-        //         arrowModel.position.z = gesamtTiefe -100;
-        //     })
-        //     .start();
-
-    }else if ((pos <= (targetPoints.profil + bereichOffsetVorne)) && (pos >= (targetPoints.profil - bereichOffsetHinten))) {
+    if ((pos <= (targetPoints.profil + bereichOffsetVorne)) && (pos >= (targetPoints.profil - bereichOffsetHinten))) {
         //Bereich Profil
         if (bereichInfo.currentIndex != 1) {
             bereichInfo.currentIndex = 1;
@@ -1031,8 +1024,8 @@ async function createTopArtist() {
     let artistPics = [];
     let contentTopArtist = [];
     let topArtistZ = targetPoints.topArtist - 200;
-    let headlineOne = await createTextMesh("Your", 20, -300, -90, topArtistZ,0, 0, 0x000000,1,'Jersey 15_Regular');
-    let headlineTwo = await createTextMesh("\nTop 6 Artists", 40, -300, -80, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
+    let headlineOne = await createTextMesh("Your", headlineSize, -300, -90, topArtistZ,0, 0, 0x000000,1,'Jersey 15_Regular');
+    let headlineTwo = await createTextMesh("\nTop 6 Artists", headlineSize, -300, -80, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
     // topArtistsRank = await createTextMesh("Top 1", 20, 100, 40, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
     // topArtistsName = await createTextMesh(topArtists[0].name, 15, 100, 10, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
 
@@ -1095,8 +1088,8 @@ async function createHeavyRotation() {
         bildMesh.userData.originalZ = z;
         heavyRotCircleGroup.add(bildMesh);
     }
-    contentHeavyRotation.push(await createTextMesh("Your Heavy \nRotation", headlineSize, -350, 150, targetPoints.onRepeat - 250, 10, 30, 0x000000, 1, 'Jersey 15_Regular'));
-    contentHeavyRotation.push(await createTextMesh("Hover to see more", textBigSize, -350, 50, targetPoints.onRepeat - 250, 10, 30, 0x000000, 1, 'Jersey 15_Regular'));
+    contentHeavyRotation.push(await createTextMesh("Your \nHeavy Rotation", headlineSize, -325, -100, targetPoints.onRepeat - 200, 0, 0, 0x000000, 1, 'Jersey 15_Regular'));
+    contentHeavyRotation.push(await createTextMesh("The Songs you listen to the most right now.", textBigSize -5 , -325, -200, targetPoints.onRepeat - 200, 0, 0, 0x000000, 1, 'Jersey 15_Regular'));
     contentHeavyRotation.push(heavyRotCircleGroup);
 
     return contentHeavyRotation;
@@ -1211,7 +1204,7 @@ async function createEND(){
 async function createStart(){
     let contentStart = [];
     arrowModel = await createGLTFMesh(0, -40, gesamtTiefe -100, -80, -10, -40, 4.0, '3d_mouse_cursor');
-    contentStart.push(await createTextMesh("Scroll to start", textSize, -35, -60, gesamtTiefe - 90,-20, 0, 0x000000, 1, 'Jersey 15_Regular'));
+    contentStart.push(await createTextMesh("scroll to start", textSize, -35, -60, gesamtTiefe - 90,-20, 0, 0x000000, 1, 'Jersey 15_Regular'));
     contentStart.push(arrowModel);
     console.log("Content Start: ", contentStart);
     return contentStart;
@@ -1224,14 +1217,8 @@ function handleStartPosition(){
             .easing(TWEEN.Easing.Cubic.InOut)
             .yoyo(true) // Rückkehr zur Ausgangsposition
             .repeat(3)
-            .onComplete(() => {
-            //    new TWEEN.Tween(arrowModel.position)
-            //             .to({z: arrowModel.position.z + 20}, 750)
-            //             .easing(TWEEN.Easing.Cubic.InOut)
-            //             .start();
-            })
             .start();
-    }, 2000);
+    }, 1250);
 }
 
 async function createAll() {
