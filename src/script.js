@@ -309,6 +309,8 @@ loadingManager.onLoad = function() {
         document.getElementById("timeRange").addEventListener("change", function() {
             deleteGroup();
             timeRange = this.value;
+            progressBarContainer.style.display = 'flex';
+
             createAll();
             //Playlist Button restetten
             document.getElementById("playlistButton").innerText = "Create Playlist";
@@ -641,6 +643,7 @@ async function rotateCube(event) {
     topArtistsRotationIndex = (topArtistsRotationIndex + 1) % rotationSequence.length; // Immer zum nächsten Schritt
     if(topArtistsRotationIndex == 0) {
         trackControls.noZoom = false;
+        window.removeEventListener('wheel', rotateCube);
         // cleanupTopArtistsCube();
         // clearAndRemoveObject(topArtistsRank);
         // clearAndRemoveObject(topArtistsName);
