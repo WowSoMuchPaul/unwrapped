@@ -155,7 +155,7 @@ async function init() {
     lastCamPosition = camera.position.z;
 
     //Lights
-    let light = new THREE.DirectionalLight(0xffffff, 2);
+    let light = new THREE.DirectionalLight(0xffffff, 1.2);
     light.position.set( gesamtTiefe/2, gesamtTiefe/2, gesamtTiefe ).normalize();
     light.target.position.set(0, 0, 0);
     scene.add(light);
@@ -347,7 +347,7 @@ function checkCamPosition() {
     if ((pos <= (targetPoints.topArtist + bereichOffsetVorne)) && (pos >= (targetPoints.topArtist - bereichOffsetHinten))) {
         handleBereich(pos, targetPoints.topArtist);
     } else {
-        cleanupTopArtistsCube();
+        // cleanupTopArtistsCube();
     }
 
     //Bereich Songs
@@ -399,7 +399,11 @@ function handleBereich(pos, tp) {
                 .easing(TWEEN.Easing.Exponential.Out)
                 .onComplete(() => {
                     if(tp == targetPoints.topArtist) {
-                        handleTopArtistBereich();
+                        if(!topArtistBereichInitialized){
+                            cleanupTopArtistsCube(); // Zurücksetzen, bevor der Bereich erneut initialisiert wird  
+                            handleTopArtistBereich();
+                            console.log("Handle Bereich triggered");
+                        }
                     } else {
                         //console.log("TWEEN abgeschlossen");
                         TrackballControls.noZoom = false;
@@ -445,30 +449,40 @@ let rotationSequence = [
     ]
 ];
 
+let topArtistBereichInitialized = false;
+
 /**
  * Behandelt den Bereich der Top-Künstler.
  * Wird aufgerufen wenn die Kamera in den Bereich der Top-Künstler eintritt.
  * Steuert die Rotation des Würfels und die Anzeige der Künstlerinformationen.
- * 
  * @async
  * @function handleTopArtistBereich
  * @returns {Promise<void>}
  */
 async function handleTopArtistBereich() {
-    topArtistsRank = await createTextMesh("Top 1", 20, 100, 40, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
-    topArtistsName = await createTextMesh(topArtistsCube.userData.artistNames[0], 15, 100, 10, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
-    inhaltGroup.add(topArtistsRank);
-    inhaltGroup.add(topArtistsName);
+    console.log("Handle Top Artist Bereich erreicht");
+    if (topArtistBereichInitialized) {
+        return; // Beende die Funktion, wenn sie bereits ausgeführt wurde
+    }
+    topArtistBereichInitialized = true;
+    topArtistsRotationIndex = 0;
+
+    // Bereinige eventuell vorhandene Text-Meshes, bevor neue erstellt werden
+    clearAndRemoveObject(topArtistsRank);
+    clearAndRemoveObject(topArtistsName);
+
+    await initTopArtistsCube();
+
     window.addEventListener('wheel', rotateCube);
-    // topArtistsCube.rotation.set(0, Math.PI + (Math.PI / 2), 0);
     if (!initCubeAnimationPlayed) {
         initialAnimation();
         initCubeAnimationPlayed = true;
     }
-    topArtistsRotationIndex = 0;
+    // topArtistsRotationIndex = 0;
     topArtCubeAnimating = false;
     trackControls.noZoom = true; // Verhindert Zoom während der Rotation
 }
+
 
 /**
      * Initiale Würfel-Animation beim ersten Betreten des Top-Artists-Bereichs.
@@ -486,22 +500,20 @@ function initialAnimation() {
                     .easing(TWEEN.Easing.Cubic.InOut)
                     .start();
             }
-        });
-
-    initialTween.start();
+        })
+        .start();
 }
 
 /**
-     * Dreht den Würfel und aktualisiert die angezeigten Informationen.
-     * 
-     * @param {Event} event - Das Ereignis, das den Funktionsaufruf ausgelöst hat.
-     * @returns {Promise<void>} Ein Promise, das gelöst wird, wenn die Animation abgeschlossen ist.
-     */
+ * Dreht den Würfel und aktualisiert die angezeigten Informationen.
+ * 
+ * @param {Event} event - Das Ereignis, das den Funktionsaufruf ausgelöst hat.
+ * @returns {Promise<void>} Ein Promise, das gelöst wird, wenn die Animation abgeschlossen ist.
+ */
 async function rotateCube(event) {
     if (topArtCubeAnimating || event.deltaY === 0) return;
     if(initialTween.isPlaying()){
         initialTween.stop();
-        // Würfel auf ausgangspoition zurücksetzen
         let resetTween = new TWEEN.Tween(topArtistsCube.rotation)
         .to({ x: 0, y: Math.PI + (Math.PI / 2), z: 0 }, 300)
         .easing(TWEEN.Easing.Cubic.InOut)
@@ -511,22 +523,19 @@ async function rotateCube(event) {
     topArtistsRotationIndex = (topArtistsRotationIndex + 1) % rotationSequence.length; // Immer zum nächsten Schritt
     if(topArtistsRotationIndex == 0) {
         trackControls.noZoom = false;
+        cleanupTopArtistsCube();
         clearAndRemoveObject(topArtistsRank);
         clearAndRemoveObject(topArtistsName);
-        cleanupTopArtistsCube();
     }
     let steps = rotationSequence[topArtistsRotationIndex];
     let tween;
-    // Führt jede Rotation aus dem Schritt in der Sequenz aus
     steps.forEach((step) => {
-        console.log(step);
         let rotation = {};
         rotation[step.axis] = topArtistsCube.rotation[step.axis] + step.angle;
         tween = new TWEEN.Tween(topArtistsCube.rotation)
             .to(rotation, 800)
             .easing(TWEEN.Easing.Cubic.InOut)                
             .onComplete(() => {
-                console.log("Rotation nach Animation: ", topArtistsCube.rotation);
                 setTimeout(() => {
                     topArtCubeAnimating = false;
                 }, 800);
@@ -541,35 +550,59 @@ async function rotateCube(event) {
     inhaltGroup.add(topArtistsName);
 }
 
+
+/**
+ * Initialisiert den Top-Artists-Würfel.
+ * Setzt die Ursprungsrotation und erstellt die ersten Text-Meshes.
+ * @async
+ * @function initTopArtistsCube
+ * @returns {Promise<void>}
+ */
+async function initTopArtistsCube() {
+    // Bereinige eventuell vorhandene Text-Meshes, bevor neue erstellt werden
+    clearAndRemoveObject(topArtistsRank);
+    clearAndRemoveObject(topArtistsName);
+
+    topArtistsRotationIndex = 0;
+
+    // Setze den Würfel auf die Ursprungsrotation
+    new TWEEN.Tween(topArtistsCube.rotation)
+        .to({ x: 0, y: Math.PI + (Math.PI / 2), z: 0 }, 300)
+        .easing(TWEEN.Easing.Cubic.InOut)
+        .start();
+    
+    // Erstelle die ersten Text-Meshes
+    topArtistsRank = await createTextMesh("Top 1", 20, 100, 40, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
+    topArtistsName = await createTextMesh(topArtistsCube.userData.artistNames[0], 15, 100, 10, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
+    
+    // Füge die Text-Meshes zur Gruppe hinzu
+    inhaltGroup.add(topArtistsRank);
+    inhaltGroup.add(topArtistsName);
+}
+
+
 /**
  * Funktion zum Aufräumen und Zurücksetzen des Würfels.
  * Entfernt den Event-Listener für das Scrollen und setzt den Würfel auf die erste Rotation aus der Sequenz zurück.
- * @async
- * @returns {Promise<void>}
+ * @function cleanupTopArtistsCube
  */
-async function cleanupTopArtistsCube() {
+function cleanupTopArtistsCube() {
+    console.log("Cleanup wurde aufgerufen");
     window.removeEventListener('wheel', rotateCube);
-    topArtistsCube.rotation.set(0, Math.PI + (Math.PI / 2), 0);
     clearAndRemoveObject(topArtistsRank);
     clearAndRemoveObject(topArtistsName);
-    // Setze den Würfel auf die erste Rotation aus der Sequenz zurück
-    let firstStep = rotationSequence[0];
-    let rotation = {};
-    firstStep.forEach(step => {
-        rotation[step.axis] = step.angle; // Setze die Winkel direkt aus der ersten Sequenz
-    });
-    
-    console.log("Ursprungs Rotation: ", topArtistsCube.userData.rotation);
-    console.log("Aktuelle  Rotation: ", topArtistsCube.rotation);
-    if(topArtistsCube.userData.rotation !== topArtistsCube.rotation) {
+
+    // Setze den Index für die Rotation zurück
+    topArtistsRotationIndex = 0;
+
+    // Setze den Würfel auf die erste Rotation der Sequenz zurück
     new TWEEN.Tween(topArtistsCube.rotation)
-        .to(rotation, 500)
+        .to({ x: 0, y: Math.PI + (Math.PI / 2), z: 0 }, 300)
         .easing(TWEEN.Easing.Cubic.InOut)
         .start();
-        console.log("gedreht");
-    }
-
+    topArtistBereichInitialized = false;
 }
+
 
 
 function bringeZumBereich(tp) {
@@ -587,7 +620,10 @@ function bringeZumBereich(tp) {
         trackControls.noZoom = false;
         freeMovement = true;
         if(tp == targetPoints.topArtist) {
+            if(!topArtistBereichInitialized){
+            cleanupTopArtistsCube(); // Zurücksetzen, bevor der Bereich erneut initialisiert wird
             handleTopArtistBereich();
+            }
         }
     })
     .start();
@@ -721,7 +757,7 @@ async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse) {
             bildUrl,
             (texture) => {
                 const geometry = new THREE.PlaneGeometry(bildGroesse, bildGroesse);
-                const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+                const material = new THREE.MeshPhongMaterial({ map: texture, side: THREE.DoubleSide });
 
                 const aspect = bildGroesse / bildGroesse;
                 var imageAspect = texture.image.width / texture.image.height;
@@ -759,9 +795,9 @@ function createCube(options) {
     const geometry = new THREE.BoxGeometry();
     const materials = options.materials.map(material => {
         if (typeof material === 'string' && (material.startsWith('http') || material.match(/\.(jpeg|jpg|gif|png)$/))) {
-            return new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader(loadingManager).load(material) });
+            return new THREE.MeshPhongMaterial({ map: new THREE.TextureLoader(loadingManager).load(material) });
         } else {
-            return new THREE.MeshBasicMaterial({ color: material, transparent: true, opacity: 1 });
+            return new THREE.MeshPhongMaterial({ color: material, transparent: true, opacity: 1 });
         }
     });
 
@@ -772,7 +808,7 @@ function createCube(options) {
     cube.scale.set(options.scale, options.scale, options.scale);
     cube.position.z = options.positionZ;
     cube.userData.rotation = cube.rotation;
-    console.log("Rotation: ", cube.rotation);
+    // console.log("Rotation: ", cube.rotation);
     cube.name = "TopArtists Cube";
 
     return cube;
@@ -909,15 +945,15 @@ async function createTopArtist() {
     let topArtistZ = targetPoints.topArtist - 200;
     let headlineOne = await createTextMesh("Your", 20, -300, -90, topArtistZ,0, 0, 0x000000,1,'Jersey 15_Regular');
     let headlineTwo = await createTextMesh("\nTop 6 Artists", 40, -300, -80, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
-    topArtistsRank = await createTextMesh("Top 1", 20, 100, 40, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
-    topArtistsName = await createTextMesh(topArtists[0].name, 15, 100, 10, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
+    // topArtistsRank = await createTextMesh("Top 1", 20, 100, 40, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
+    // topArtistsName = await createTextMesh(topArtists[0].name, 15, 100, 10, topArtistZ, 0, 0, 0x000000,1,'Jersey 15_Regular');
 
     const cubeOptions = {
         materials: [],
         positionZ: topArtistZ,
         scale: 100,
-        rotationY: 2,
-        rotationX: -8,
+        // rotationY: 2,
+        // rotationX: -8,
     };
     for (let i = 0; i < topArtists.length; i++) {
         artistPics.push(topArtists[i].imageUrl);
