@@ -37,12 +37,12 @@ let initCubeAnimationPlayed = false;
 let bereichInfo = {
     currentIndex : 0,
     bereich : [
-        {name: "unwrapped", text:"This window will guide you through the unwrapped experience. You can navigate through the different sections by scrolling or using the navigation bar on the right. Enjoy the ride!"},
-        {name: "Profil", text: "This is your Spotify profile. Have a look at your profile picture and your recently played songs."},
-        {name: "Top Artists", text: "These are your most listened to artists. Scroll to see more."}, 
-        {name: "Top Songs", text: "These are your most listened to songs. Congratilations to your top hits!"}, 
-        {name: "Heavy Rotation", text: "These are the songs you can't stop listening to. Hover over the covers to reveal more details. Keep on repeating!"}, 
-        {name: "Playlist", text: "This is your chance to create your personal unwrapped playlist. Press the button to save the playlist to your profile. Enjoy the music!"}
+        {name: "unwrapped", text:"This window will guide you through the unwrapped experience. You can navigate through the different sections by <u>scrolling</u> or using the <u>navigation bar</u> on the right. <br>Enjoy the ride!"},
+        {name: "Profil", text: "This is your Spotify profile. <br>Have a look at your profile picture and your recently played songs."},
+        {name: "Top Artists", text: "These are your most listened to artists. <br><u>Scroll</u> to see more."}, 
+        {name: "Top Songs", text: "These are your most listened to songs. <br>Congratulations to your top hits!"}, 
+        {name: "Heavy Rotation", text: "These are the songs you can't stop listening to. <br><u>Hover</u> over the covers to reveal more details. <br>Keep on repeating!"}, 
+        {name: "Playlist", text: "This is your chance to create your personal unwrapped playlist. <br><u>Press the button</u> to save the playlist to your profile. Enjoy the music!"}
     ],
 };
 const gesamtTiefe = 5000;
@@ -357,9 +357,9 @@ function closeHelp() {
 }
 
 function setHelpText() {
-    document.getElementById("helpBereichInfo").innerText = bereichInfo.bereich[bereichInfo.currentIndex].text;
-    document.getElementById("helpHeadline").innerText = bereichInfo.bereich[bereichInfo.currentIndex].name;
-    document.getElementById("helpOverlayHeadline").innerText = bereichInfo.bereich[bereichInfo.currentIndex].name.toLowerCase() + ".help";
+    document.getElementById("helpBereichInfo").innerHTML = bereichInfo.bereich[bereichInfo.currentIndex].text;
+    document.getElementById("helpHeadline").innerHTML = bereichInfo.bereich[bereichInfo.currentIndex].name;
+    document.getElementById("helpOverlayHeadline").innerHTML = bereichInfo.bereich[bereichInfo.currentIndex].name.toLowerCase() + ".help";
 }
 
 function onWindowResize() {

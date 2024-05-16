@@ -57,6 +57,10 @@ body {
   animation: WindowsBlurr 30s ease infinite;
 }
 
+p{
+  line-height: 1.5rem;
+}
+
 canvas {
   position: fixed;
   top: 0;
