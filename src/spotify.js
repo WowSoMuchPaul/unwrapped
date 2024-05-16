@@ -215,7 +215,10 @@ async function callApi(method, url, body) {
         //Bei erfolgreichem call die erfragten Daten returnen
         return response.json();
     }else if (status == 401 ){
-        await refreshToken();
+        console.log("Token expired, please refresh token");
+        logoutClick();
+        return response;
+        //await refreshToken();
         //callApi(method, url, body);
     }else if (status == 202){
         //Erfolgreicher Request, Cover wurde gesetzt
@@ -385,6 +388,11 @@ export async function setFestivalPlaylist(timeRange){
         "description": "Deine Playlist zum unwrapped 2024 basierend auf " + zeitInfo + ".", 
         "public": "false"
     };
+
+    //Schauen, ob es schon eine Playlist mit dem Namen gibt.
+    // const idData = await callApi("GET", onRepeatEndpoint, null);
+    // const onRepeatId = idData.playlists.items[0].id;
+
     const playlistId = (await callApi("POST", "https://api.spotify.com/v1/users/" + spotifyUserID + "/playlists", body)).id;
 
     //Liste mit allen Track-Uris füllen, die zur Playlist hinzugefuegt werden sollen.
@@ -421,4 +429,6 @@ export async function setFestivalPlaylist(timeRange){
     while(coverRes.status != 202){
         coverRes = await (callApi("PUT", "https://api.spotify.com/v1/playlists/" + playlistId + "/images", base64Cover));
     }
+
+    return coverRes.status == 202;
 }
