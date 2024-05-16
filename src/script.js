@@ -28,6 +28,7 @@ import { log } from 'three/examples/jsm/nodes/Nodes.js';
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, topArtistCountText, arrowModel;
 // export {camera, heavyRotCircleGroup as heavyRotCircleGroup, inhaltGroup, scene};
 export const targetPoints = {};
+const loadingManager = new THREE.LoadingManager();
 let inEinemBereich = false;
 let tweenAktiviert = false; 
 let freeMovement = true;
@@ -38,12 +39,12 @@ let playlistButtonAktiviert = true;
 let bereichInfo = {
     currentIndex : 0,
     bereich : [
-        {name: "unwrapped", text:"This window will guide you through the unwrapped experience. You can navigate through the different sections by scrolling or using the navigation bar on the right. Enjoy the ride!"},
-        {name: "Profil", text: "This is your Spotify profile. Have a look at your profile picture and your recently played songs."},
-        {name: "Top Artists", text: "These are your most listened to artists. Scroll to see more."}, 
-        {name: "Top Songs", text: "These are your most listened to songs. Congratilations to your top hits!"}, 
-        {name: "Heavy Rotation", text: "These are the songs you can't stop listening to. Hover over the covers to reveal more details. Keep on repeating!"}, 
-        {name: "Playlist", text: "This is your chance to create your personal unwrapped playlist. Press the button to save the playlist to your profile. Enjoy the music!"}
+        {name: "unwrapped", text:"This window will guide you through the unwrapped experience. You can navigate through the different sections by <u>scrolling</u> or using the <u>navigation bar</u> on the right. <br>Enjoy the ride!"},
+        {name: "Profil", text: "This is your Spotify profile. <br>Have a look at your profile picture and your recently played songs."},
+        {name: "Top Artists", text: "These are your most listened to artists. <br><u>Scroll</u> to see more."}, 
+        {name: "Top Songs", text: "These are your most listened to songs. <br>Congratulations to your top hits!"}, 
+        {name: "Heavy Rotation", text: "These are the songs you can't stop listening to. <br><u>Hover</u> over the covers to reveal more details. <br>Keep on repeating!"}, 
+        {name: "Playlist", text: "This is your chance to create your personal unwrapped playlist. <br><u>Press the button</u> to save the playlist to your profile. Enjoy the music!"}
     ],
 };
 const gesamtTiefe = 5000;
@@ -107,7 +108,49 @@ export function getMouse3DPosition(mouse, camera) {
 /**cursor */
 const cursor = {};
 
-const loadingManager = new THREE.LoadingManager();
+// const loadingManager = new THREE.LoadingManager();
+// const loadingLabel = document.getElementById('progress-bar-label');
+// const progressBar = document.getElementById('progress-bar-blocks');
+// const progressBarContainer = document.querySelector('.progress-bar-container');
+
+// loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
+//     // loadingLabel.innerText = "Nearly done...";
+//     setTimeout(() => {
+//         loadingLabel.innerText = "Nearly done...";
+//     }, 1000);
+// }
+
+// let lastProgress = 0; 
+// loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
+//     console.log("Progress: ", itemsLoaded, itemsTotal);
+//     console.log(url);
+//     let currentProgress = (itemsLoaded / itemsTotal) * 100;
+
+//     // if(currentProgress > lastProgress) {
+//         progressBar.value = currentProgress;
+//     //     lastProgress = currentProgress;
+//     // }
+// };
+
+// loadingManager.onLoad = function() {
+//     setTimeout(() => {
+//             progressBarContainer.style.display = 'none';
+//     }, 2000);
+// }
+
+await init(); // Starte die Initialisierung der Szene
+
+
+/**
+ * Initialisiert die Anwendung.
+ * Erstellt alle nötigen Elemente und fügt sie der Szene hinzu.
+ * @async
+ * @function init
+ * @returns {Promise<void>}
+ */
+async function init() {
+    // console.log("Init");
+// const loadingManager = new THREE.LoadingManager();
 const loadingLabel = document.getElementById('progress-bar-label');
 const progressBar = document.getElementById('progress-bar-blocks');
 const progressBarContainer = document.querySelector('.progress-bar-container');
@@ -137,18 +180,6 @@ loadingManager.onLoad = function() {
     }, 2000);
 }
 
-await init(); // Starte die Initialisierung der Szene
-
-
-/**
- * Initialisiert die Anwendung.
- * Erstellt alle nötigen Elemente und fügt sie der Szene hinzu.
- * @async
- * @function init
- * @returns {Promise<void>}
- */
-async function init() {
-    // console.log("Init");
     /**
      * Sizes
      */
@@ -278,6 +309,8 @@ async function init() {
         document.getElementById("timeRange").addEventListener("change", function() {
             deleteGroup();
             timeRange = this.value;
+            progressBarContainer.style.display = 'flex';
+
             createAll();
             //Playlist Button restetten
             document.getElementById("playlistButton").innerText = "Create Playlist";
@@ -363,9 +396,9 @@ function closeHelp() {
 }
 
 function setHelpText() {
-    document.getElementById("helpBereichInfo").innerText = bereichInfo.bereich[bereichInfo.currentIndex].text;
-    document.getElementById("helpHeadline").innerText = bereichInfo.bereich[bereichInfo.currentIndex].name;
-    document.getElementById("helpOverlayHeadline").innerText = bereichInfo.bereich[bereichInfo.currentIndex].name.toLowerCase() + ".help";
+    document.getElementById("helpBereichInfo").innerHTML = bereichInfo.bereich[bereichInfo.currentIndex].text;
+    document.getElementById("helpHeadline").innerHTML = bereichInfo.bereich[bereichInfo.currentIndex].name;
+    document.getElementById("helpOverlayHeadline").innerHTML = bereichInfo.bereich[bereichInfo.currentIndex].name.toLowerCase() + ".help";
 }
 
 function onWindowResize() {
@@ -610,7 +643,8 @@ async function rotateCube(event) {
     topArtistsRotationIndex = (topArtistsRotationIndex + 1) % rotationSequence.length; // Immer zum nächsten Schritt
     if(topArtistsRotationIndex == 0) {
         trackControls.noZoom = false;
-        //cleanupTopArtistsCube();
+        window.removeEventListener('wheel', rotateCube);
+        // cleanupTopArtistsCube();
         // clearAndRemoveObject(topArtistsRank);
         // clearAndRemoveObject(topArtistsName);
     }
