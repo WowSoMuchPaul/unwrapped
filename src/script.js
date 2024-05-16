@@ -28,6 +28,7 @@ import { log } from 'three/examples/jsm/nodes/Nodes.js';
 let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, topArtistCountText, arrowModel;
 // export {camera, heavyRotCircleGroup as heavyRotCircleGroup, inhaltGroup, scene};
 export const targetPoints = {};
+const loadingManager = new THREE.LoadingManager();
 let inEinemBereich = false;
 let tweenAktiviert = false; 
 let freeMovement = true;
@@ -106,7 +107,49 @@ export function getMouse3DPosition(mouse, camera) {
 /**cursor */
 const cursor = {};
 
-const loadingManager = new THREE.LoadingManager();
+// const loadingManager = new THREE.LoadingManager();
+// const loadingLabel = document.getElementById('progress-bar-label');
+// const progressBar = document.getElementById('progress-bar-blocks');
+// const progressBarContainer = document.querySelector('.progress-bar-container');
+
+// loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
+//     // loadingLabel.innerText = "Nearly done...";
+//     setTimeout(() => {
+//         loadingLabel.innerText = "Nearly done...";
+//     }, 1000);
+// }
+
+// let lastProgress = 0; 
+// loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
+//     console.log("Progress: ", itemsLoaded, itemsTotal);
+//     console.log(url);
+//     let currentProgress = (itemsLoaded / itemsTotal) * 100;
+
+//     // if(currentProgress > lastProgress) {
+//         progressBar.value = currentProgress;
+//     //     lastProgress = currentProgress;
+//     // }
+// };
+
+// loadingManager.onLoad = function() {
+//     setTimeout(() => {
+//             progressBarContainer.style.display = 'none';
+//     }, 2000);
+// }
+
+await init(); // Starte die Initialisierung der Szene
+
+
+/**
+ * Initialisiert die Anwendung.
+ * Erstellt alle nötigen Elemente und fügt sie der Szene hinzu.
+ * @async
+ * @function init
+ * @returns {Promise<void>}
+ */
+async function init() {
+    // console.log("Init");
+// const loadingManager = new THREE.LoadingManager();
 const loadingLabel = document.getElementById('progress-bar-label');
 const progressBar = document.getElementById('progress-bar-blocks');
 const progressBarContainer = document.querySelector('.progress-bar-container');
@@ -136,18 +179,6 @@ loadingManager.onLoad = function() {
     }, 2000);
 }
 
-await init(); // Starte die Initialisierung der Szene
-
-
-/**
- * Initialisiert die Anwendung.
- * Erstellt alle nötigen Elemente und fügt sie der Szene hinzu.
- * @async
- * @function init
- * @returns {Promise<void>}
- */
-async function init() {
-    // console.log("Init");
     /**
      * Sizes
      */
