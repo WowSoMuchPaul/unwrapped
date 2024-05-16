@@ -1,3 +1,4 @@
+import { cos } from 'three/examples/jsm/nodes/Nodes.js';
 import coverUrl from '../static/images/PaulApproved.jpeg';
 
 const client_id = "b125b5d4ba6f4e619e84880fa7a9a74f";
@@ -372,7 +373,7 @@ export async function setFestivalPlaylist(timeRange){
     const topSongs = await getTopSongs(timeRange);
     const onRepeat = await getOnRepeat();
     let spotifyUserID = profil.id;
-    let playlistName = profil.name + "s unwrapped 2024";
+    let playlistName = profil.name + "s unwrapped";
     let zeitInfo = "deiner Spotify Erfahrung";
     if(timeRange == "long_term") {
         zeitInfo = "deiner gesamten Spotify Erfahrung";
@@ -389,11 +390,21 @@ export async function setFestivalPlaylist(timeRange){
         "public": "false"
     };
 
-    //Schauen, ob es schon eine Playlist mit dem Namen gibt.
-    // const idData = await callApi("GET", onRepeatEndpoint, null);
-    // const onRepeatId = idData.playlists.items[0].id;
-
-    const playlistId = (await callApi("POST", "https://api.spotify.com/v1/users/" + spotifyUserID + "/playlists", body)).id;
+    //In den Playlists des Users nach der Playlist suchen, falls vorhanden.
+    const userPlaylistsEndpoint = "https://api.spotify.com/v1/users/" + profil.id + "/playlists";
+    const userPlaylistsResponse = await callApi("GET", userPlaylistsEndpoint, null);
+    let playlistId;
+    let playlistExists = false;
+    for (const playlist of userPlaylistsResponse.items) {
+        if(playlist.name == playlistName){
+            playlistId = playlist.id;
+            playlistExists = true;
+            break;
+        }
+    }
+    if(!playlistExists) {
+        playlistId = (await callApi("POST", "https://api.spotify.com/v1/users/" + spotifyUserID + "/playlists", body)).id;
+    }
 
     //Liste mit allen Track-Uris füllen, die zur Playlist hinzugefuegt werden sollen.
 
@@ -418,17 +429,21 @@ export async function setFestivalPlaylist(timeRange){
     }
 
     //Alle Tracks der Playlist hinzufuegen
-    let trackUriListe = {"uris": trackListe, "position": 0};
-    callApi("POST", "https://api.spotify.com/v1/playlists/" + playlistId + "/tracks", trackUriListe);
-
-    
-    let base64Cover = await (getBase64Image(coverUrl));
-    let coverRes = await (callApi("PUT", "https://api.spotify.com/v1/playlists/" + playlistId + "/images", base64Cover));
-    //Beim Cover setzten scheint Spotify etwas unzuverlässig zu sein, daher wird der Request so lange wiederholt, bis er erfolgreich ist.
-    //Kein 100% sauberer Weg, aber zunächst ein ausreichender Workaround.
-    while(coverRes.status != 202){
-        coverRes = await (callApi("PUT", "https://api.spotify.com/v1/playlists/" + playlistId + "/images", base64Cover));
+    let trackUriListe = {"uris": trackListe};
+    const setplaylistRes = await callApi("PUT", "https://api.spotify.com/v1/playlists/" + playlistId + "/tracks", JSON.stringify(trackUriListe));
+    console.log(setplaylistRes);
+    //Cover der Playlist setzen
+    if(!playlistExists){
+        let base64Cover = await (getBase64Image(coverUrl));
+        let coverRes = await (callApi("PUT", "https://api.spotify.com/v1/playlists/" + playlistId + "/images", base64Cover));
+        //Beim Cover setzten scheint Spotify etwas unzuverlässig zu sein, daher wird der Request so lange wiederholt, bis er erfolgreich ist.
+        //Kein 100% sauberer Weg, aber zunächst ein ausreichender Workaround.
+        while(coverRes.status != 202){
+            coverRes = await (callApi("PUT", "https://api.spotify.com/v1/playlists/" + playlistId + "/images", base64Cover));
+        }
+        if ((coverRes.status == 202) && (setplaylistRes.snapshot_id)) return "Playlist erfolgreich erstellt!";
+    }else{
+        if (setplaylistRes.snapshot_id) return "Playlist erfolgreich aktualisiert!";
     }
 
-    return coverRes.status == 202;
 }

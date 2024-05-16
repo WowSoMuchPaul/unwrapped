@@ -35,6 +35,7 @@ let freeMovement = true;
 let timeRange = document.getElementById("timeRange").value;
 let topArtistsRotationIndex;
 let initCubeAnimationPlayed = false;
+let playlistButtonAktiviert = true;
 let bereichInfo = {
     currentIndex : 0,
     bereich : [
@@ -309,6 +310,11 @@ loadingManager.onLoad = function() {
             deleteGroup();
             timeRange = this.value;
             createAll();
+            //Playlist Button restetten
+            document.getElementById("playlistButton").innerText = "Create Playlist";
+            document.getElementById("playlistButton").disabled = false;
+            playlistButtonAktiviert = true;
+            checkCamPosition();
         });
         await createAll();
     }else{
@@ -463,7 +469,9 @@ function checkCamPosition() {
         if (freeMovement) {
             handleBereich(pos, targetPoints.playlist);
         }
-        document.getElementById("playlistButton").style.display = "block";
+        if (playlistButtonAktiviert) {
+            document.getElementById("playlistButton").style.display = "block";
+        }
     }else{
         //Außerhalb der Bereiche
         if (bereichInfo.currentIndex != 0) {
@@ -1205,10 +1213,12 @@ async function createTopSongs() {
 }
 
 async function createPlaylistResponse() {
-    if (await setFestivalPlaylist(timeRange)) {
-        console.log("Festival Playlist erstellt!");
-        //document.getElementById("playlistButton").innerText = "Playlist erstellt!";
-    }
+    document.getElementById("playlistButton").innerText = "Loading...";
+    document.getElementById("playlistButton").disabled = true;
+    const playlistRes = await setFestivalPlaylist(timeRange);
+    console.log(playlistRes);
+    playlistButtonAktiviert = false;
+    document.getElementById("playlistButton").style.display = "none";
 }
 
 async function createPlaylist(){
