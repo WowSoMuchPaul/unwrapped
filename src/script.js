@@ -45,7 +45,7 @@ let bereichInfo = {
         {name: "Playlist", text: "This is your chance to create your personal unwrapped playlist. Press the button to save the playlist to your profile. Enjoy the music!"}
     ],
 };
-const gesamtTiefe = 3000;
+const gesamtTiefe = 5000;
 const bereichOffsetVorne = 400;
 const bereichDampingVorne = bereichOffsetVorne / 2;
 const bereichOffsetHinten = 100;
@@ -423,6 +423,8 @@ function checkCamPosition() {
         if (bereichInfo.currentIndex != 0) {
             bereichInfo.currentIndex = 0;
             setHelpText();
+            console.log("Cleanup außerhalb der Bereiche aufgerufen :"); 
+            cleanupTopArtistsCube(); // Zurücksetzen, bevor der Bereich erneut initialisiert wird 
         }
     }
 }
@@ -458,9 +460,8 @@ function handleBereich(pos, tp) {
                 .onComplete(() => {
                     if(tp == targetPoints.topArtist) {
                         if(!topArtistBereichInitialized){
-                            cleanupTopArtistsCube(); // Zurücksetzen, bevor der Bereich erneut initialisiert wird  
+                            // cleanupTopArtistsCube(); // Zurücksetzen, bevor der Bereich erneut initialisiert wird  
                             handleTopArtistBereich();
-                            console.log("Handle Bereich triggered");
                         }
                     } else {
                         //console.log("TWEEN abgeschlossen");
@@ -527,15 +528,17 @@ async function handleTopArtistBereich() {
     topArtistsRotationIndex = 0;
 
     // Bereinige eventuell vorhandene Text-Meshes, bevor neue erstellt werden
-    clearAndRemoveObject(topArtistsRank);
-    clearAndRemoveObject(topArtistsName);
+    // clearAndRemoveObject(topArtistsRank);
+    // clearAndRemoveObject(topArtistsName);
 
-    await initTopArtistsCube();
+    // await initTopArtistsCube();
+    topArtistBereichInitialized = false;
+
 
     window.addEventListener('wheel', rotateCube);
     if (!initCubeAnimationPlayed) {
         initialAnimation();
-        initCubeAnimationPlayed = true;
+        // initCubeAnimationPlayed = true;
     }
     // topArtistsRotationIndex = 0;
     topArtCubeAnimating = false;
@@ -561,6 +564,8 @@ function initialAnimation() {
             }
         })
         .start();
+        initCubeAnimationPlayed = true;
+
 }
 
 /**
@@ -582,9 +587,9 @@ async function rotateCube(event) {
     topArtistsRotationIndex = (topArtistsRotationIndex + 1) % rotationSequence.length; // Immer zum nächsten Schritt
     if(topArtistsRotationIndex == 0) {
         trackControls.noZoom = false;
-        cleanupTopArtistsCube();
-        clearAndRemoveObject(topArtistsRank);
-        clearAndRemoveObject(topArtistsName);
+        // cleanupTopArtistsCube();
+        // clearAndRemoveObject(topArtistsRank);
+        // clearAndRemoveObject(topArtistsName);
     }
     let steps = rotationSequence[topArtistsRotationIndex];
     let tween;
@@ -626,7 +631,7 @@ async function initTopArtistsCube() {
 
     // Setze den Würfel auf die Ursprungsrotation
     new TWEEN.Tween(topArtistsCube.rotation)
-        .to({ x: 0, y: Math.PI + (Math.PI / 2), z: 0 }, 300)
+        .to({ x: 0, y: Math.PI + (Math.PI / 2), z: 0 }, 600)
         .easing(TWEEN.Easing.Cubic.InOut)
         .start();
     
@@ -645,11 +650,11 @@ async function initTopArtistsCube() {
  * Entfernt den Event-Listener für das Scrollen und setzt den Würfel auf die erste Rotation aus der Sequenz zurück.
  * @function cleanupTopArtistsCube
  */
-function cleanupTopArtistsCube() {
+async function cleanupTopArtistsCube() {
     console.log("Cleanup wurde aufgerufen");
     window.removeEventListener('wheel', rotateCube);
-    clearAndRemoveObject(topArtistsRank);
-    clearAndRemoveObject(topArtistsName);
+    // clearAndRemoveObject(topArtistsRank);
+    // clearAndRemoveObject(topArtistsName);
 
     // Setze den Index für die Rotation zurück
     topArtistsRotationIndex = 0;
@@ -660,6 +665,11 @@ function cleanupTopArtistsCube() {
         .easing(TWEEN.Easing.Cubic.InOut)
         .start();
     topArtistBereichInitialized = false;
+    // topArtistsRank = await createTextMesh("Top " + (topArtistsRotationIndex + 1), 20, 100, 40, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
+    // topArtistsName = await createTextMesh(topArtistsCube.userData.artistNames[topArtistsRotationIndex], 15, 100, 10, targetPoints.topArtist -200, 0, 0, 0x000000, 1, 'W95FA_Regular.typeface');
+    // inhaltGroup.add(topArtistsRank);
+    // inhaltGroup.add(topArtistsName);
+    await initTopArtistsCube();
 }
 
 
@@ -680,8 +690,9 @@ function bringeZumBereich(tp) {
         freeMovement = true;
         if(tp == targetPoints.topArtist) {
             if(!topArtistBereichInitialized){
-            cleanupTopArtistsCube(); // Zurücksetzen, bevor der Bereich erneut initialisiert wird
-            handleTopArtistBereich();
+            // console.log("Cleanup aus bringeZumBereich aufgerufen:");
+            // cleanupTopArtistsCube(); // Zurücksetzen, bevor der Bereich erneut initialisiert wird
+            // handleTopArtistBereich();
             }
         }
     })
