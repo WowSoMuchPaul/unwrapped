@@ -416,6 +416,7 @@ function handleBereich(pos, tp) {
     if (((pos > (tp + bereichOffsetVorne - bereichDampingVorne)) || (pos < (tp - bereichOffsetHinten + bereichDampingHinten))) && inEinemBereich) {
         inEinemBereich = false;
         tweenAktiviert = false;
+        console.log("Bereich verlassen");
     }
     //Kamera ist im Austritts-Damping
     if ((pos >= (tp - bereichOffsetHinten)) && (pos <= (tp - bereichOffsetHinten + bereichDampingHinten))) {
