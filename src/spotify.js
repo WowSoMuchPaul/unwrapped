@@ -388,6 +388,11 @@ export async function setFestivalPlaylist(timeRange){
         "description": "Deine Playlist zum unwrapped 2024 basierend auf " + zeitInfo + ".", 
         "public": "false"
     };
+
+    //Schauen, ob es schon eine Playlist mit dem Namen gibt.
+    // const idData = await callApi("GET", onRepeatEndpoint, null);
+    // const onRepeatId = idData.playlists.items[0].id;
+
     const playlistId = (await callApi("POST", "https://api.spotify.com/v1/users/" + spotifyUserID + "/playlists", body)).id;
 
     //Liste mit allen Track-Uris füllen, die zur Playlist hinzugefuegt werden sollen.

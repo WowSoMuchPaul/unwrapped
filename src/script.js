@@ -37,7 +37,7 @@ let initCubeAnimationPlayed = false;
 let bereichInfo = {
     currentIndex : 0,
     bereich : [
-        {name: "unwrapped", text:"This window will guide you through the unwrapped experience. You can navigate through the different sections by scrolling or using the navigation bar. Enjoy the ride!"},
+        {name: "unwrapped", text:"This window will guide you through the unwrapped experience. You can navigate through the different sections by scrolling or using the navigation bar on the right. Enjoy the ride!"},
         {name: "Profil", text: "This is your Spotify profile. Have a look at your profile picture and your recently played songs."},
         {name: "Top Artists", text: "These are your most listened to artists. Scroll to see more."}, 
         {name: "Top Songs", text: "These are your most listened to songs. Congratilations to your top hits!"}, 
@@ -369,8 +369,11 @@ function checkCamPosition() {
     //Aktuelle Kamera Position
     const pos = Math.round(camera.position.z);
 
-    //Bereich Profil
+    document.getElementById("playlistButton").style.display = "none";
+
+    
     if ((pos <= (targetPoints.profil + bereichOffsetVorne)) && (pos >= (targetPoints.profil - bereichOffsetHinten))) {
+        //Bereich Profil
         if (bereichInfo.currentIndex != 1) {
             bereichInfo.currentIndex = 1;
             setHelpText();
@@ -378,10 +381,8 @@ function checkCamPosition() {
         if (freeMovement) {
             handleBereich(pos, targetPoints.profil);
         }
-    }
-
-    //Bereich Artists
-    if ((pos <= (targetPoints.topArtist + bereichOffsetVorne)) && (pos >= (targetPoints.topArtist - bereichOffsetHinten))) {
+    }else if ((pos <= (targetPoints.topArtist + bereichOffsetVorne)) && (pos >= (targetPoints.topArtist - bereichOffsetHinten))) {
+        //Bereich Artists
         if (bereichInfo.currentIndex != 2) {
             bereichInfo.currentIndex = 2;
             setHelpText();
@@ -389,10 +390,8 @@ function checkCamPosition() {
         if (freeMovement) {
             handleBereich(pos, targetPoints.topArtist);
         }
-    }
-
-    //Bereich Songs
-    if((pos <= (targetPoints.topSong + bereichOffsetVorne)) && (pos >= (targetPoints.topSong - bereichOffsetHinten))){
+    }else if((pos <= (targetPoints.topSong + bereichOffsetVorne)) && (pos >= (targetPoints.topSong - bereichOffsetHinten))){
+        //Bereich Songs
         if (bereichInfo.currentIndex != 3) {
             bereichInfo.currentIndex = 3;
             setHelpText();
@@ -400,10 +399,8 @@ function checkCamPosition() {
         if (freeMovement) {
             handleBereich(pos, targetPoints.topSong);
         }
-    }
-
-    //Bereich OnRepeat
-    if ((pos <= (targetPoints.onRepeat + bereichOffsetVorne)) && (pos >= (targetPoints.onRepeat - bereichOffsetHinten))) {
+    }else if ((pos <= (targetPoints.onRepeat + bereichOffsetVorne)) && (pos >= (targetPoints.onRepeat - bereichOffsetHinten))) {
+        //Bereich OnRepeat
         if (bereichInfo.currentIndex != 4) {
             bereichInfo.currentIndex = 4;
             setHelpText();
@@ -411,10 +408,8 @@ function checkCamPosition() {
         if (freeMovement) {
             handleBereich(pos, targetPoints.onRepeat);
         }
-    }
-
-    //Bereich Playlist
-    if ((pos <= (targetPoints.playlist + bereichOffsetVorne)) && (pos >= (targetPoints.playlist - bereichOffsetHinten))) {
+    }else if ((pos <= (targetPoints.playlist + bereichOffsetVorne)) && (pos >= (targetPoints.playlist - bereichOffsetHinten))) {
+        //Bereich Playlist
         if (bereichInfo.currentIndex != 5) {
             bereichInfo.currentIndex = 5;
             setHelpText();
@@ -424,7 +419,11 @@ function checkCamPosition() {
         }
         document.getElementById("playlistButton").style.display = "block";
     }else{
-        document.getElementById("playlistButton").style.display = "none";
+        //Außerhalb der Bereiche
+        if (bereichInfo.currentIndex != 0) {
+            bereichInfo.currentIndex = 0;
+            setHelpText();
+        }
     }
 }
 
