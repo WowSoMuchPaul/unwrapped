@@ -287,6 +287,7 @@ async function init() {
     window.addEventListener('resize', onWindowResize);
     document.getElementById("help").addEventListener("click", openHelp);
     document.getElementById("closeHelpButton").addEventListener("click", closeHelp);
+    document.getElementById("helpToStartButton").addEventListener("click", switchHelpToStart);
     document.getElementById("helpToStartButton").addEventListener("click", openOverlay);
     document.getElementById("playlistButton").addEventListener("click", createPlaylistResponse);
     
@@ -317,6 +318,7 @@ async function init() {
 }
 
 function closeOverlay() {
+    playButtonSound();
     document.getElementById("pageBlocker").style.display = "none";
     document.getElementById("help").style.display = "block";
     document.getElementById("navBar").style.display = "block";
@@ -336,7 +338,12 @@ function openHelp() {
     
 }
 
+function switchHelpToStart() {
+    playButtonSound();
+}
+
 function closeHelp() {
+    playButtonSound();
     document.getElementById("helpWindow").style.display = "none";
 }
 
@@ -594,6 +601,7 @@ async function rotateCube(event) {
     let steps = rotationSequence[topArtistsRotationIndex];
     let tween;
     steps.forEach((step) => {
+        playHoverSound();
         let rotation = {};
         rotation[step.axis] = topArtistsCube.rotation[step.axis] + step.angle;
         tween = new TWEEN.Tween(topArtistsCube.rotation)
@@ -1252,6 +1260,18 @@ function clearAndRemoveObject(obj) {
     obj.parent?.remove(obj);
 }
 
+function playButtonSound(){
+    let audio = new Audio("../sounds/closeSound.mp3");
+    audio.play();
+}
+
+function playHoverSound(){
+    let soundOne = new Audio("../sounds/moveSoundOne.mp3");
+    let soundTwo = new Audio("../sounds/moveSoundTwo.mp3");
+    let audio = Math.random() < 0.5 ? soundOne : soundTwo;
+    audio.play();
+}
+
 // ---------------------------- Interaktionen aus der alten heavyRotInteraction ----------------------------
 
 const textMeshMap = new Map(); 
@@ -1265,8 +1285,8 @@ function updateRaycasterInteraction() {
 }
 
 function isCameraInBounds() {
-    let minCameraZ = 1000;
-    let maxCameraZ = 1500;
+    let minCameraZ = targetPoints.onRepeat - 100;
+    let maxCameraZ = targetPoints.onRepeat + cameraTargetDistance + 45;
     return camera.position.z >= minCameraZ && camera.position.z <= maxCameraZ;
 }
 
@@ -1296,6 +1316,7 @@ function processIntersects(intersects, lastIntersected) {
         // Prüft, ob das Objekt gehovert wird und ob es nicht durch bestimmte Bedingungen blockiert ist
         if (isMouseNearCenter(intersects[0]) && lastIntersected !== intersected && intersected !== lastHovered && !intersected.userData.interactionBlocked && !intersected.userData.isAnimating) {
             resetObject(lastIntersected);
+            playHoverSound();
             animateAndDisplayText(intersected);
             lastIntersected = intersected;
             lastHovered = intersected; // Setzt lastHovered auf das aktuelle BildMesh
