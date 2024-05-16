@@ -43,7 +43,7 @@ let bereichInfo = {
         {name: "Profil", text: "This is your Spotify profile. <br>Have a look at your profile picture and your recently played songs."},
         {name: "Top Artists", text: "These are your most listened to artists. <br><u>Scroll</u> to see more."}, 
         {name: "Top Songs", text: "These are your most listened to songs. <br>Congratulations to your top hits!"}, 
-        {name: "Heavy Rotation", text: `These are the songs you can't stop listening to. <br><u>Hover</u> over the covers to reveal more details. <br<br>>Keep on repeating!`}, 
+        {name: "Heavy Rotation", text: `These are the songs you can't stop listening to. <br><u>Hover</u> over the covers to reveal more details. <br><br>Keep on repeating!`}, 
         {name: "Playlist", text: "This is your chance to create your personal unwrapped playlist. <br><u>Press the button</u> to save the playlist to your profile. Enjoy the music!"}
     ],
 };
