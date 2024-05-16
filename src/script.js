@@ -36,14 +36,16 @@ let timeRange = document.getElementById("timeRange").value;
 let topArtistsRotationIndex;
 let initCubeAnimationPlayed = false;
 let playlistButtonAktiviert = true;
+let heavyRotation = await getOnRepeat();
+let heavyRotCount = heavyRotation.length;
 let bereichInfo = {
     currentIndex : 0,
     bereich : [
-        {name: "unwrapped", text:"This window will guide you through the unwrapped experience. You can navigate through the different sections by <u>scrolling</u> or using the <u>navigation bar</u> on the right. <br>Enjoy the ride!"},
+        {name: "unwrapped", text:"This window will guide you through the unwrapped experience. You can navigate through the different sections by <br><u>scrolling</u> or using the <u>navigation bar</u> on the right. <br><br>Enjoy the ride!"},
         {name: "Profil", text: "This is your Spotify profile. <br>Have a look at your profile picture and your recently played songs."},
         {name: "Top Artists", text: "These are your most listened to artists. <br><u>Scroll</u> to see more."}, 
         {name: "Top Songs", text: "These are your most listened to songs. <br>Congratulations to your top hits!"}, 
-        {name: "Heavy Rotation", text: "These are the songs you can't stop listening to. <br><u>Hover</u> over the covers to reveal more details. <br>Keep on repeating!"}, 
+        {name: "Heavy Rotation", text: `These are your ${heavyRotCount} songs you can't stop listening to. <br><u>Hover</u> over the covers to reveal more details. <br><br>Keep on repeating!`}, 
         {name: "Playlist", text: "This is your chance to create your personal unwrapped playlist. <br><u>Press the button</u> to save the playlist to your profile. Enjoy the music!"}
     ],
 };
@@ -138,6 +140,12 @@ const cursor = {};
 //     }, 2000);
 // }
 
+const loadingLabel = document.getElementById('progress-bar-label');
+const progressBar = document.getElementById('progress-bar-blocks');
+const progressBarContainer = document.querySelector('.progress-bar-container');
+progressBarContainer.style.display = 'none';
+
+
 await init(); // Starte die Initialisierung der Szene
 
 
@@ -151,15 +159,13 @@ await init(); // Starte die Initialisierung der Szene
 async function init() {
     // console.log("Init");
 // const loadingManager = new THREE.LoadingManager();
-const loadingLabel = document.getElementById('progress-bar-label');
-const progressBar = document.getElementById('progress-bar-blocks');
-const progressBarContainer = document.querySelector('.progress-bar-container');
+
 
 loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
     // loadingLabel.innerText = "Nearly done...";
-    setTimeout(() => {
-        loadingLabel.innerText = "Nearly done...";
-    }, 1000);
+    // setTimeout(() => {
+    //     loadingLabel.innerText = "Nearly done...";
+    // }, 1000);
 }
 
 let lastProgress = 0; 
@@ -175,9 +181,7 @@ loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
 };
 
 loadingManager.onLoad = function() {
-    setTimeout(() => {
-            progressBarContainer.style.display = 'none';
-    }, 2000);
+    loadingLabel.innerText = "Nearly done...";
 }
 
     /**
@@ -296,6 +300,8 @@ loadingManager.onLoad = function() {
 
     //Erstelle alle Geometrien, wenn Nutzer bereits authentifiziert ist
     if (await (onPageLoad())) {
+        progressBarContainer.style.zIndex = 10;
+        progressBarContainer.style.display = 'flex';
         const profil = await getMe();
         document.getElementById("fensterHeadline").innerText = "Welcome, " + profil.name + "!";
         document.getElementById("fensterTutorialImg").src = fensterTutorialImg;
@@ -307,11 +313,10 @@ loadingManager.onLoad = function() {
         document.getElementById("spotifyConnectButton").addEventListener("click", closeOverlay);
         document.getElementById("logoutButton").addEventListener("click", logoutClick);
         document.getElementById("timeRange").addEventListener("change", function() {
-            deleteGroup();
-            timeRange = this.value;
             progressBarContainer.style.zIndex = 10;
             progressBarContainer.style.display = 'flex';
-
+            deleteGroup();
+            timeRange = this.value;
             createAll();
             //Playlist Button restetten
             document.getElementById("playlistButton").innerText = "Create Playlist";
@@ -607,7 +612,7 @@ async function handleTopArtistBereich() {
      * Initiale Würfel-Animation beim ersten Betreten des Top-Artists-Bereichs.
      */
 function initialAnimation() {
-    initialTween.TWEEN.Tween(topArtistsCube.rotation)
+    initialTween  = new TWEEN.Tween(topArtistsCube.rotation)
         .to({ x: topArtistsCube.rotation.x - Math.PI / 10 }, 600)
         .easing(TWEEN.Easing.Cubic.InOut)
         .yoyo(true) // Rückkehr zur Ausgangsposition
@@ -656,7 +661,7 @@ async function rotateCube(event) {
         let rotation = {};
         rotation[step.axis] = topArtistsCube.rotation[step.axis] + step.angle;
         tween = new TWEEN.Tween(topArtistsCube.rotation)
-            .to(rotation, 800)
+            .to(rotation, 500)
             .easing(TWEEN.Easing.Cubic.InOut)                
             .onComplete(() => {
                 setTimeout(() => {
@@ -1288,6 +1293,7 @@ async function createAll() {
 
     let end = await createEND();
     end.forEach(element => inhaltGroup.add(element));
+    progressBarContainer.style.display = 'none';
 }
 
 function deleteGroup() {

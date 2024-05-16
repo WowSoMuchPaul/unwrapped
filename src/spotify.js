@@ -34,6 +34,7 @@ const currentToken = {
 };
 
 export async function onPageLoad(){
+    
    
     // On page load, try to fetch auth code from current browser search URL
     const args = new URLSearchParams(window.location.search);
