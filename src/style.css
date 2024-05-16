@@ -92,7 +92,7 @@ canvas {
 
 h1 {
   font-size: 20px;
-  margin: 0;
+  margin: 0px;
   color:#000000;
 }
 
@@ -184,14 +184,6 @@ button:hover {
 .closebtn:hover {
   background-color: #808080;
   color: #000000;
-}
-
-
-h1 {
-  font-size: 20px;
-  color: #000000;
-  margin-left: 10px;
-  margin-top: 2px;
 }
 
 
@@ -382,11 +374,34 @@ h1 {
 
 #help {
     position: fixed;
-    top: 20px;
-    left: 20px;
+    top: 2rem;
+    left: 2rem;
     height: 40px;
     width: 40px;
     cursor: pointer;
+}
+
+#helpWindow {
+    display: none;
+    position: fixed;
+    top: 2rem;
+    left: 2rem;
+    /* height: 15rem; */
+    /* width: 20rem; */
+    max-width: 30vw;
+    background-color: var(--grey);
+}
+
+#helpWindowInhalt {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+}
+
+#helpToStartButton {
+    padding: 0.5rem;
+    font-size: 16px;
 }
 
 #navBar {
