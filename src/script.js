@@ -25,7 +25,7 @@ import navRotationIcon from '../static/images/nav_rotation_icon.png';
 import navPlaylistIcon from '../static/images/nav_playlist_icon.png';
 import { log } from 'three/examples/jsm/nodes/Nodes.js'; 
 
-let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, topArtistCountText;
+let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, topArtistCountText, arrowModel;
 // export {camera, heavyRotCircleGroup as heavyRotCircleGroup, inhaltGroup, scene};
 export const targetPoints = {};
 let inEinemBereich = false;
@@ -62,9 +62,9 @@ let topArtistsName = new THREE.Mesh;
 const stats = new Stats();
 // Textgrößen Konstanten
 const headlineSize = 40;
+const textBigSize = 20;
 const textSize = 10;
 const textSmallSize = 5;
-const textBigSize = 20;
 
 const textHeight = 0;
 const textWidth = 0;
@@ -108,28 +108,30 @@ const cursor = {};
 
 const loadingManager = new THREE.LoadingManager();
 const loadingLabel = document.getElementById('progress-bar-label');
-const progressBar = document.getElementById('progress-bar');
+const progressBar = document.getElementById('progress-bar-blocks');
 const progressBarContainer = document.querySelector('.progress-bar-container');
 
-// loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
-//     loadingLabel.innerText = "Nearly done...";
-// }
+loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
+    loadingLabel.innerText = "Nearly done...";
+}
 
-// let lastProgress = 0; 
-// loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
-//     let currentProgress = (itemsLoaded / itemsTotal) * 100;
+let lastProgress = 0; 
+loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
+    console.log("Progress: ", itemsLoaded, itemsTotal);
+    console.log(url);
+    let currentProgress = (itemsLoaded / itemsTotal) * 100;
 
-//     if(currentProgress > lastProgress) {
-//         progressBar.value = currentProgress;
-//         lastProgress = currentProgress;
-//     }
-// };
+    // if(currentProgress > lastProgress) {
+        progressBar.value = currentProgress;
+    //     lastProgress = currentProgress;
+    // }
+};
 
-// loadingManager.onLoad = function() {
-//     setTimeout(() => {
-//             progressBarContainer.style.display = 'none';
-//     }, 1500);
-// }
+loadingManager.onLoad = function() {
+    setTimeout(() => {
+            progressBarContainer.style.display = 'none';
+    }, 2000);
+}
 
 await init(); // Starte die Initialisierung der Szene
 
@@ -142,7 +144,7 @@ await init(); // Starte die Initialisierung der Szene
  * @returns {Promise<void>}
  */
 async function init() {
-    console.log("Init");
+    // console.log("Init");
     /**
      * Sizes
      */
@@ -323,6 +325,7 @@ function closeOverlay() {
     document.getElementById("help").style.display = "block";
     document.getElementById("navBar").style.display = "block";
     document.getElementById("spotifyConnectButton").innerText = "Return to unwrapped!"
+    handleStartPosition();
 }
 
 function openOverlay() {
@@ -378,8 +381,19 @@ function checkCamPosition() {
 
     document.getElementById("playlistButton").style.display = "none";
 
-    
-    if ((pos <= (targetPoints.profil + bereichOffsetVorne)) && (pos >= (targetPoints.profil - bereichOffsetHinten))) {
+    if (( pos <= (gesamtTiefe + 100)) && (pos >= (gesamtTiefe - 100))) {
+        console.log("Start Position"); 
+        // new TWEEN.Tween(arrowModel.position)
+        //     .to({z: arrowModel.position.z - 100 }, 1000)
+        //     .easing(TWEEN.Easing.Cubic.InOut)
+        //     .yoyo(true) // Rückkehr zur Ausgangsposition
+        //     .repeat(3) // Wiederhole die Bewegung einmal
+        //     .onComplete(() => {
+        //         arrowModel.position.z = gesamtTiefe -100;
+        //     })
+        //     .start();
+
+    }else if ((pos <= (targetPoints.profil + bereichOffsetVorne)) && (pos >= (targetPoints.profil - bereichOffsetHinten))) {
         //Bereich Profil
         if (bereichInfo.currentIndex != 1) {
             bereichInfo.currentIndex = 1;
@@ -430,7 +444,7 @@ function checkCamPosition() {
         if (bereichInfo.currentIndex != 0) {
             bereichInfo.currentIndex = 0;
             setHelpText();
-            console.log("Cleanup außerhalb der Bereiche aufgerufen :"); 
+            // console.log("Cleanup außerhalb der Bereiche aufgerufen :"); 
             cleanupTopArtistsCube(); // Zurücksetzen, bevor der Bereich erneut initialisiert wird 
         }
     }
@@ -679,7 +693,6 @@ async function cleanupTopArtistsCube() {
     // inhaltGroup.add(topArtistsName);
     await initTopArtistsCube();
 }
-
 
 
 function bringeZumBereich(tp) {
@@ -1091,7 +1104,7 @@ async function createHeavyRotation() {
 
 async function createGLTFMesh(x, y, z, rotationX, rotationY, rotationZ, scale, name) {
     return new Promise((resolve, reject) => {
-        const gltfloader = new GLTFLoader();
+        const gltfloader = new GLTFLoader(loadingManager);
         gltfloader.load(
             `../models/${name}.glb`,
             (gltf) => {
@@ -1195,7 +1208,38 @@ async function createEND(){
     return contentEnd;
 }
 
+async function createStart(){
+    let contentStart = [];
+    arrowModel = await createGLTFMesh(0, -40, gesamtTiefe -100, -80, -10, -40, 4.0, '3d_mouse_cursor');
+    contentStart.push(await createTextMesh("Scroll to start", textSize, -35, -60, gesamtTiefe - 90,-20, 0, 0x000000, 1, 'Jersey 15_Regular'));
+    contentStart.push(arrowModel);
+    console.log("Content Start: ", contentStart);
+    return contentStart;
+}
+
+function handleStartPosition(){
+    setTimeout(() => {
+    new TWEEN.Tween(arrowModel.position)
+            .to({z: arrowModel.position.z - 20 }, 500)
+            .easing(TWEEN.Easing.Cubic.InOut)
+            .yoyo(true) // Rückkehr zur Ausgangsposition
+            .repeat(3)
+            .onComplete(() => {
+            //    new TWEEN.Tween(arrowModel.position)
+            //             .to({z: arrowModel.position.z + 20}, 750)
+            //             .easing(TWEEN.Easing.Cubic.InOut)
+            //             .start();
+            })
+            .start();
+    }, 2000);
+}
+
 async function createAll() {
+    let inhaltStart = await createStart();
+    inhaltStart.forEach(element => inhaltGroup.add(element));
+    // let initCursor = await createGLTFMesh(0, -50, gesamtTiefe -100, -80, -10, -40, 5.0, '3d_mouse_cursor');
+    // inhaltGroup.add(initCursor);
+
     let inhaltProfil = await createProfil();
     inhaltProfil.forEach(element => inhaltGroup.add(element));
 
@@ -1261,15 +1305,15 @@ function clearAndRemoveObject(obj) {
 }
 
 function playButtonSound(){
-    let audio = new Audio("../sounds/closeSound.mp3");
-    audio.play();
+    const buttonAudio = new Audio("../sounds/closeSound.mp3");
+    buttonAudio.play();
 }
 
 function playHoverSound(){
-    let soundOne = new Audio("../sounds/moveSoundOne.mp3");
-    let soundTwo = new Audio("../sounds/moveSoundTwo.mp3");
-    let audio = Math.random() < 0.5 ? soundOne : soundTwo;
-    audio.play();
+    const soundOne = new Audio("../sounds/moveSoundOne.mp3");
+    const soundTwo = new Audio("../sounds/moveSoundTwo.mp3");
+    let movAudio = Math.random() < 0.5 ? soundOne : soundTwo;
+    movAudio.play();
 }
 
 // ---------------------------- Interaktionen aus der alten heavyRotInteraction ----------------------------
