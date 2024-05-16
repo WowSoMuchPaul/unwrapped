@@ -341,6 +341,7 @@ function openOverlay() {
 }
 
 function openHelp() {
+    playButtonSound();
     document.getElementById("helpWindow").style.display = "block";
     setHelpText();
     
