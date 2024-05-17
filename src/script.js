@@ -8,11 +8,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'stats.js';
 import { GUI } from 'dat.gui';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DirectionalLight } from 'three';
-import { AmbientLight } from 'three'; 
-import { HemisphereLight } from 'three';
-import { PointLight } from 'three';
-import { PMREMGenerator } from 'three';
 
 import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
 import fensterTutorialImg from '../static/images/startScreenImg.png';
@@ -26,9 +21,8 @@ import navArtistsIcon from '../static/images/nav_artists_icon.png';
 import navSongsIcon from '../static/images/nav_songs_icon.png';
 import navRotationIcon from '../static/images/nav_rotation_icon.png';
 import navPlaylistIcon from '../static/images/nav_playlist_icon.png';
-import { log } from 'three/examples/jsm/nodes/Nodes.js'; 
 
-let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, topArtistCountText, arrowModel;
+let sizes, canvas, scene, camera, renderer, trackControls, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, arrowModel;
 // export {camera, heavyRotCircleGroup as heavyRotCircleGroup, inhaltGroup, scene};
 export const targetPoints = {};
 const loadingManager = new THREE.LoadingManager();
@@ -163,29 +157,29 @@ async function init() {
 // const loadingManager = new THREE.LoadingManager();
 
 
-loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
-    // loadingLabel.innerText = "Nearly done...";
-    // setTimeout(() => {
-    //     loadingLabel.innerText = "Nearly done...";
-    // }, 1000);
-}
+    loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
+        // loadingLabel.innerText = "Nearly done...";
+        // setTimeout(() => {
+        //     loadingLabel.innerText = "Nearly done...";
+        // }, 1000);
+    }
 
-let lastProgress = 0; 
-loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
-    // console.log("Progress: ", itemsLoaded, itemsTotal);
-    // console.log(url);
-    let currentProgress = (itemsLoaded / itemsTotal) * 100;
+    let lastProgress = 0; 
+    loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
+        // console.log("Progress: ", itemsLoaded, itemsTotal);
+        // console.log(url);
+        let currentProgress = (itemsLoaded / itemsTotal) * 100;
 
-    // if(currentProgress > lastProgress) {
-        progressBar.value = currentProgress;
-    //     lastProgress = currentProgress;
-    // }
-};
+        // if(currentProgress > lastProgress) {
+            progressBar.value = currentProgress;
+        //     lastProgress = currentProgress;
+        // }
+    };
 
-loadingManager.onLoad = function() {
-    loadingLabel.innerText = "Nearly done...";
-    // playStartupSound();
-}
+    loadingManager.onLoad = function() {
+        loadingLabel.innerText = "Nearly done...";
+        // playStartupSound();
+    }
 
     /**
      * Sizes
@@ -210,61 +204,19 @@ loadingManager.onLoad = function() {
     lastCamPosition = camera.position.z;
 
     //Lights
-    let light = new THREE.DirectionalLight(0xffffff, 1);
-    light.castShadow = true; // default false
-    light.position.set( gesamtTiefe/2, gesamtTiefe/2, gesamtTiefe ).normalize();
-    light.target.position.set(0, 0, 0);
-    scene.add(light);
+    let directionalLight = new THREE.DirectionalLight(0xffffff, 1.3);
+    directionalLight.position.set(0,1,1);
+    scene.add(directionalLight);
 
-    //Set up shadow properties for the light
-    light.shadow.mapSize.width = 512; // default
-    light.shadow.mapSize.height = 512; // default
-    light.shadow.camera.near = 0.5; // default
-    light.shadow.camera.far = 500; // default
-
-    let ambientLight = new THREE.AmbientLight(0xF0FEFF, 0.2);
-    scene.add(ambientLight);
-
-    // Helper GUI für Directional Light
-    const gui = new GUI();
-    const lightFolder = gui.addFolder('Directional Light');
-    lightFolder.add(light.position, 'x', -1000, 1000).name('Position X');
-    lightFolder.add(light.position, 'y', -1000, 1000).name('Position Y');
-    lightFolder.add(light.position, 'z', -1000, 1000).name('Position Z');
-    lightFolder.add(light, 'intensity', 0, 10).name('Intensity');
-    lightFolder.open();
-    const ambientLightFolder = gui.addFolder('Ambient Light');
-    ambientLightFolder.add(ambientLight, 'intensity', 0, 10).name('Intensity');
-    ambientLightFolder.add(ambientLight.color, 'getHex').name('Color');
-
-
+    //Hemisphären Licht
+    const hemiLight = new THREE.HemisphereLight(0xB6D8DE, 0x382F2B, 1);
+    hemiLight.position.set(0, 1, 0);
+    // scene.add(hemiLight);
 
     //Inhalt Group definieren
     inhaltGroup = new THREE.Group();
     inhaltGroup.name = "inhaltGroup";
     scene.add(inhaltGroup);
-    // const pmremGenerator = new THREE.PMREMGenerator(renderer);
-
-    // pmremGenerator.compileEquirectangularShader();
-
-
-    // new THREE.RGBELoader()
-    //     .setDataType(THREE.UnsignedByteType)
-    //     .load('../110_hdrmaps_com_free_1K.exr', function (texture) {
-    //         const envMap = pmremGenerator.fromEquirectangular(texture).texture;
-    //         scene.environment = envMap;
-    //         texture.dispose();
-    //         pmremGenerator.dispose();
-    //     });
-
-    //Hemisphären Licht
-    // const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 3, 1);
-    // hemiLight.position.set(0, 20, 0);
-    //scene.add(hemiLight);
-
-    // helper = new THREE.CameraHelper(camera);
-    // scene.add(helper);
-
 
     /**
     * Axis Helper 
@@ -290,6 +242,7 @@ loadingManager.onLoad = function() {
     renderer.setClearColor(0xffffff, 0);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(sizes.width, sizes.height);
+    // renderer.outputEncoding = THREE.sRGBEncoding;
     //document.body.appendChild(renderer.domElement);
 
     //Track Controls
@@ -876,8 +829,8 @@ export async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotati
             textGeometry.computeBoundingBox();
             //const textMaterial = new THREE.MeshBasicMaterial();
             const textMaterial = [
-                new THREE.MeshPhongMaterial( { color: 0xffffff, flatShading: true } ), // front
-                new THREE.MeshPhongMaterial( { color: 0xffffff } ) // side
+                new THREE.MeshPhongMaterial( { color: 0xffffff, emissive: 0xB6C0DE, emissiveIntensity: 0.25} ), // front
+                new THREE.MeshPhongMaterial( { color: 0xE0E4EF, emissiveIntensity: 0.25 } ) // side
             ];
             let textMesh = new THREE.Mesh(textGeometry, textMaterial);
             // Positionierung des TextMeshes
@@ -923,8 +876,10 @@ async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse, mitFrame
             bildUrl,
             (texture) => {
                 const geometry = new THREE.PlaneGeometry(bildGroesse, bildGroesse);
-                const material = new THREE.MeshPhongMaterial({ map: texture, side: THREE.DoubleSide });
-
+                const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+                // material.emissive = new THREE.Color(0xffffff);
+                // material.emissiveMap = texture;
+                material.emissiveIntensity = 0.5;
                 const aspect = bildGroesse / bildGroesse;
                 var imageAspect = texture.image.width / texture.image.height;
                 texture.matrixAutoUpdate = false;
@@ -983,7 +938,7 @@ function createCube(options) {
         if (typeof material === 'string' && (material.startsWith('http') || material.match(/\.(jpeg|jpg|gif|png)$/))) {
             return new THREE.MeshPhongMaterial({ map: new THREE.TextureLoader(loadingManager).load(material) });
         } else {
-            return new THREE.MeshPhongMaterial({ color: material, transparent: true, opacity: 1 });
+            return new THREE.MeshBasicMaterial({ color: material, transparent: true, opacity: 1 });
         }
     });
 
