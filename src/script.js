@@ -39,11 +39,11 @@ let playlistButtonAktiviert = true;
 let bereichInfo = {
     currentIndex : 0,
     bereich : [
-        {name: "unwrapped", text:"This window will guide you through the unwrapped experience. You can navigate through the different sections by <u>scrolling</u> or using the <u>navigation bar</u> on the right. <br>Enjoy the ride!"},
+        {name: "unwrapped", text:"This window will guide you through the unwrapped experience. You can navigate through the different sections by <br><u>scrolling</u> or using the <u>navigation bar</u> on the right. <br><br>Enjoy the ride!"},
         {name: "Profil", text: "This is your Spotify profile. <br>Have a look at your profile picture and your recently played songs."},
         {name: "Top Artists", text: "These are your most listened to artists. <br><u>Scroll</u> to see more."}, 
         {name: "Top Songs", text: "These are your most listened to songs. <br>Congratulations to your top hits!"}, 
-        {name: "Heavy Rotation", text: "These are the songs you can't stop listening to. <br><u>Hover</u> over the covers to reveal more details. <br>Keep on repeating!"}, 
+        {name: "Heavy Rotation", text: `These are the songs you can't stop listening to. <br><u>Hover</u> over the covers to reveal more details. <br><br>Keep on repeating!`}, 
         {name: "Playlist", text: "This is your chance to create your personal unwrapped playlist. <br><u>Press the button</u> to save the playlist to your profile. Enjoy the music!"}
     ],
 };
@@ -72,6 +72,7 @@ const textHeight = 0;
 const textWidth = 0;
 const textDepth = 0;
 
+let startupSoundPlayed = false;
 
 // stats.showPanel(0);
 //document.body.appendChild(stats.dom); 
@@ -138,6 +139,12 @@ const cursor = {};
 //     }, 2000);
 // }
 
+const loadingLabel = document.getElementById('progress-bar-label');
+const progressBar = document.getElementById('progress-bar-blocks');
+const progressBarContainer = document.querySelector('.progress-bar-container');
+progressBarContainer.style.display = 'none';
+
+
 await init(); // Starte die Initialisierung der Szene
 
 
@@ -151,15 +158,13 @@ await init(); // Starte die Initialisierung der Szene
 async function init() {
     // console.log("Init");
 // const loadingManager = new THREE.LoadingManager();
-const loadingLabel = document.getElementById('progress-bar-label');
-const progressBar = document.getElementById('progress-bar-blocks');
-const progressBarContainer = document.querySelector('.progress-bar-container');
+
 
 loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
     // loadingLabel.innerText = "Nearly done...";
-    setTimeout(() => {
-        loadingLabel.innerText = "Nearly done...";
-    }, 1000);
+    // setTimeout(() => {
+    //     loadingLabel.innerText = "Nearly done...";
+    // }, 1000);
 }
 
 let lastProgress = 0; 
@@ -175,9 +180,8 @@ loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
 };
 
 loadingManager.onLoad = function() {
-    setTimeout(() => {
-            progressBarContainer.style.display = 'none';
-    }, 2000);
+    loadingLabel.innerText = "Nearly done...";
+    // playStartupSound();
 }
 
     /**
@@ -296,6 +300,8 @@ loadingManager.onLoad = function() {
 
     //Erstelle alle Geometrien, wenn Nutzer bereits authentifiziert ist
     if (await (onPageLoad())) {
+        progressBarContainer.style.zIndex = 10;
+        progressBarContainer.style.display = 'flex';
         const profil = await getMe();
         document.getElementById("fensterHeadline").innerText = "Welcome, " + profil.name + "!";
         document.getElementById("fensterTutorialImg").src = fensterTutorialImg;
@@ -304,13 +310,23 @@ loadingManager.onLoad = function() {
         document.getElementById("loginStatusImage").src = onlineImage;
         document.getElementById("loginStatusLabel").innerText = "online";
         document.getElementById("spotifyConnectButton").innerText = "Start unwrapped!";
-        document.getElementById("spotifyConnectButton").addEventListener("click", closeOverlay);
-        document.getElementById("logoutButton").addEventListener("click", logoutClick);
+        document.getElementById("spotifyConnectButton").addEventListener("click", 
+        () => {
+            closeOverlay();
+            playStartupSound();
+        });
+        document.getElementById("logoutButton").addEventListener("click", 
+        () => {
+            playButtonSound();
+            setTimeout(() => {
+            logoutClick();
+            }, 200);
+        });
         document.getElementById("timeRange").addEventListener("change", function() {
+            progressBarContainer.style.zIndex = 10;
+            progressBarContainer.style.display = 'flex';
             deleteGroup();
             timeRange = this.value;
-            progressBarContainer.style.display = 'flex';
-
             createAll();
             //Playlist Button restetten
             document.getElementById("playlistButton").innerText = "Create Playlist";
@@ -324,7 +340,11 @@ loadingManager.onLoad = function() {
        document.getElementById("profilImage").src = profilPlaceholder;
        document.getElementById("loginStatusImage").src = offlineImage;
        document.getElementById("loginStatusLabel").innerText = "offline";
-       document.getElementById("spotifyConnectButton").addEventListener("click", loginWithSpotifyClick);
+       document.getElementById("spotifyConnectButton").addEventListener("click", 
+       () => {
+        loginWithSpotifyClick();
+        playButtonSound();
+       });
        document.getElementById("timeRangeDiv").style.display = "none";
        document.getElementById("logoutButton").style.display = "none";
     }
@@ -540,7 +560,7 @@ function handleBereich(pos, tp) {
     }
 }
 
-let initialTween = new TWEEN.Tween(topArtistsCube.rotation);
+let initialTween;
 let topArtCubeAnimating;
 
 let rotationSequence = [
@@ -606,7 +626,7 @@ async function handleTopArtistBereich() {
      * Initiale Würfel-Animation beim ersten Betreten des Top-Artists-Bereichs.
      */
 function initialAnimation() {
-    initialTween
+    initialTween  = new TWEEN.Tween(topArtistsCube.rotation)
         .to({ x: topArtistsCube.rotation.x - Math.PI / 10 }, 600)
         .easing(TWEEN.Easing.Cubic.InOut)
         .yoyo(true) // Rückkehr zur Ausgangsposition
@@ -655,12 +675,12 @@ async function rotateCube(event) {
         let rotation = {};
         rotation[step.axis] = topArtistsCube.rotation[step.axis] + step.angle;
         tween = new TWEEN.Tween(topArtistsCube.rotation)
-            .to(rotation, 1000)
+            .to(rotation, 500)
             .easing(TWEEN.Easing.Cubic.InOut)                
             .onComplete(() => {
                 setTimeout(() => {
                     topArtCubeAnimating = false;
-                }, 800);
+                }, 1000);
             })
             .start();
     });
@@ -1058,20 +1078,20 @@ async function createProfil() {
     contentProfil.push(await createTextMesh("Recently Played Songs", textSize, recGroupX, recGroupY, targetPoints.profil,0, 0, 0x000000,1,'Jersey 15_Regular'));
 
     contentProfil.push(await createBildMesh(recentlyPlayed[0].image, recGroupX + 13, recGroupY - 19, targetPoints.profil, recBildRot, recBildG, true));
-    contentProfil.push(await createTextMesh(recentlyPlayed[0].name, recText, recGroupX + 1, recGroupY - 34.3, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createTextMesh(recentlyPlayed[0].name, recText, recGroupX + 1, recGroupY - 35, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
     contentProfil.push(await createTextMesh(recentlyPlayed[0].artists[0].name + ".jpg", recText-1, recGroupX+1 + 1, recGroupY -6.5, targetPoints.profil+0.5, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
     
     contentProfil.push(await createBildMesh(recentlyPlayed[1].image, recGroupX + 43, recGroupY - 19, targetPoints.profil, recBildRot, recBildG, true));
-    contentProfil.push(await createTextMesh(recentlyPlayed[1].name, recText, recGroupX + 31, recGroupY - 34.3, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createTextMesh(recentlyPlayed[1].name, recText, recGroupX + 31, recGroupY - 35, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
     contentProfil.push(await createTextMesh(recentlyPlayed[1].artists[0].name + ".jpg", recText-1, recGroupX+32, recGroupY -6.5, targetPoints.profil+0.5, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
 
-    contentProfil.push(await createBildMesh(recentlyPlayed[2].image, recGroupX + 13, recGroupY - 50, targetPoints.profil, recBildRot, recBildG, true));
-    contentProfil.push(await createTextMesh(recentlyPlayed[2].name, recText, recGroupX + 1, recGroupY - 66, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
-    contentProfil.push(await createTextMesh(recentlyPlayed[2].artists[0].name + ".jpg", recText-1, recGroupX+2, recGroupY -37.3, targetPoints.profil+0.5, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createBildMesh(recentlyPlayed[2].image, recGroupX + 13, recGroupY - 53, targetPoints.profil, recBildRot, recBildG, true));
+    contentProfil.push(await createTextMesh(recentlyPlayed[2].name, recText, recGroupX + 1, recGroupY - 69, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createTextMesh(recentlyPlayed[2].artists[0].name + ".jpg", recText-1, recGroupX+2, recGroupY -40.3, targetPoints.profil+0.5, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
 
-    contentProfil.push(await createBildMesh(recentlyPlayed[3].image, recGroupX + 43, recGroupY - 50, targetPoints.profil, recBildRot, recBildG, true));
-    contentProfil.push(await createTextMesh(recentlyPlayed[3].name, recText, recGroupX + 31, recGroupY - 66, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
-    contentProfil.push(await createTextMesh(recentlyPlayed[3].artists[0].name + ".jpg", recText-1, recGroupX+32, recGroupY -37.3, targetPoints.profil+0.5, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createBildMesh(recentlyPlayed[3].image, recGroupX + 43, recGroupY - 53, targetPoints.profil, recBildRot, recBildG, true));
+    contentProfil.push(await createTextMesh(recentlyPlayed[3].name, recText, recGroupX + 31, recGroupY - 69, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createTextMesh(recentlyPlayed[3].artists[0].name + ".jpg", recText-1, recGroupX+32, recGroupY -40.3, targetPoints.profil+0.5, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
 
     contentProfil.push(await createTextMesh("j", textBigSize, 45, -35, targetPoints.profil+40,0, -25, 0x000000,0.4,'Yarndings 12_Regular'));
     contentProfil.push(await createTextMesh("k", textSize,-80, -95, targetPoints.profil+20,0, 12, 0x000000,0.4,'Yarndings 12_Regular'));
@@ -1287,6 +1307,7 @@ async function createAll() {
 
     let end = await createEND();
     end.forEach(element => inhaltGroup.add(element));
+    progressBarContainer.style.display = 'none';
 }
 
 function deleteGroup() {
@@ -1335,14 +1356,26 @@ function clearAndRemoveObject(obj) {
 
 function playButtonSound(){
     const buttonAudio = new Audio("../sounds/closeSound.mp3");
+    buttonAudio.volume = 0.2;
     buttonAudio.play();
 }
 
 function playHoverSound(){
     const soundOne = new Audio("../sounds/moveSoundOne.mp3");
     const soundTwo = new Audio("../sounds/moveSoundTwo.mp3");
-    let movAudio = Math.random() < 0.5 ? soundOne : soundTwo;
-    movAudio.play();
+    let moveAudio = Math.random() < 0.5 ? soundOne : soundTwo;
+    soundOne.volume = 0.1;
+    soundTwo.volume = 0.1;
+    moveAudio.play();
+}
+
+function playStartupSound(){
+    if(!startupSoundPlayed){
+    const startupAudio = new Audio("../sounds/win98.mp3");
+    startupAudio.volume = 0.2;
+    startupAudio.play();
+    }
+    startupSoundPlayed = true;
 }
 
 // ---------------------------- Interaktionen aus der alten heavyRotInteraction ----------------------------
