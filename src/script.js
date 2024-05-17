@@ -1,12 +1,9 @@
 import { THREE, TWEEN } from './imports.js';
 
-// import { updateRaycasterInteraction } from './heavyRotInteraction.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'stats.js';
-import { GUI } from 'dat.gui';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
@@ -21,11 +18,9 @@ import navArtistsIcon from '../static/images/nav_artists_icon.png';
 import navSongsIcon from '../static/images/nav_songs_icon.png';
 import navRotationIcon from '../static/images/nav_rotation_icon.png';
 import navPlaylistIcon from '../static/images/nav_playlist_icon.png';
-import { Tween } from '@tweenjs/tween.js';
 
 let sizes, canvas, scene, camera, renderer, trackControls, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, arrowModel;
-// export {camera, heavyRotCircleGroup as heavyRotCircleGroup, inhaltGroup, scene};
-export const targetPoints = {};
+const targetPoints = {};
 const loadingManager = new THREE.LoadingManager();
 let inEinemBereich = false;
 let tweenAktiviert = false; 
