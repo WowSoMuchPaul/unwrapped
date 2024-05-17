@@ -1,5 +1,11 @@
-import { THREE, TWEEN } from './imports.js';
+/**
+ * Dieses Skript enthält den Hauptcode für die unwrapped Anwendung.
+ * Es importiert verschiedene Module und erstellt die Szene, die Kamera und den Renderer.
+ * Es initialisiert auch die verschiedenen Elemente der Szene und fügt sie hinzu.
+ * @module script
+ */
 
+import { THREE, TWEEN } from './imports.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
@@ -61,6 +67,7 @@ const dekoIconKeys = ["w","x","j","k","y"];
 
 let topArtistsRank = new THREE.Mesh;
 let topArtistsName = new THREE.Mesh;
+let lastHovered = null;
 
 const stats = new Stats();
 // Textgrößen Konstanten
@@ -110,15 +117,13 @@ export function getMouse3DPosition(mouse, camera) {
 /**cursor */
 const cursor = {};
 
-
 const loadingLabel = document.getElementById('progress-bar-label');
 const progressBar = document.getElementById('progress-bar-blocks');
 const progressBarContainer = document.querySelector('.progress-bar-container');
 progressBarContainer.style.display = 'none';
 
-
-await init(); // Starte die Initialisierung der Szene
-
+// Szene initialisieren
+await init();
 
 /**
  * Initialisiert die Anwendung.
@@ -729,9 +734,7 @@ let previousTime = 0;
 
 
 /**
- * Funktion zum Steuern des Haupt-Animations-Loops.
- * @function tick
- * @returns {void}
+ * Funktion, die den Hauptanimationszyklus steuert.
  */
 const tick = () => {
     stats.begin();
@@ -768,7 +771,6 @@ const tick = () => {
 
 function animateObjects() {
     for (const object of animationObjects) {
-        
         object.rotation.y += object.userData.movementFactorAchse * 0.01;
         object.rotation.x += object.userData.movementFactorAchse * 0.01;
         const movementSpeed = clock.getElapsedTime() * object.userData.movementFactorKreis;
@@ -778,21 +780,23 @@ function animateObjects() {
     }
 }
 
-
+  
 /**
- * Erstellt ein TextMesh mit dem angegebenen Text, Schriftgröße und Position.
- * 
- * @param {string} text - Der Text, der im TextMesh angezeigt werden soll.
+ * Erstellt ein TextMesh mit den angegebenen Parametern.
+ *
+ * @param {string} text - Der Text, der angezeigt werden soll.
  * @param {number} fontsize - Die Schriftgröße des Textes.
  * @param {number} x - Die x-Koordinate der Position des TextMeshes.
  * @param {number} y - Die y-Koordinate der Position des TextMeshes.
  * @param {number} z - Die z-Koordinate der Position des TextMeshes.
- * @param {number} rotationY - Der Winkel, um den das TextMesh um die Y-Achse gedreht werden soll (in Grad).
+ * @param {number} rotationX - Die Rotation um die x-Achse des TextMeshes in Grad.
+ * @param {number} rotationY - Die Rotation um die y-Achse des TextMeshes in Grad.
+ * @param {number} color - Die Farbe des Textes.
+ * @param {number} opacity - Die Transparenz des Textes.
+ * @param {string} fontName - Der Name der Schriftart.
  * @returns {Promise<THREE.Mesh>} Ein Promise, das das erstellte TextMesh enthält.
- * @throws {Error} Wenn ein Fehler beim Laden der Schriftart auftritt.
  */
-    
-export async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotationY, color, opacity, fontName) {
+async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotationY, color, opacity, fontName) {
     return new Promise((resolve, reject) => {
     const fontLoader = new FontLoader(loadingManager)
     fontLoader.load(
@@ -814,8 +818,8 @@ export async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotati
             textGeometry.computeBoundingBox();
             //const textMaterial = new THREE.MeshBasicMaterial();
             const textMaterial = [
-                new THREE.MeshPhongMaterial( { color: color, flatShading: true } ), // front
-                new THREE.MeshPhongMaterial( { color: color, flatShading: true } ) // side
+                new THREE.MeshPhongMaterial( { color: color, flatShading: true, emissiveIntensity: 0 } ), // front
+                new THREE.MeshPhongMaterial( { color: color, flatShading: true, emissiveIntensity: 0 } ) // side
             ];
             let textMesh = new THREE.Mesh(textGeometry, textMaterial);
             // Positionierung des TextMeshes
@@ -845,14 +849,17 @@ export async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotati
 });
 }
 
+
 /**
  * Erstellt ein Bild-Mesh mit den angegebenen Parametern.
- * @param {string} bildUrl - Die URL des Bildes, das geladen werden soll.
+ *
+ * @param {string} bildUrl - Die URL des Bildes.
  * @param {number} x - Die x-Koordinate der Position des Meshes.
  * @param {number} y - Die y-Koordinate der Position des Meshes.
  * @param {number} z - Die z-Koordinate der Position des Meshes.
  * @param {number} rotationY - Die Y-Rotation des Meshes in Grad.
- * @param {number} bildGroesse - Die Größe des Meshes.
+ * @param {number} bildGroesse - Die Größe des Bildes.
+ * @param {boolean} mitFrame - Gibt an, ob das Bild einen Rahmen haben soll.
  * @returns {Promise<THREE.Mesh>} Ein Promise, das das erstellte Bild-Mesh enthält.
  */
 async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse, mitFrame) {
@@ -909,11 +916,11 @@ async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse, mitFrame
 }
 
 /**
- * Erstellt einen ThreeJS Würfel mit den angegebenen Optionen.
+ * Erstellt einen Würfel mit den angegebenen Optionen.
  *
  * @param {Object} options - Die Optionen für den Würfel.
- * @param {Array} options.materials - Ein Array von Materialien für die Seiten des Würfels.
- * @param {number} options.scale - Der Skalierungsfaktor des Würfels.
+ * @param {Array} options.materials - Ein Array von Materialien für den Würfel.
+ * @param {number} options.scale - Die Skalierung des Würfels.
  * @param {number} options.positionZ - Die Z-Position des Würfels.
  * @returns {THREE.Mesh} - Der erstellte Würfel.
  */
@@ -1011,6 +1018,10 @@ function createQuaderMesh(x,y,z,rotationX, rotationY, size, color){
    return frameMesh;
 }
 
+/**
+ * Erstellt das Profil mit Informationen und den kürzlich gespielten Songs.
+ * @returns {Array} Ein Array mit den erstellten Inhalten des Profils.
+ */
 async function createProfil() {
     const profil = await getMe();
     const recentlyPlayed = await getRecentlyPlayed();
@@ -1142,6 +1153,19 @@ async function createHeavyRotation() {
     return contentHeavyRotation;
 }
 
+/**
+ * Erstellt ein GLTF-Mesh mit den angegebenen Parametern.
+ *
+ * @param {number} x - Die X-Koordinate der Position des Meshes.
+ * @param {number} y - Die Y-Koordinate der Position des Meshes.
+ * @param {number} z - Die Z-Koordinate der Position des Meshes.
+ * @param {number} rotationX - Die Rotation um die X-Achse des Meshes in Grad.
+ * @param {number} rotationY - Die Rotation um die Y-Achse des Meshes in Grad.
+ * @param {number} rotationZ - Die Rotation um die Z-Achse des Meshes in Grad.
+ * @param {number} scale - Der Skalierungsfaktor des Meshes.
+ * @param {string} name - Der Name des GLB-Modells, das geladen werden soll.
+ * @returns {Promise<THREE.Group>} Ein Promise, das das geladene GLTF-Objekt enthält.
+ */
 async function createGLTFMesh(x, y, z, rotationX, rotationY, rotationZ, scale, name) {
     return new Promise((resolve, reject) => {
         const gltfloader = new GLTFLoader(loadingManager);
@@ -1165,7 +1189,10 @@ async function createGLTFMesh(x, y, z, rotationX, rotationY, rotationZ, scale, n
 }
 
 
-// Funktion zu Erstellen aller Hauptgruppen der Szene
+/**
+ * Erstellt eine Liste der Top-Songs.
+ * @returns {Promise<Array>} Eine Promise, die ein Array mit den erstellten Inhalten der Top-Songs zurückgibt.
+ */
 async function createTopSongs() {
     const songs = await getTopSongs(timeRange);
 
@@ -1208,6 +1235,10 @@ async function createPlaylistResponse() {
     inhaltGroup.add(await createTextMesh(playlistRes, textBigSize, 80, -120, targetPoints.playlist - 200 , 0, -15, 0xffffff,1,'W95FA_Regular.typeface'));
 }
 
+/**
+ * Erstellt die Playlist-Seite.
+ * @returns {Promise<Array>} Ein Array mit den erstellten Inhalten der Wiedergabeliste.
+ */
 async function createPlaylist(){
     let contentPlaylist = [];
     contentPlaylist.push(await createTextMesh("Your \nunwrapped \nPlaylist", headlineSize, -230, 70, targetPoints.playlist-80,0,35,0xffffff, 1,'Jersey 15_Regular'));
@@ -1218,6 +1249,10 @@ async function createPlaylist(){
     return contentPlaylist;
 }
 
+/**
+ * Erstellt den Inhalt für das Ende.
+ * @returns {Promise<Array>} Ein Array mit den erstellten Inhalten für das Ende.
+ */
 async function createEND(){
     let contentEnd = [];
     contentEnd.push(await createTextMesh("THE END", headlineSize, -65, -100, 150, -20, 0, 0xffffff,1,'Jersey 15_Regular'));
@@ -1227,6 +1262,10 @@ async function createEND(){
     return contentEnd;
 }
 
+/**
+ * Erstellt den Startinhalt.
+ * @returns {Promise<Array>} Ein Array mit dem erstellten Inhalt.
+ */
 async function createStart(){
     let contentStart = [];
     arrowModel = await createGLTFMesh(0, -40, gesamtTiefe -100, -80, -10, -40, 4.0, '3d_mouse_cursor');
@@ -1236,6 +1275,10 @@ async function createStart(){
     return contentStart;
 }
 
+/**
+ * Erstellt Animationsobjekte.
+ * @returns {Promise<void>} Ein Promise, das gelöst wird, wenn die Animationsobjekte erstellt wurden.
+ */
 async function createAnimationObjects(){
     //Profil Objects
     animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize, 45, -35, targetPoints.profil+40,0, -25, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color),0.4,'Yarndings 12_Regular'));
@@ -1256,6 +1299,11 @@ async function createAnimationObjects(){
     }
 }
 
+/**
+ * Funktion, die die Startposition behandelt.
+ * 
+ * @returns {void}
+ */
 function handleStartPosition(){
     setTimeout(() => {
     new TWEEN.Tween(arrowModel.position)
@@ -1267,6 +1315,10 @@ function handleStartPosition(){
     }, 1250);
 }
 
+/**
+ * Erstellt alle Inhalte für die Anwendung.
+ * @returns {Promise<void>} Ein Promise, das keinen Wert zurückgibt.
+ */
 async function createAll() {
     let inhaltStart = await createStart();
     inhaltStart.forEach(element => inhaltGroup.add(element));
@@ -1294,6 +1346,9 @@ async function createAll() {
     progressBarContainer.style.display = 'none';
 }
 
+/**
+ * Löscht die Gruppe und leert den Inhalt.
+ */
 function deleteGroup() {
     clearGroup(inhaltGroup);
 }
@@ -1391,8 +1446,6 @@ function isMouseNearCenter(intersect, threshold = 1.5) {
     return distance <= maxDistance; // Prüft, ob die Distanz innerhalb des gewünschten Bereichs ist
 }
 
-let lastHovered = null;
-
 /**
  * Verarbeitet die Intersects und aktualisiert den letzten intersected  Zustand.
  * 
@@ -1441,6 +1494,12 @@ async function animateAndDisplayText(obj) {
     }
 }
 
+/**
+ * Zeigt den Namen des Songs an.
+ *
+ * @param {Object} obj - Das Objekt, das den Song repräsentiert.
+ * @returns {Promise<THREE.Mesh>} - Das Textmesh des Songnamens.
+ */
 async function displaySongName(obj) {
     let songNameTextMesh = await createTextMesh(obj.userData.name, 10, 0, 0, 0,0,0,0xffffff, 1,'W95FA_Regular.typeface');
     storeAndReturnMesh(obj, songNameTextMesh);
@@ -1448,6 +1507,12 @@ async function displaySongName(obj) {
     return songNameTextMesh;
 }
 
+/**
+ * Zeigt den Namen des Künstlers an.
+ * 
+ * @param {Object} obj - Das Objekt, das die Benutzerdaten enthält.
+ * @returns {Promise<THREE.Mesh>} - Das Textmesh-Objekt, das den Künstler und den Namen des Songs darstellt.
+ */
 async function displaySongArtist(obj) {
     const artistsArray = obj.userData.artists.map(artist => artist.name).join(", ");
     let songArtistTextMesh = await createTextMesh(artistsArray, 8, 0, -15,0,0,0,0xffffff, 1,'W95FA_Regular.typeface');
@@ -1456,6 +1521,11 @@ async function displaySongArtist(obj) {
     return songArtistTextMesh;
 }
 
+/**
+ * Zentriert den TextMesh und positioniert ihn relativ zur heavyRotCircleGroup.
+ * @param {THREE.Mesh} textMesh - Das TextMesh, das zentriert werden soll.
+ * @param {number} [yOffset=0] - Der optionale vertikale Versatz des TextMesh.
+ */
 function centerTextMesh(textMesh, yOffset = 0) {
     textMesh.geometry.computeBoundingBox();
     let size = new THREE.Vector3();
@@ -1467,6 +1537,11 @@ function centerTextMesh(textMesh, yOffset = 0) {
     );
 }
 
+/**
+ * Speichert das übergebene Mesh-Objekt in einer Map und gibt es zurück.
+ * @param {Object} obj - Das Objekt, zu dem das Mesh gehört.
+ * @param {Mesh} mesh - Das zu speichernde Mesh-Objekt.
+ */
 function storeAndReturnMesh(obj, mesh) {
     if (!textMeshMap.has(obj)) {
         textMeshMap.set(obj, []);
@@ -1487,21 +1562,11 @@ function moveObject(obj, duration) {
     obj.userData.isAnimating = true;
     // Holen der 3D-Mausposition
     const mouse3DPosition = getMouse3DPosition(mouse, camera);
-    // Berechnung des Richtungsvektors von der aktuellen Position des Objekts zur Mausposition
-    const directionVector = new THREE.Vector3(
-        mouse3DPosition.x - obj.position.x,
-        mouse3DPosition.y - obj.position.y,
-        mouse3DPosition.z - obj.position.z
-    );
-    // Normalisiert den Richtungsvektor, um die Bewegung in die Richtung der Mausposition zu ermöglichen
-    directionVector.normalize();
-    // Definiert die Entfernung, die das Objekt bewegt werden soll
     const moveDistance = 25;
-    // Berechnet die Zielposition basierend auf dem Richtungsvektor und der Bewegungsdistanz
     const targetPosition = {
-        x: obj.position.x,// + directionVector.x * moveDistance,
-        y: obj.position.y,// + directionVector.y * moveDistance,
-        z: obj.position.z + moveDistance //directionVector.z * moveDistance
+        x: obj.position.x,
+        y: obj.position.y,
+        z: obj.position.z + moveDistance
     };
     const tween = new TWEEN.Tween(obj.position)
         .to(targetPosition, duration)
@@ -1526,6 +1591,11 @@ function moveObject(obj, duration) {
     obj.userData.animation = tween;
 }
 
+/**
+ * Setzt ein Objekt auf seine ursprüngliche Position zurück.
+ * @param {Object3D} obj - Das Objekt, das zurückgesetzt werden soll.
+ * @param {number} duration - Die Dauer der Animation in Millisekunden.
+ */
 function resetObjectToOrigin(obj, duration) {
     obj.userData.isAnimating = true;
 
@@ -1543,6 +1613,10 @@ function resetObjectToOrigin(obj, duration) {
 
 }
 
+/**
+ * Setzt ein Objekt zurück, indem es verschiedene Eigenschaften zurücksetzt und Animationen stoppt.
+ * @param {Object} obj - Das Objekt, das zurückgesetzt werden soll.
+ */
 function resetObject(obj) {
     if(obj === undefined) return;
     if (obj && obj.userData.isHovered) {
@@ -1551,16 +1625,19 @@ function resetObject(obj) {
         if (obj.userData.animation) {
             obj.userData.animation.stop();
         }
-
         obj.userData.animationActive = true;
-
-        scaleObject(obj, 1.0); // Zurücksetzen auf die ursprüngliche Skalierung
-
+        scaleObject(obj, 1.0);
         removeTextMeshes(obj);
         moveObject(obj, 100);
     }
 }
 
+/**
+ * Skaliert ein Objekt um den angegebenen Faktor.
+ *
+ * @param {Object3D} obj - Das zu skalierende Objekt.
+ * @param {number} scale - Der Skalierungsfaktor.
+ */
 function scaleObject(obj, scale) {
     if (obj.userData.originalScale === undefined) {
         obj.userData.originalScale = obj.scale.clone(); // Speichert die ursprüngliche Skalierung des Objekts
@@ -1568,6 +1645,11 @@ function scaleObject(obj, scale) {
     obj.scale.set(obj.userData.originalScale.x * scale, obj.userData.originalScale.y * scale, obj.userData.originalScale.z * scale);
 }
 
+/**
+ * Entfernt alle TextMeshes, die mit dem übergebenen Objekt verknüpft sind.
+ *
+ * @param {Object} obj - Das Objekt, mit dem die TextMeshes verknüpft sind.
+ */
 function removeTextMeshes(obj) {
     const textMeshes = textMeshMap.get(obj);
     if (textMeshes) {
@@ -1581,4 +1663,5 @@ function removeTextMeshes(obj) {
     }
 }
 
+// Animationszyklus starten
 tick();
