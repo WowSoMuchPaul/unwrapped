@@ -222,7 +222,7 @@ button:hover {
 #playlistBttnContainer{
     position: fixed;      
     left: 50%;
-    bottom: 30%;
+    bottom: 10%;
     transform: translateX(-50%);
     z-index: 1;
 } 

@@ -1,5 +1,5 @@
 import { cos } from 'three/examples/jsm/nodes/Nodes.js';
-import coverUrl from '../static/images/PaulApproved.jpeg';
+import coverUrl from '../static/images/playlistCover.jpg';
 
 const client_id = "b125b5d4ba6f4e619e84880fa7a9a74f";
 const redirect_uri = "http://localhost:8000/";
@@ -442,9 +442,9 @@ export async function setFestivalPlaylist(timeRange){
         while(coverRes.status != 202){
             coverRes = await (callApi("PUT", "https://api.spotify.com/v1/playlists/" + playlistId + "/images", base64Cover));
         }
-        if ((coverRes.status == 202) && (setplaylistRes.snapshot_id)) return "Playlist erfolgreich erstellt!";
+        if ((coverRes.status == 202) && (setplaylistRes.snapshot_id)) return "Playlist erstellt!";
     }else{
-        if (setplaylistRes.snapshot_id) return "Playlist erfolgreich aktualisiert!";
+        if (setplaylistRes.snapshot_id) return "Playlist aktualisiert!";
     }
 
 }

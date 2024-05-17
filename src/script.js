@@ -13,7 +13,8 @@ import { HemisphereLight } from 'three';
 import { PMREMGenerator } from 'three';
 
 import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
-import fensterTutorialImg from '../static/images/vapor.png';
+import fensterTutorialImg from '../static/images/startScreenImg.png';
+import playlistCover from '../static/images/playlistCover.jpg';
 import profilPlaceholder from '../static/images/profil_placeholder.png';
 import offlineImage from '../static/images/offline.png';
 import onlineImage from '../static/images/online.png';
@@ -1242,24 +1243,26 @@ async function createPlaylistResponse() {
     console.log(playlistRes);
     playlistButtonAktiviert = false;
     document.getElementById("playlistButton").style.display = "none";
+    inhaltGroup.add(await createTextMesh(playlistRes, textBigSize, 80, -120, targetPoints.playlist - 200 , 0, -15, 0x000000,1,'W95FA_Regular.typeface'));
 }
 
 async function createPlaylist(){
     let contentPlaylist = [];
-    contentPlaylist.push(await createTextMesh("Deine \nunwrapped \nPlaylist", headlineSize, -250, 85, targetPoints.playlist-40,0,25,0x000000, 1,'Jersey 15_Regular'));
-    contentPlaylist.push(await createTextMesh("w", textBigSize, 55, 85, targetPoints.playlist,0, -25, 0x000000,0.3,'Yarndings 12_Regular'));
-    contentPlaylist.push(await createTextMesh("x", textBigSize,-120, -75, targetPoints.playlist,0, 15, 0x000000,0.2,'Yarndings 12_Regular'));
-    contentPlaylist.push(await createTextMesh("a", 1000, -580,-500, targetPoints.playlist-20,0,0,0x000000,0.1,'Yarndings 12_Regular'));
+    contentPlaylist.push(await createTextMesh("Your \nunwrapped \nPlaylist", headlineSize, -230, 70, targetPoints.playlist-80,0,35,0x000000, 1,'Jersey 15_Regular'));
+    contentPlaylist.push(await createBildMesh(playlistCover, 200, 30, targetPoints.playlist-200, -15, 200, true));
+    contentPlaylist.push(await createTextMesh("w", textBigSize, 180, 70, targetPoints.playlist - 50,0, -25, 0x000000,0.3,'Yarndings 12_Regular'));
+    contentPlaylist.push(await createTextMesh("x", textBigSize,-120, -75, targetPoints.playlist - 25,0, 15, 0x000000,0.2,'Yarndings 12_Regular'));
+    //contentPlaylist.push(await createTextMesh("a", 1000, -580,-500, targetPoints.playlist-20,0,0,0x000000,0.1,'Yarndings 12_Regular'));
     
     return contentPlaylist;
 }
 
 async function createEND(){
     let contentEnd = [];
-    contentEnd.push(await createTextMesh("THE END", headlineSize, -40, 0, targetPoints.playlist-500,0, 0, 0x000000,1,'Jersey 15_Regular'));
+    contentEnd.push(await createTextMesh("THE END", headlineSize, -65, -100, 150, -20, 0, 0x000000,1,'Jersey 15_Regular'));
     // contentEnd.push(await createRingMesh(15,0,targetPoints.playlist-500,-35,15,0x42887E,150,160));
     // contentEnd.push(await createQuaderMesh(0,0,targetPoints.playlist-500,20,10, 120, 0xffffff));
-    contentEnd.push(await createTextMesh("v", 150, -150,-100,targetPoints.playlist-470 ,0,0,0x000000,0.1,'Yarndings 12_Regular'));
+    contentEnd.push(await createTextMesh("v", 150, -75, -25, 40,0,0,0x000000,0.1,'Yarndings 12_Regular'));
     return contentEnd;
 }
 
