@@ -6,10 +6,12 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'stats.js';
+import { GUI } from 'dat.gui';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DirectionalLight } from 'three';
 import { AmbientLight } from 'three'; 
 import { HemisphereLight } from 'three';
+import { PointLight } from 'three';
 import { PMREMGenerator } from 'three';
 
 import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
@@ -169,8 +171,8 @@ loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
 
 let lastProgress = 0; 
 loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
-    console.log("Progress: ", itemsLoaded, itemsTotal);
-    console.log(url);
+    // console.log("Progress: ", itemsLoaded, itemsTotal);
+    // console.log(url);
     let currentProgress = (itemsLoaded / itemsTotal) * 100;
 
     // if(currentProgress > lastProgress) {
@@ -207,12 +209,34 @@ loadingManager.onLoad = function() {
     lastCamPosition = camera.position.z;
 
     //Lights
-    let light = new THREE.DirectionalLight(0xffffff, 1.2);
+    let light = new THREE.DirectionalLight(0xffffff, 1);
+    light.castShadow = true; // default false
     light.position.set( gesamtTiefe/2, gesamtTiefe/2, gesamtTiefe ).normalize();
     light.target.position.set(0, 0, 0);
     scene.add(light);
-    // let ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-    // scene.add(ambientLight);
+
+    //Set up shadow properties for the light
+    light.shadow.mapSize.width = 512; // default
+    light.shadow.mapSize.height = 512; // default
+    light.shadow.camera.near = 0.5; // default
+    light.shadow.camera.far = 500; // default
+
+    let ambientLight = new THREE.AmbientLight(0xF0FEFF, 0.2);
+    scene.add(ambientLight);
+
+    // Helper GUI für Directional Light
+    const gui = new GUI();
+    const lightFolder = gui.addFolder('Directional Light');
+    lightFolder.add(light.position, 'x', -1000, 1000).name('Position X');
+    lightFolder.add(light.position, 'y', -1000, 1000).name('Position Y');
+    lightFolder.add(light.position, 'z', -1000, 1000).name('Position Z');
+    lightFolder.add(light, 'intensity', 0, 10).name('Intensity');
+    lightFolder.open();
+    const ambientLightFolder = gui.addFolder('Ambient Light');
+    ambientLightFolder.add(ambientLight, 'intensity', 0, 10).name('Intensity');
+    ambientLightFolder.add(ambientLight.color, 'getHex').name('Color');
+
+
 
     //Inhalt Group definieren
     inhaltGroup = new THREE.Group();
@@ -675,7 +699,7 @@ async function rotateCube(event) {
         let rotation = {};
         rotation[step.axis] = topArtistsCube.rotation[step.axis] + step.angle;
         tween = new TWEEN.Tween(topArtistsCube.rotation)
-            .to(rotation, 500)
+            .to(rotation, 650)
             .easing(TWEEN.Easing.Cubic.InOut)                
             .onComplete(() => {
                 setTimeout(() => {
@@ -1057,7 +1081,7 @@ async function createProfil() {
 
     contentProfil.push(await createTextMesh("Hey" , textBigSize, -80, 35, targetPoints.profil,0,0,0x000000, 1,'Jersey 15_Regular'));
     contentProfil.push(await createTextMesh(profil.name + " !", textBigSize, -80, 15, targetPoints.profil,0,0,0x000000, 1,'Jersey 15_Regular'));
-    contentProfil.push(await createTextMesh("Followers: " + profil.follower.toString(), textSmallSize, 55, -31, targetPoints.profil,winkel,0,0x000000, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createTextMesh("Follower: " + profil.follower.toString(), textSmallSize, 55, -32, targetPoints.profil,winkel,0,0x000000, 1,'W95FA_Regular.typeface'));
     
     let recGroupX = -80;
     let recGroupY = -2;
@@ -1093,9 +1117,9 @@ async function createProfil() {
     contentProfil.push(await createTextMesh(recentlyPlayed[3].name, recText, recGroupX + 31, recGroupY - 69, targetPoints.profil, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
     contentProfil.push(await createTextMesh(recentlyPlayed[3].artists[0].name + ".jpg", recText-1, recGroupX+32, recGroupY -40.3, targetPoints.profil+0.5, recBildRot,0,0x000000, 1,'W95FA_Regular.typeface'));
 
-    contentProfil.push(await createTextMesh("j", textBigSize, 45, -35, targetPoints.profil+40,0, -25, 0x000000,0.4,'Yarndings 12_Regular'));
+    contentProfil.push(await createTextMesh("j", textBigSize, 45, -40, targetPoints.profil+40,0, -25, 0x000000,0.4,'Yarndings 12_Regular'));
     contentProfil.push(await createTextMesh("k", textSize,-80, -95, targetPoints.profil+20,0, 12, 0x000000,0.4,'Yarndings 12_Regular'));
-    contentProfil.push(await createTextMesh("y", textBigSize-8, -30, 20, targetPoints.profil-40,-5, 15, 0x000000,0.3,'Yarndings 12_Regular'));
+    contentProfil.push(await createTextMesh("y", textBigSize-8, -30, 50, targetPoints.profil-40,-5, 15, 0x000000,0.3,'Yarndings 12_Regular'));
 
     
     return contentProfil;
@@ -1223,6 +1247,9 @@ async function createTopSongs() {
     contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 10, targetPoints.topSong - 200, 0, 70, true));
     contentTopSongs.push(await createTextMesh("1: " + songs[0].name, textSize, -40, 55, targetPoints.topSong - 200,0,0,0x000000, 1,'W95FA_Regular.typeface'));
     contentTopSongs.push(await createGLTFMesh(0, -90, targetPoints.topSong - 200, 0, 0, 0, 50.0, 'pedestal'));
+    // let ped = await createGLTFMesh(0, -90, targetPoints.topSong - 200, 0, 0, 0, 50.0, 'pedestal');
+    // ped.shiniess = 50;
+    // contentTopSongs.push(ped);
 
     contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -120, -5, targetPoints.topSong - 155, 20, 70, true));
     contentTopSongs.push(await createTextMesh("2: " + songs[1].name, textSize, -155, 40, targetPoints.topSong - 135 ,0,20,0x000000, 1,'W95FA_Regular.typeface'));
