@@ -21,6 +21,7 @@ import navArtistsIcon from '../static/images/nav_artists_icon.png';
 import navSongsIcon from '../static/images/nav_songs_icon.png';
 import navRotationIcon from '../static/images/nav_rotation_icon.png';
 import navPlaylistIcon from '../static/images/nav_playlist_icon.png';
+import { Tween } from '@tweenjs/tween.js';
 
 let sizes, canvas, scene, camera, renderer, trackControls, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, arrowModel;
 // export {camera, heavyRotCircleGroup as heavyRotCircleGroup, inhaltGroup, scene};
@@ -106,35 +107,6 @@ export function getMouse3DPosition(mouse, camera) {
 /**cursor */
 const cursor = {};
 
-// const loadingManager = new THREE.LoadingManager();
-// const loadingLabel = document.getElementById('progress-bar-label');
-// const progressBar = document.getElementById('progress-bar-blocks');
-// const progressBarContainer = document.querySelector('.progress-bar-container');
-
-// loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
-//     // loadingLabel.innerText = "Nearly done...";
-//     setTimeout(() => {
-//         loadingLabel.innerText = "Nearly done...";
-//     }, 1000);
-// }
-
-// let lastProgress = 0; 
-// loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
-//     console.log("Progress: ", itemsLoaded, itemsTotal);
-//     console.log(url);
-//     let currentProgress = (itemsLoaded / itemsTotal) * 100;
-
-//     // if(currentProgress > lastProgress) {
-//         progressBar.value = currentProgress;
-//     //     lastProgress = currentProgress;
-//     // }
-// };
-
-// loadingManager.onLoad = function() {
-//     setTimeout(() => {
-//             progressBarContainer.style.display = 'none';
-//     }, 2000);
-// }
 
 const loadingLabel = document.getElementById('progress-bar-label');
 const progressBar = document.getElementById('progress-bar-blocks');
@@ -153,27 +125,14 @@ await init(); // Starte die Initialisierung der Szene
  * @returns {Promise<void>}
  */
 async function init() {
-    // console.log("Init");
-// const loadingManager = new THREE.LoadingManager();
-
 
     loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
-        // loadingLabel.innerText = "Nearly done...";
-        // setTimeout(() => {
-        //     loadingLabel.innerText = "Nearly done...";
-        // }, 1000);
+        loadingLabel.innerText = "Loading...";
     }
 
-    let lastProgress = 0; 
     loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
-        // console.log("Progress: ", itemsLoaded, itemsTotal);
-        // console.log(url);
         let currentProgress = (itemsLoaded / itemsTotal) * 100;
-
-        // if(currentProgress > lastProgress) {
-            progressBar.value = currentProgress;
-        //     lastProgress = currentProgress;
-        // }
+        progressBar.value = currentProgress;
     };
 
     loadingManager.onLoad = function() {
@@ -303,14 +262,21 @@ async function init() {
         document.getElementById("timeRange").addEventListener("change", function() {
             progressBarContainer.style.zIndex = 10;
             progressBarContainer.style.display = 'flex';
-            deleteGroup();
-            timeRange = this.value;
-            createAll();
-            //Playlist Button restetten
-            document.getElementById("playlistButton").innerText = "Create Playlist";
-            document.getElementById("playlistButton").disabled = false;
-            playlistButtonAktiviert = true;
-            checkCamPosition();
+            let backToStartTween = new TWEEN.Tween(camera.position)
+                .to({z: gesamtTiefe}, 2000)
+                .easing(TWEEN.Easing.Quadratic.InOut)
+                .onComplete(() => {
+                    cleanupTopArtistsCube();
+                    deleteGroup();
+                    timeRange = this.value;
+                    createAll();
+                    //Playlist Button restetten
+                    document.getElementById("playlistButton").innerText = "Create Playlist";
+                    document.getElementById("playlistButton").disabled = false;
+                    playlistButtonAktiviert = true;
+                    checkCamPosition();
+                })
+                .start();
         });
         await createAll();
     }else{
