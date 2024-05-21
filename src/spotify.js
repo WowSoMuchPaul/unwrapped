@@ -1,5 +1,7 @@
 import { cos } from 'three/examples/jsm/nodes/Nodes.js';
 import coverUrl from '../static/images/playlistCover.jpg';
+import coverUrlMid from '../static/images/playlistCoverMid.jpg';
+import coverUrlShort from '../static/images/playlistCoverShort.jpg';
 
 const client_id = "b125b5d4ba6f4e619e84880fa7a9a74f";
 const redirect_uri = "http://localhost:8000/";
@@ -376,18 +378,23 @@ export async function setFestivalPlaylist(timeRange){
     let spotifyUserID = profil.id;
     let playlistName = profil.name + "s unwrapped";
     let zeitInfo = "deiner Spotify Erfahrung";
+    let playlistCoverUrl = coverUrl;
     if(timeRange == "long_term") {
         zeitInfo = "deiner gesamten Spotify Erfahrung";
     }
     if(timeRange == "medium_term") {
         zeitInfo = "den letzten 6 Monaten deiner Spotify Erfahrung";
+        playlistName += " (Mid Term)";
+        playlistCoverUrl = coverUrlMid;
     }
     if(timeRange == "short_term") {
         zeitInfo = "den letzten 4 Wochen deiner Spotify Erfahrung";
+        playlistName += " (Short Term)";
+        playlistCoverUrl = coverUrlShort;
     }
     let body = {
         "name": playlistName, 
-        "description": "Deine Playlist zum unwrapped 2024 basierend auf " + zeitInfo + ".", 
+        "description": "Deine unwrapped Playlist basierend auf " + zeitInfo + ".", 
         "public": "false"
     };
 
@@ -435,7 +442,7 @@ export async function setFestivalPlaylist(timeRange){
     console.log(setplaylistRes);
     //Cover der Playlist setzen
     if(!playlistExists){
-        let base64Cover = await (getBase64Image(coverUrl));
+        let base64Cover = await (getBase64Image(playlistCoverUrl));
         let coverRes = await (callApi("PUT", "https://api.spotify.com/v1/playlists/" + playlistId + "/images", base64Cover));
         //Beim Cover setzten scheint Spotify etwas unzuverlässig zu sein, daher wird der Request so lange wiederholt, bis er erfolgreich ist.
         //Kein 100% sauberer Weg, aber zunächst ein ausreichender Workaround.

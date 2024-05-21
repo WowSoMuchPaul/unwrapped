@@ -15,6 +15,8 @@ import { PMREMGenerator } from 'three';
 import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
 import fensterTutorialImg from '../static/images/startScreenImg.png';
 import playlistCover from '../static/images/playlistCover.jpg';
+import playlistCoverMid from '../static/images/playlistCoverMid.jpg';
+import playlistCoverShort from '../static/images/playlistCoverShort.jpg';
 import profilPlaceholder from '../static/images/profil_placeholder.png';
 import offlineImage from '../static/images/offline.png';
 import onlineImage from '../static/images/online.png';
@@ -343,8 +345,9 @@ loadingManager.onLoad = function() {
             playlistButtonAktiviert = true;
             checkCamPosition();
         });
-        await createAnimationObjects();
+        
         await createAll();
+        await createAnimationObjects();
     }else{
        document.getElementById("fensterTutorialImg").src = fensterTutorialImg;
        document.getElementById("profilImage").src = profilPlaceholder;
@@ -1077,12 +1080,15 @@ async function createProfil() {
     let winkel = 0;
     let contentProfil = [];
 
+
+    animationObjects.push(await createTextMesh(profil.name, textBigSize, 40, 100, targetPoints.profil-200,-5, 15, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color),0.3,'W95FA_Regular.typeface'));
+
     contentProfil.push(await createBildMesh(profil.imageUrl, 80, 0, targetPoints.profil, winkel, 50, true));
     // contentProfil.push( await createGLTFMesh(80, -25, targetPoints.profil-23, 0, 0, 0, 25, 'DP_Frame_001'));
 
     contentProfil.push(await createTextMesh("Hey" , textBigSize, -80, 35, targetPoints.profil,0,0,0xffffff, 1,'Jersey 15_Regular'));
     contentProfil.push(await createTextMesh(profil.name + " !", textBigSize, -80, 15, targetPoints.profil,0,0,0xffffff, 1,'Jersey 15_Regular'));
-    contentProfil.push(await createTextMesh("Followers: " + profil.follower.toString(), textSmallSize, 55, -31, targetPoints.profil,winkel,0,0xffffff, 1,'W95FA_Regular.typeface'));
+    contentProfil.push(await createTextMesh("Follower: " + profil.follower.toString(), textSmallSize, 55, -31, targetPoints.profil,winkel,0,0xffffff, 1,'W95FA_Regular.typeface'));
     
     let recGroupX = -80;
     let recGroupY = -2;
@@ -1267,8 +1273,11 @@ async function createPlaylistResponse() {
 
 async function createPlaylist(){
     let contentPlaylist = [];
+    let cover = playlistCover;
     contentPlaylist.push(await createTextMesh("Your \nunwrapped \nPlaylist", headlineSize, -230, 70, targetPoints.playlist-80,0,35,0xffffff, 1,'Jersey 15_Regular'));
-    contentPlaylist.push(await createBildMesh(playlistCover, 200, 30, targetPoints.playlist-200, -15, 200, true));
+    if (timeRange === "short_term") cover = playlistCoverShort;
+    if (timeRange === "medium_term") cover = playlistCoverMid;
+    contentPlaylist.push(await createBildMesh(cover, 200, 30, targetPoints.playlist-200, -15, 200, true));
     
     //contentPlaylist.push(await createTextMesh("a", 1000, -580,-500, targetPoints.playlist-20,0,0,0xffffff,0.1,'Yarndings 12_Regular'));
     
@@ -1298,10 +1307,28 @@ async function createAnimationObjects(){
     animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize, 45, -35, targetPoints.profil+40,0, -25, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color),0.4,'Yarndings 12_Regular'));
     animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textSize,-80, -95, targetPoints.profil+20,0, 12, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color),0.4,'Yarndings 12_Regular'));
     animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize-8, -30, 20, targetPoints.profil-40,-5, 15, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color),0.3,'Yarndings 12_Regular'));
+    
+
+    //TopArtist Objects
+    animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize,-100, 20, targetPoints.topArtist + 25,0, 15, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color), 0.2,'Yarndings 12_Regular'));
+    animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize, 80, -20, targetPoints.topArtist + 20,0, 0, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color), 0.2,'Yarndings 12_Regular'));
+    animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize, 120, -60, targetPoints.topArtist - 80,0, 0, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color), 0.2,'Yarndings 12_Regular'));
+
+    //TopSongs Objects
+    animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize,-350, 100, targetPoints.topSong - 250,0, 15, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color), 0.2,'Yarndings 12_Regular'));
+    animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize, 170, 0, targetPoints.topSong - 0,0, 15, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color), 0.2,'Yarndings 12_Regular'));
+    animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize,-100, -20, targetPoints.topSong + 25,0, 15, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color), 0.2,'Yarndings 12_Regular'));
+    animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize,300, 200, targetPoints.topSong - 300,0, 15, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color), 0.2,'Yarndings 12_Regular'));
+
+    //HeavyRotation Objects
+    animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize,-100, 60, targetPoints.onRepeat - 25,0, 15, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color), 0.2,'Yarndings 12_Regular'));
+    animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize, 200, -75, targetPoints.onRepeat - 100,0, 15, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color), 0.2,'Yarndings 12_Regular'));
+    animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize + 10, 100, 10, targetPoints.onRepeat - 350,0, 15, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color), 0.2,'Yarndings 12_Regular'));
 
     //Playlist Objects
     animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize, 180, 70, targetPoints.playlist - 50,0, -25, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color), 0.3,'Yarndings 12_Regular'));
-    animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize,-120, -75, targetPoints.playlist - 25,0, 15, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color), 0.2,'Yarndings 12_Regular'));
+    animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize,-120, -75, targetPoints.playlist - 0,0, 15, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color), 0.2,'Yarndings 12_Regular'));
+
     
     for (const object of animationObjects) {
         object.userData.ogPosition = object.position.clone();
