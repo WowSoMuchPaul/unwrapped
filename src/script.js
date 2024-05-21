@@ -5,11 +5,13 @@
  * @module script
  */
 
+/**
+ * Importis der benötigten Module.
+ */
 import { THREE, TWEEN } from './imports.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
-import Stats from 'stats.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
@@ -65,11 +67,18 @@ const colorPalette = [
 ];
 const dekoIconKeys = ["w","x","j","k","y"];
 
+let topArtistBereichInitialized = false;
 let topArtistsRank = new THREE.Mesh;
 let topArtistsName = new THREE.Mesh;
 let lastHovered = null;
 
-const stats = new Stats();
+let initialTween;
+let topArtCubeAnimating;
+
+const clock = new THREE.Clock();
+let previousTime = 0;
+
+
 // Textgrößen Konstanten
 const headlineSize = 40;
 const textBigSize = 20;
@@ -82,13 +91,11 @@ const textDepth = 0;
 
 let startupSoundPlayed = false;
 
-// stats.showPanel(0);
-//document.body.appendChild(stats.dom); 
-
 /** Raycaster */
-export const raycaster = new THREE.Raycaster();
-export let mouse = new THREE.Vector2();
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
 
+// Event-Listener für Mausbewegungen, der die Mauskoordinaten normalisiert
 window.addEventListener('mousemove', (event) => {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -100,7 +107,7 @@ window.addEventListener('mousemove', (event) => {
  * @param {THREE.PerspectiveCamera} camera - Die verwendete Kamera in der Szene.
  * @returns {THREE.Vector3} Die berechnete Position der Maus auf der z=0 Ebene.
  */
-export function getMouse3DPosition(mouse, camera) {
+function getMouse3DPosition(mouse, camera) {
     // Projiziert den normalisierten Gerätekoordinatenvektor (mouse.x, mouse.y) auf die z=0 Ebene
     const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
     const raycaster = new THREE.Raycaster();
@@ -113,17 +120,16 @@ export function getMouse3DPosition(mouse, camera) {
     return intersects; // Gibt die berechnete 3D-Position der Maus zurück
 }
 
-
 /**cursor */
 const cursor = {};
 
+/**
+ * Zuweisen der Loading Animation Elemente
+ */
 const loadingLabel = document.getElementById('progress-bar-label');
 const progressBar = document.getElementById('progress-bar-blocks');
 const progressBarContainer = document.querySelector('.progress-bar-container');
 progressBarContainer.style.display = 'none';
-
-// Szene initialisieren
-await init();
 
 /**
  * Initialisiert die Anwendung.
@@ -133,19 +139,18 @@ await init();
  * @returns {Promise<void>}
  */
 async function init() {
-
+    /**
+     * Loading Manager
+     */
     loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
         loadingLabel.innerText = "Loading...";
     }
-
     loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
         let currentProgress = (itemsLoaded / itemsTotal) * 100;
         progressBar.value = currentProgress;
     };
-
     loadingManager.onLoad = function() {
         loadingLabel.innerText = "Nearly done...";
-        // playStartupSound();
     }
 
     /**
@@ -163,6 +168,13 @@ async function init() {
     scene = new THREE.Scene();
 
     /**
+     * Inhalt-Gruppe für alle Elemente in der Szene
+     */
+    inhaltGroup = new THREE.Group();
+    inhaltGroup.name = "inhaltGroup";
+    scene.add(inhaltGroup);
+
+    /**
      * Camera
      */
     camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 10, 550 );
@@ -170,7 +182,9 @@ async function init() {
     scene.add(camera);
     lastCamPosition = camera.position.z;
 
-    //Lights
+    /**
+     * Lichter
+     */
     let directionalLight = new THREE.DirectionalLight(0xffffff, 1.3);
     directionalLight.position.set(0,1,1);
     scene.add(directionalLight);
@@ -180,16 +194,7 @@ async function init() {
     hemiLight.position.set(0, 1, 0);
     // scene.add(hemiLight);
 
-    //Inhalt Group definieren
-    inhaltGroup = new THREE.Group();
-    inhaltGroup.name = "inhaltGroup";
-    scene.add(inhaltGroup);
-
-    /**
-    * Axis Helper 
-    */
-
-    // Seiten Target
+    // Seiten Targets
     targetPoints.profil = camera.position.z - (camera.position.z / 6);
     targetPoints.topArtist = camera.position.z - (2 * (camera.position.z / 6));
     targetPoints.topSong = camera.position.z - (3 * (camera.position.z / 6));
@@ -209,10 +214,11 @@ async function init() {
     renderer.setClearColor(0xffffff, 0);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(sizes.width, sizes.height);
-    // renderer.outputEncoding = THREE.sRGBEncoding;
-    //document.body.appendChild(renderer.domElement);
 
-    //Track Controls
+    /**
+     * TrackballControls
+     * Kontrolle über das Verhalten der Kamera und des Zooms
+     */
     trackControls = new TrackballControls(camera, renderer.domElement);
     trackControls.noRotate = true;
     trackControls.noPan = true;
@@ -227,10 +233,11 @@ async function init() {
     document.getElementById("help").src = help;
     document.getElementById("help").style.display = "none";
 
-    //Nav Bar
+    /**
+     * Nav Bar mit den Icons der einzelnen Bereiche
+     */
     document.getElementById("navProgress").style.bottom = progBarBottom + "%";
     document.getElementById("navBar").style.display = "none";
-
     document.getElementById("navProfil").style.bottom = (1 - (targetPoints.profil + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
     document.getElementById("navProfilImg").src = navProfilIcon;
     document.getElementById("navArtists").style.bottom = (1 - (targetPoints.topArtist + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
@@ -241,7 +248,6 @@ async function init() {
     document.getElementById("navOnRepeatImg").src = navRotationIcon;
     document.getElementById("navPlaylist").style.bottom = (1 - (targetPoints.playlist + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
     document.getElementById("navPlaylistImg").src = navPlaylistIcon;
-
 
     //Erstelle alle Geometrien, wenn Nutzer bereits authentifiziert ist
     if (await (onPageLoad())) {
@@ -310,7 +316,6 @@ async function init() {
     document.getElementById("helpToStartButton").addEventListener("click", openOverlay);
     document.getElementById("playlistButton").addEventListener("click", createPlaylistResponse);
     
-    
     //Nav Bar Listener
     document.getElementById("navPlaylist").addEventListener("click", () => {
         bringeZumBereich(targetPoints.playlist);
@@ -327,15 +332,16 @@ async function init() {
     document.getElementById("navProfil").addEventListener("click", () => {
         bringeZumBereich(targetPoints.profil);
     });
-
-
-
+    
     window.addEventListener('mousemove', (event) => {
         cursor.x = event.clientX / sizes.width - 0.5;
         cursor.y = event.clientY / sizes.height - 0.5;
     })
 }
 
+/**
+ * Schließt das Overlay und stellt die ursprüngliche Position wieder her.
+ */
 function closeOverlay() {
     playButtonSound();
     document.getElementById("pageBlocker").style.display = "none";
@@ -345,6 +351,9 @@ function closeOverlay() {
     handleStartPosition();
 }
 
+/**
+ * Öffnet das Overlay und blendet bestimmte Elemente aus.
+ */
 function openOverlay() {
     document.getElementById("pageBlocker").style.display = "block";
     document.getElementById("help").style.display = "none";
@@ -352,48 +361,64 @@ function openOverlay() {
     document.getElementById("helpWindow").style.display = "none";
 }
 
+/**
+ * Öffnet das Hilfefenster und ruft weitere, zugehörige Funktionen auf.
+ */
 function openHelp() {
     playButtonSound();
     document.getElementById("helpWindow").style.display = "block";
     setHelpText();
-    
 }
 
+/**
+ * Schaltet die Hilfe auf den Startzustand um.
+ */
 function switchHelpToStart() {
     playButtonSound();
 }
 
+/**
+ * Schließt das Hilfefenster und spielt den Sound des Button clicks ab.
+ */
 function closeHelp() {
     playButtonSound();
     document.getElementById("helpWindow").style.display = "none";
 }
 
+/**
+ * Setzt den Hilfetext für den aktuellen Bereich.
+ */
 function setHelpText() {
     document.getElementById("helpBereichInfo").innerHTML = bereichInfo.bereich[bereichInfo.currentIndex].text;
     document.getElementById("helpHeadline").innerHTML = bereichInfo.bereich[bereichInfo.currentIndex].name;
     document.getElementById("helpOverlayHeadline").innerHTML = bereichInfo.bereich[bereichInfo.currentIndex].name.toLowerCase() + ".help";
 }
 
+/**
+ * Funktion, die aufgerufen wird, wenn das Fenstergröße geändert wird.
+ * Aktualisiert die Kamera-Aspektverhältnis und die Renderer-Größe entsprechend.
+ */
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function setProgressBar() {
+/**
+ * Setzt die Navbar basierend auf der Kameraposition.
+ */
+function setNavBarProgress() {
     var barProgress = 0;
     const progBarMaxH = 100 - 2 * progBarBottom;
     const camProgress = (1 - (Math.round(camera.position.z) / gesamtTiefe)) * 100;
     barProgress = camProgress * (progBarMaxH / 100);
-    
     document.getElementById("navProgress").style.height = barProgress + "%";
 }
 
 /**
- * Überprüft die Position der Kamera und ruft entsprechende Funktionen auf, basierend auf der Position.
+ * Überprüft die Position der Kamera und ruft entsprechende Funktionen auf, basierend auf der aktuellen Position.
  */
 function checkCamPosition() {
-    //console.log("CheckCamPosition");
     //Aktuelle Kamera Position
     const pos = Math.round(camera.position.z);
 
@@ -452,8 +477,7 @@ function checkCamPosition() {
         if (bereichInfo.currentIndex != 0) {
             bereichInfo.currentIndex = 0;
             setHelpText();
-            // console.log("Cleanup außerhalb der Bereiche aufgerufen :"); 
-            cleanupTopArtistsCube(); // Zurücksetzen, bevor der Bereich erneut initialisiert wird 
+            cleanupTopArtistsCube();
         }
     }
 }
@@ -513,9 +537,6 @@ function handleBereich(pos, tp) {
     }
 }
 
-let initialTween;
-let topArtCubeAnimating;
-
 let rotationSequence = [
     [ //Auf 1
         { axis: 'y', angle: Math.PI / 2 }    
@@ -538,8 +559,6 @@ let rotationSequence = [
     ]
 ];
 
-let topArtistBereichInitialized = false;
-
 /**
  * Behandelt den Bereich der Top-Künstler.
  * Wird aufgerufen wenn die Kamera in den Bereich der Top-Künstler eintritt.
@@ -549,31 +568,21 @@ let topArtistBereichInitialized = false;
  * @returns {Promise<void>}
  */
 async function handleTopArtistBereich() {
-    console.log("Handle Top Artist Bereich erreicht");
     if (topArtistBereichInitialized) {
         return; // Beende die Funktion, wenn sie bereits ausgeführt wurde
     }
     topArtistBereichInitialized = true;
     topArtistsRotationIndex = 0;
-
-    // Bereinige eventuell vorhandene Text-Meshes, bevor neue erstellt werden
-    // clearAndRemoveObject(topArtistsRank);
-    // clearAndRemoveObject(topArtistsName);
+    topArtCubeAnimating = false;
+    trackControls.noZoom = true;
 
     // await initTopArtistsCube();
-    topArtistBereichInitialized = false;
-
 
     window.addEventListener('wheel', rotateCube);
     if (!initCubeAnimationPlayed) {
         initialAnimation();
-        // initCubeAnimationPlayed = true;
     }
-    // topArtistsRotationIndex = 0;
-    topArtCubeAnimating = false;
-    trackControls.noZoom = true; // Verhindert Zoom während der Rotation
 }
-
 
 /**
      * Initiale Würfel-Animation beim ersten Betreten des Top-Artists-Bereichs.
@@ -583,18 +592,11 @@ function initialAnimation() {
         .to({ x: topArtistsCube.rotation.x - Math.PI / 10 }, 600)
         .easing(TWEEN.Easing.Cubic.InOut)
         .yoyo(true) // Rückkehr zur Ausgangsposition
-        .repeat(2) // Wiederhole die Bewegung einmal
+        .repeat(3) // Wiederhole die Bewegung
         .onComplete(() => {
-            if (!topArtCubeAnimating) { // Wenn keine andere Animation aktiv ist, führe Rückbewegung aus
-                new TWEEN.Tween(topArtistsCube.rotation)
-                    .to({ x: topArtistsCube.rotation.x + Math.PI / 10 }, 600)
-                    .easing(TWEEN.Easing.Cubic.InOut)
-                    .start();
-            }
+            initCubeAnimationPlayed = true;
         })
         .start();
-        initCubeAnimationPlayed = true;
-
 }
 
 /**
@@ -607,7 +609,7 @@ async function rotateCube(event) {
     if (topArtCubeAnimating || event.deltaY === 0) return;
     if(initialTween.isPlaying()){
         initialTween.stop();
-        let resetTween = new TWEEN.Tween(topArtistsCube.rotation)
+        const resetTween = new TWEEN.Tween(topArtistsCube.rotation)
         .to({ x: 0, y: Math.PI + (Math.PI / 2), z: 0 }, 300)
         .easing(TWEEN.Easing.Cubic.InOut)
         .start();
@@ -617,9 +619,7 @@ async function rotateCube(event) {
     if(topArtistsRotationIndex == 0) {
         trackControls.noZoom = false;
         window.removeEventListener('wheel', rotateCube);
-        // cleanupTopArtistsCube();
-        // clearAndRemoveObject(topArtistsRank);
-        // clearAndRemoveObject(topArtistsName);
+        return;
     }
     let steps = rotationSequence[topArtistsRotationIndex];
     let tween;
@@ -729,15 +729,10 @@ function bringeZumBereich(tp) {
     .start();
 }
 
-const clock = new THREE.Clock();
-let previousTime = 0;
-
-
 /**
  * Funktion, die den Hauptanimationszyklus steuert.
  */
 const tick = () => {
-    stats.begin();
     const elapsedTime = clock.getElapsedTime();
     const deltaTime = elapsedTime - previousTime;
     previousTime = elapsedTime;
@@ -752,13 +747,12 @@ const tick = () => {
     camera.position.y += (parallaxY - camera.position.y) * 5 * deltaTime;
     
     if (lastCamPosition != Math.round(camera.position.z)) {
-        setProgressBar();
+        setNavBarProgress();
         checkCamPosition();
         lastCamPosition = Math.round(camera.position.z);
     }
 
     lastIntersected = updateRaycasterInteraction();
-    // lastIntersected = updateRaycasterInteraction(raycaster, mouse, camera, heavyRotCircleGroup, lastIntersected);
     
     // aktualiseren der TrackballControls und der TWEEN-Animationen
     trackControls.update();
@@ -769,6 +763,9 @@ const tick = () => {
     window.requestAnimationFrame(tick);
 }
 
+/**
+ * Animiert die Objekte in der Szene.
+ */
 function animateObjects() {
     for (const object of animationObjects) {
         object.rotation.y += object.userData.movementFactorAchse * 0.01;
@@ -779,7 +776,6 @@ function animateObjects() {
         object.position.z = object.userData.ogPosition.z + object.userData.radius * Math.sin(movementSpeed);
     }
 }
-
   
 /**
  * Erstellt ein TextMesh mit den angegebenen Parametern.
@@ -816,7 +812,6 @@ async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotationY, co
                 }
             )
             textGeometry.computeBoundingBox();
-            //const textMaterial = new THREE.MeshBasicMaterial();
             const textMaterial = [
                 new THREE.MeshPhongMaterial( { color: color, flatShading: true, emissiveIntensity: 0 } ), // front
                 new THREE.MeshPhongMaterial( { color: color, flatShading: true, emissiveIntensity: 0 } ) // side
@@ -832,17 +827,11 @@ async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotationY, co
             textMaterial.materialColor = color || new THREE.Color(0xffffff);
             textMaterial.opacity = opacity || 1;
 
-            // textGeometry.computeBoundingBox();
-            // textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
-            // textHeight = textGeometry.boundingBox.max.y - textGeometry.boundingBox.min.y;
-            // textDepth = textGeometry.boundingBox.max.z - textGeometry.boundingBox.min.z;
-
-            // Auflösen des Promises mit dem erstellten TextMesh
             textMesh.userData.name = text;
             resolve(textMesh);
         },
         undefined,
-        (error) => {  // onError Handler
+        (error) => {
             reject(error);
         }
     );
@@ -869,8 +858,6 @@ async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse, mitFrame
             (texture) => {
                 const geometry = new THREE.PlaneGeometry(bildGroesse, bildGroesse);
                 const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
-                // material.emissive = new THREE.Color(0xffffff);
-                // material.emissiveMap = texture;
                 material.emissiveIntensity = 0.5;
                 const aspect = bildGroesse / bildGroesse;
                 var imageAspect = texture.image.width / texture.image.height;
@@ -894,7 +881,7 @@ async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse, mitFrame
             }
         );
         if(mitFrame==true) {
-            // Create GLTF mesh
+            // Erstellt einen Rahmen um das Bild
             const gltfLoader = new GLTFLoader(loadingManager);
             gltfLoader.load(
                 `../models/DP_Frame_001.glb`,
@@ -941,8 +928,7 @@ function createCube(options) {
     cube.scale.set(options.scale, options.scale, options.scale);
     cube.position.z = options.positionZ;
     cube.userData.rotation = cube.rotation;
-    // console.log("Rotation: ", cube.rotation);
-    cube.name = "TopArtists Cube";
+    cube.name = options.name || "Cube";
 
     return cube;
 }
@@ -969,38 +955,37 @@ function createQuaderMesh(x,y,z,rotationX, rotationY, size, color){
    const frameGeometry = new THREE.BufferGeometry();
     let outSqu = size;
     let inSqu = outSqu-(outSqu/10);
-   // Define vertices for an outer and inner square (counter-clockwise winding)
+   // Definiert die Eckpunkte des äußeren und inneren Quadrats
    const vertices = new Float32Array([
 
-       // Outer square vertices
+       // Äußere Quadrat-Eckpunkte
        -outSqu, -outSqu, 0.0,  // bottom left
        outSqu, -outSqu, 0.0,   // bottom right
        outSqu, outSqu, 0.0,    // top right
        -outSqu, outSqu, 0.0,   // top left
-       // Inner square vertices
+       // Innere Quadrat-Eckpunkte
        -inSqu, -inSqu, 0.0,  // bottom left
        inSqu, -inSqu, 0.0,   // bottom right
        inSqu, inSqu, 0.0,    // top right
        -inSqu, inSqu, 0.0    // top left
    ]);
 
-   // Define the indices that make up the two square faces (two triangles per face)
+   // Definiert die Indizes, die die beiden Quadratflächen bilden (zwei Dreiecke pro Fläche)
    const indices = new Uint16Array([
-       // Outer square triangle 1
+       // Äußeres Quadrat Dreieck 1
        0, 1, 4,
        1, 5, 4,
-       // Outer square triangle 2
+       // Äußeres Quadrat Dreieck 2
        1, 2, 5,
        2, 6, 5,
-       // Outer square triangle 3
+       // Äußeres Quadrat Dreieck 3
        2, 3, 6,
        3, 7, 6,
-       // Outer square triangle 4
+       // Äußeres Quadrat Dreieck 4
        3, 0, 7,
        0, 4, 7
    ]);
 
-   // Create attribute and set geometry indices
    frameGeometry.setIndex(new THREE.BufferAttribute(indices, 1));
    frameGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
 
@@ -1025,11 +1010,10 @@ function createQuaderMesh(x,y,z,rotationX, rotationY, size, color){
 async function createProfil() {
     const profil = await getMe();
     const recentlyPlayed = await getRecentlyPlayed();
-    let winkel = 0;
     let contentProfil = [];
-
+    let winkel = 0;
+    
     contentProfil.push(await createBildMesh(profil.imageUrl, 80, 0, targetPoints.profil, winkel, 50, true));
-    // contentProfil.push( await createGLTFMesh(80, -25, targetPoints.profil-23, 0, 0, 0, 25, 'DP_Frame_001'));
 
     contentProfil.push(await createTextMesh("Hey" , textBigSize, -80, 35, targetPoints.profil,0,0,0xffffff, 1,'Jersey 15_Regular'));
     contentProfil.push(await createTextMesh(profil.name + " !", textBigSize, -80, 15, targetPoints.profil,0,0,0xffffff, 1,'Jersey 15_Regular'));
@@ -1040,10 +1024,6 @@ async function createProfil() {
     let recText = 2;
     let recBildG = 25;
     let recBildRot = 0;
-
-    // for (let i = 0; i < 4; i++) {
-    //     let x = recGroupX + (i % 2) * 30;
-    //     let y = recGroupY - Math.floor(i / 2) * 30;
 
     for(let i = 0; i < recentlyPlayed.length; i++){
         if(recentlyPlayed[i].name.length >= 20){
@@ -1074,7 +1054,6 @@ async function createProfil() {
 
 /**
  * Erstellt die Top-Künstler-Seite.
- * 
  * @returns {Array} Ein Array mit den erstellten Inhalten der Top-Künstler-Seite.
  */
 async function createTopArtist() {
@@ -1084,15 +1063,12 @@ async function createTopArtist() {
     let topArtistZ = targetPoints.topArtist - 200;
     let headlineOne = await createTextMesh("Your", headlineSize, -300, -90, topArtistZ,0, 0, 0xffffff,1,'Jersey 15_Regular');
     let headlineTwo = await createTextMesh("\nTop 6 Artists", headlineSize, -300, -80, topArtistZ, 0, 0, 0xffffff,1,'Jersey 15_Regular');
-    // topArtistsRank = await createTextMesh("Top 1", 20, 100, 40, topArtistZ, 0, 0, 0xffffff,1,'Jersey 15_Regular');
-    // topArtistsName = await createTextMesh(topArtists[0].name, 15, 100, 10, topArtistZ, 0, 0, 0xffffff,1,'Jersey 15_Regular');
 
     const cubeOptions = {
         materials: [],
         positionZ: topArtistZ,
         scale: 100,
-        // rotationY: 2,
-        // rotationX: -8,
+        name: "TopArtists Cube"
     };
     for (let i = 0; i < topArtists.length; i++) {
         artistPics.push(topArtists[i].imageUrl);
@@ -1100,7 +1076,6 @@ async function createTopArtist() {
     }
     topArtistsCube = createCube(cubeOptions);
     topArtistsCube.userData.artistNames = topArtists.map(artist => artist.name); // Speichert die Namen im userData
-    // alle Elemente in die Gruppe hinzufügen
     contentTopArtist.push(headlineOne);
     contentTopArtist.push(headlineTwo);
     contentTopArtist.push(topArtistsRank);
@@ -1190,29 +1165,22 @@ async function createGLTFMesh(x, y, z, rotationX, rotationY, rotationZ, scale, n
 
 
 /**
- * Erstellt eine Liste der Top-Songs.
+ * Erstellt die Top-Songs-Seite.
  * @returns {Promise<Array>} Eine Promise, die ein Array mit den erstellten Inhalten der Top-Songs zurückgibt.
  */
 async function createTopSongs() {
     const songs = await getTopSongs(timeRange);
-
+    let contentTopSongs = [];
     for (let i = 0; i < songs.length; i++) {
         if(songs[i].name.length >= 20){
             songs[i].name = songs[i].name.substring(0,20) + "...";
         }
     }
-
-    let contentTopSongs = [];
-    
-    //console.log(songs);
     contentTopSongs.push(await createTextMesh("Your Top Songs", headlineSize, -150, -100, targetPoints.topSong - 85 ,0, 0, 0xffffff,1,'Jersey 15_Regular'));
     
     contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 10, targetPoints.topSong - 200, 0, 70, true));
     contentTopSongs.push(await createTextMesh("1: " + songs[0].name, textSize, -40, 55, targetPoints.topSong - 200,0,0,0xffffff, 1,'W95FA_Regular.typeface'));
     contentTopSongs.push(await createGLTFMesh(0, -90, targetPoints.topSong - 200, 0, 0, 0, 50.0, 'pedestal'));
-    // let ped = await createGLTFMesh(0, -90, targetPoints.topSong - 200, 0, 0, 0, 50.0, 'pedestal');
-    // ped.shiniess = 50;
-    // contentTopSongs.push(ped);
 
     contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -120, -5, targetPoints.topSong - 155, 20, 70, true));
     contentTopSongs.push(await createTextMesh("2: " + songs[1].name, textSize, -155, 40, targetPoints.topSong - 135 ,0,20,0xffffff, 1,'W95FA_Regular.typeface'));
@@ -1225,6 +1193,9 @@ async function createTopSongs() {
     return contentTopSongs;
 }
 
+/**
+ * Handelt die Interaktion mit der Playlist-Seite.
+ */
 async function createPlaylistResponse() {
     document.getElementById("playlistButton").innerText = "Loading...";
     document.getElementById("playlistButton").disabled = true;
@@ -1662,6 +1633,9 @@ function removeTextMeshes(obj) {
         textMeshMap.delete(obj);
     }
 }
+
+// Szene initialisieren
+await init();
 
 // Animationszyklus starten
 tick();
