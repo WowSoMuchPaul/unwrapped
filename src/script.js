@@ -704,6 +704,11 @@ async function cleanupTopArtistsCube() {
 }
 
 
+/**
+ * Funktion, die die Kamera zum angegebenen Bereich bewegt.
+ *
+ * @param {number} tp - Der Zielbereich, zu dem die Kamera bewegt werden soll.
+ */
 function bringeZumBereich(tp) {
     let target = tp + cameraTargetDistance;
     freeMovement = false;
