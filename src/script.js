@@ -1,16 +1,18 @@
-import { THREE, TWEEN } from './imports.js';
+/**
+ * Dieses Skript enthält den Hauptcode für die unwrapped Anwendung.
+ * Es importiert verschiedene Module und erstellt die Szene, die Kamera und den Renderer.
+ * Es initialisiert auch die verschiedenen Elemente der Szene und fügt sie hinzu.
+ * @module script
+ */
 
-// import { updateRaycasterInteraction } from './heavyRotInteraction.js';
+/**
+ * Importis der benötigten Module.
+ */
+import { THREE, TWEEN } from './imports.js';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import Stats from 'stats.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DirectionalLight } from 'three';
-import { AmbientLight } from 'three'; 
-import { HemisphereLight } from 'three';
-import { PMREMGenerator } from 'three';
 
 import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
 import fensterTutorialImg from '../static/images/startScreenImg.png';
@@ -26,11 +28,9 @@ import navArtistsIcon from '../static/images/nav_artists_icon.png';
 import navSongsIcon from '../static/images/nav_songs_icon.png';
 import navRotationIcon from '../static/images/nav_rotation_icon.png';
 import navPlaylistIcon from '../static/images/nav_playlist_icon.png';
-import { log } from 'three/examples/jsm/nodes/Nodes.js'; 
 
-let sizes, canvas, scene, camera, helper, renderer, controls, trackControls, hemiLightHelper, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, topArtistCountText, arrowModel;
-// export {camera, heavyRotCircleGroup as heavyRotCircleGroup, inhaltGroup, scene};
-export const targetPoints = {};
+let sizes, canvas, scene, camera, renderer, trackControls, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, arrowModel;
+const targetPoints = {};
 const loadingManager = new THREE.LoadingManager();
 let inEinemBereich = false;
 let tweenAktiviert = false; 
@@ -69,10 +69,18 @@ const colorPalette = [
 ];
 const dekoIconKeys = ["w","x","j","k","y"];
 
+let topArtistBereichInitialized = false;
 let topArtistsRank = new THREE.Mesh;
 let topArtistsName = new THREE.Mesh;
+let lastHovered = null;
 
-const stats = new Stats();
+let initialTween;
+let topArtCubeAnimating;
+
+const clock = new THREE.Clock();
+let previousTime = 0;
+
+
 // Textgrößen Konstanten
 const headlineSize = 40;
 const textBigSize = 20;
@@ -85,13 +93,11 @@ const textDepth = 0;
 
 let startupSoundPlayed = false;
 
-// stats.showPanel(0);
-//document.body.appendChild(stats.dom); 
-
 /** Raycaster */
-export const raycaster = new THREE.Raycaster();
-export let mouse = new THREE.Vector2();
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
 
+// Event-Listener für Mausbewegungen, der die Mauskoordinaten normalisiert
 window.addEventListener('mousemove', (event) => {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -103,7 +109,7 @@ window.addEventListener('mousemove', (event) => {
  * @param {THREE.PerspectiveCamera} camera - Die verwendete Kamera in der Szene.
  * @returns {THREE.Vector3} Die berechnete Position der Maus auf der z=0 Ebene.
  */
-export function getMouse3DPosition(mouse, camera) {
+function getMouse3DPosition(mouse, camera) {
     // Projiziert den normalisierten Gerätekoordinatenvektor (mouse.x, mouse.y) auf die z=0 Ebene
     const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
     const raycaster = new THREE.Raycaster();
@@ -116,48 +122,16 @@ export function getMouse3DPosition(mouse, camera) {
     return intersects; // Gibt die berechnete 3D-Position der Maus zurück
 }
 
-
 /**cursor */
 const cursor = {};
 
-// const loadingManager = new THREE.LoadingManager();
-// const loadingLabel = document.getElementById('progress-bar-label');
-// const progressBar = document.getElementById('progress-bar-blocks');
-// const progressBarContainer = document.querySelector('.progress-bar-container');
-
-// loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
-//     // loadingLabel.innerText = "Nearly done...";
-//     setTimeout(() => {
-//         loadingLabel.innerText = "Nearly done...";
-//     }, 1000);
-// }
-
-// let lastProgress = 0; 
-// loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
-//     console.log("Progress: ", itemsLoaded, itemsTotal);
-//     console.log(url);
-//     let currentProgress = (itemsLoaded / itemsTotal) * 100;
-
-//     // if(currentProgress > lastProgress) {
-//         progressBar.value = currentProgress;
-//     //     lastProgress = currentProgress;
-//     // }
-// };
-
-// loadingManager.onLoad = function() {
-//     setTimeout(() => {
-//             progressBarContainer.style.display = 'none';
-//     }, 2000);
-// }
-
+/**
+ * Zuweisen der Loading Animation Elemente
+ */
 const loadingLabel = document.getElementById('progress-bar-label');
 const progressBar = document.getElementById('progress-bar-blocks');
 const progressBarContainer = document.querySelector('.progress-bar-container');
 progressBarContainer.style.display = 'none';
-
-
-await init(); // Starte die Initialisierung der Szene
-
 
 /**
  * Initialisiert die Anwendung.
@@ -167,33 +141,19 @@ await init(); // Starte die Initialisierung der Szene
  * @returns {Promise<void>}
  */
 async function init() {
-    // console.log("Init");
-// const loadingManager = new THREE.LoadingManager();
-
-
-loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
-    // loadingLabel.innerText = "Nearly done...";
-    // setTimeout(() => {
-    //     loadingLabel.innerText = "Nearly done...";
-    // }, 1000);
-}
-
-let lastProgress = 0; 
-loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
-    // console.log("Progress: ", itemsLoaded, itemsTotal);
-    // console.log(url);
-    let currentProgress = (itemsLoaded / itemsTotal) * 100;
-
-    // if(currentProgress > lastProgress) {
+    /**
+     * Loading Manager
+     */
+    loadingManager.onStart = function(url, itemsLoaded, itemsTotal) {
+        loadingLabel.innerText = "Loading...";
+    }
+    loadingManager.onProgress = function(url, itemsLoaded, itemsTotal) {
+        let currentProgress = (itemsLoaded / itemsTotal) * 100;
         progressBar.value = currentProgress;
-    //     lastProgress = currentProgress;
-    // }
-};
-
-loadingManager.onLoad = function() {
-    loadingLabel.innerText = "Nearly done...";
-    // playStartupSound();
-}
+    };
+    loadingManager.onLoad = function() {
+        loadingLabel.innerText = "Nearly done...";
+    }
 
     /**
      * Sizes
@@ -210,6 +170,13 @@ loadingManager.onLoad = function() {
     scene = new THREE.Scene();
 
     /**
+     * Inhalt-Gruppe für alle Elemente in der Szene
+     */
+    inhaltGroup = new THREE.Group();
+    inhaltGroup.name = "inhaltGroup";
+    scene.add(inhaltGroup);
+
+    /**
      * Camera
      */
     camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 10, 550 );
@@ -217,46 +184,19 @@ loadingManager.onLoad = function() {
     scene.add(camera);
     lastCamPosition = camera.position.z;
 
-    //Lights
-    let light = new THREE.DirectionalLight(0xffffff, 1.2);
-    light.position.set( gesamtTiefe/2, gesamtTiefe/2, gesamtTiefe ).normalize();
-    light.target.position.set(0, 0, 0);
-    scene.add(light);
-    // let ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-    // scene.add(ambientLight);
-
-    //Inhalt Group definieren
-    inhaltGroup = new THREE.Group();
-    inhaltGroup.name = "inhaltGroup";
-    scene.add(inhaltGroup);
-    // const pmremGenerator = new THREE.PMREMGenerator(renderer);
-
-    // pmremGenerator.compileEquirectangularShader();
-
-
-    // new THREE.RGBELoader()
-    //     .setDataType(THREE.UnsignedByteType)
-    //     .load('../110_hdrmaps_com_free_1K.exr', function (texture) {
-    //         const envMap = pmremGenerator.fromEquirectangular(texture).texture;
-    //         scene.environment = envMap;
-    //         texture.dispose();
-    //         pmremGenerator.dispose();
-    //     });
+    /**
+     * Lichter
+     */
+    let directionalLight = new THREE.DirectionalLight(0xffffff, 1.3);
+    directionalLight.position.set(0,1,1);
+    scene.add(directionalLight);
 
     //Hemisphären Licht
-    // const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 3, 1);
-    // hemiLight.position.set(0, 20, 0);
-    //scene.add(hemiLight);
+    const hemiLight = new THREE.HemisphereLight(0xB6D8DE, 0x382F2B, 1);
+    hemiLight.position.set(0, 1, 0);
+    // scene.add(hemiLight);
 
-    // helper = new THREE.CameraHelper(camera);
-    // scene.add(helper);
-
-
-    /**
-    * Axis Helper 
-    */
-
-    // Seiten Target
+    // Seiten Targets
     targetPoints.profil = camera.position.z - (camera.position.z / 6);
     targetPoints.topArtist = camera.position.z - (2 * (camera.position.z / 6));
     targetPoints.topSong = camera.position.z - (3 * (camera.position.z / 6));
@@ -276,9 +216,11 @@ loadingManager.onLoad = function() {
     renderer.setClearColor(0xffffff, 0);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(sizes.width, sizes.height);
-    //document.body.appendChild(renderer.domElement);
 
-    //Track Controls
+    /**
+     * TrackballControls
+     * Kontrolle über das Verhalten der Kamera und des Zooms
+     */
     trackControls = new TrackballControls(camera, renderer.domElement);
     trackControls.noRotate = true;
     trackControls.noPan = true;
@@ -293,10 +235,11 @@ loadingManager.onLoad = function() {
     document.getElementById("help").src = help;
     document.getElementById("help").style.display = "none";
 
-    //Nav Bar
+    /**
+     * Nav Bar mit den Icons der einzelnen Bereiche
+     */
     document.getElementById("navProgress").style.bottom = progBarBottom + "%";
     document.getElementById("navBar").style.display = "none";
-
     document.getElementById("navProfil").style.bottom = (1 - (targetPoints.profil + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
     document.getElementById("navProfilImg").src = navProfilIcon;
     document.getElementById("navArtists").style.bottom = (1 - (targetPoints.topArtist + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
@@ -307,7 +250,6 @@ loadingManager.onLoad = function() {
     document.getElementById("navOnRepeatImg").src = navRotationIcon;
     document.getElementById("navPlaylist").style.bottom = (1 - (targetPoints.playlist + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
     document.getElementById("navPlaylistImg").src = navPlaylistIcon;
-
 
     //Erstelle alle Geometrien, wenn Nutzer bereits authentifiziert ist
     if (await (onPageLoad())) {
@@ -336,14 +278,21 @@ loadingManager.onLoad = function() {
         document.getElementById("timeRange").addEventListener("change", function() {
             progressBarContainer.style.zIndex = 10;
             progressBarContainer.style.display = 'flex';
-            deleteGroup();
-            timeRange = this.value;
-            createAll();
-            //Playlist Button restetten
-            document.getElementById("playlistButton").innerText = "Create Playlist";
-            document.getElementById("playlistButton").disabled = false;
-            playlistButtonAktiviert = true;
-            checkCamPosition();
+            let backToStartTween = new TWEEN.Tween(camera.position)
+                .to({z: gesamtTiefe}, 2000)
+                .easing(TWEEN.Easing.Quadratic.InOut)
+                .onComplete(() => {
+                    cleanupTopArtistsCube();
+                    deleteGroup();
+                    timeRange = this.value;
+                    createAll();
+                    //Playlist Button restetten
+                    document.getElementById("playlistButton").innerText = "Create Playlist";
+                    document.getElementById("playlistButton").disabled = false;
+                    playlistButtonAktiviert = true;
+                    checkCamPosition();
+                })
+                .start();
         });
         
         await createAll();
@@ -370,7 +319,6 @@ loadingManager.onLoad = function() {
     document.getElementById("helpToStartButton").addEventListener("click", openOverlay);
     document.getElementById("playlistButton").addEventListener("click", createPlaylistResponse);
     
-    
     //Nav Bar Listener
     document.getElementById("navPlaylist").addEventListener("click", () => {
         bringeZumBereich(targetPoints.playlist);
@@ -387,15 +335,16 @@ loadingManager.onLoad = function() {
     document.getElementById("navProfil").addEventListener("click", () => {
         bringeZumBereich(targetPoints.profil);
     });
-
-
-
+    
     window.addEventListener('mousemove', (event) => {
         cursor.x = event.clientX / sizes.width - 0.5;
         cursor.y = event.clientY / sizes.height - 0.5;
     })
 }
 
+/**
+ * Schließt das Overlay und stellt die ursprüngliche Position wieder her.
+ */
 function closeOverlay() {
     playButtonSound();
     document.getElementById("pageBlocker").style.display = "none";
@@ -405,6 +354,9 @@ function closeOverlay() {
     handleStartPosition();
 }
 
+/**
+ * Öffnet das Overlay und blendet bestimmte Elemente aus.
+ */
 function openOverlay() {
     document.getElementById("pageBlocker").style.display = "block";
     document.getElementById("help").style.display = "none";
@@ -412,48 +364,64 @@ function openOverlay() {
     document.getElementById("helpWindow").style.display = "none";
 }
 
+/**
+ * Öffnet das Hilfefenster und ruft weitere, zugehörige Funktionen auf.
+ */
 function openHelp() {
     playButtonSound();
     document.getElementById("helpWindow").style.display = "block";
     setHelpText();
-    
 }
 
+/**
+ * Schaltet die Hilfe auf den Startzustand um.
+ */
 function switchHelpToStart() {
     playButtonSound();
 }
 
+/**
+ * Schließt das Hilfefenster und spielt den Sound des Button clicks ab.
+ */
 function closeHelp() {
     playButtonSound();
     document.getElementById("helpWindow").style.display = "none";
 }
 
+/**
+ * Setzt den Hilfetext für den aktuellen Bereich.
+ */
 function setHelpText() {
     document.getElementById("helpBereichInfo").innerHTML = bereichInfo.bereich[bereichInfo.currentIndex].text;
     document.getElementById("helpHeadline").innerHTML = bereichInfo.bereich[bereichInfo.currentIndex].name;
     document.getElementById("helpOverlayHeadline").innerHTML = bereichInfo.bereich[bereichInfo.currentIndex].name.toLowerCase() + ".help";
 }
 
+/**
+ * Funktion, die aufgerufen wird, wenn das Fenstergröße geändert wird.
+ * Aktualisiert die Kamera-Aspektverhältnis und die Renderer-Größe entsprechend.
+ */
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function setProgressBar() {
+/**
+ * Setzt die Navbar basierend auf der Kameraposition.
+ */
+function setNavBarProgress() {
     var barProgress = 0;
     const progBarMaxH = 100 - 2 * progBarBottom;
     const camProgress = (1 - (Math.round(camera.position.z) / gesamtTiefe)) * 100;
     barProgress = camProgress * (progBarMaxH / 100);
-    
     document.getElementById("navProgress").style.height = barProgress + "%";
 }
 
 /**
- * Überprüft die Position der Kamera und ruft entsprechende Funktionen auf, basierend auf der Position.
+ * Überprüft die Position der Kamera und ruft entsprechende Funktionen auf, basierend auf der aktuellen Position.
  */
 function checkCamPosition() {
-    //console.log("CheckCamPosition");
     //Aktuelle Kamera Position
     const pos = Math.round(camera.position.z);
 
@@ -512,8 +480,7 @@ function checkCamPosition() {
         if (bereichInfo.currentIndex != 0) {
             bereichInfo.currentIndex = 0;
             setHelpText();
-            // console.log("Cleanup außerhalb der Bereiche aufgerufen :"); 
-            cleanupTopArtistsCube(); // Zurücksetzen, bevor der Bereich erneut initialisiert wird 
+            cleanupTopArtistsCube();
         }
     }
 }
@@ -573,9 +540,6 @@ function handleBereich(pos, tp) {
     }
 }
 
-let initialTween;
-let topArtCubeAnimating;
-
 let rotationSequence = [
     [ //Auf 1
         { axis: 'y', angle: Math.PI / 2 }    
@@ -598,8 +562,6 @@ let rotationSequence = [
     ]
 ];
 
-let topArtistBereichInitialized = false;
-
 /**
  * Behandelt den Bereich der Top-Künstler.
  * Wird aufgerufen wenn die Kamera in den Bereich der Top-Künstler eintritt.
@@ -609,31 +571,21 @@ let topArtistBereichInitialized = false;
  * @returns {Promise<void>}
  */
 async function handleTopArtistBereich() {
-    console.log("Handle Top Artist Bereich erreicht");
     if (topArtistBereichInitialized) {
         return; // Beende die Funktion, wenn sie bereits ausgeführt wurde
     }
     topArtistBereichInitialized = true;
     topArtistsRotationIndex = 0;
-
-    // Bereinige eventuell vorhandene Text-Meshes, bevor neue erstellt werden
-    // clearAndRemoveObject(topArtistsRank);
-    // clearAndRemoveObject(topArtistsName);
+    topArtCubeAnimating = false;
+    trackControls.noZoom = true;
 
     // await initTopArtistsCube();
-    topArtistBereichInitialized = false;
-
 
     window.addEventListener('wheel', rotateCube);
     if (!initCubeAnimationPlayed) {
         initialAnimation();
-        // initCubeAnimationPlayed = true;
     }
-    // topArtistsRotationIndex = 0;
-    topArtCubeAnimating = false;
-    trackControls.noZoom = true; // Verhindert Zoom während der Rotation
 }
-
 
 /**
      * Initiale Würfel-Animation beim ersten Betreten des Top-Artists-Bereichs.
@@ -643,18 +595,11 @@ function initialAnimation() {
         .to({ x: topArtistsCube.rotation.x - Math.PI / 10 }, 600)
         .easing(TWEEN.Easing.Cubic.InOut)
         .yoyo(true) // Rückkehr zur Ausgangsposition
-        .repeat(2) // Wiederhole die Bewegung einmal
+        .repeat(3) // Wiederhole die Bewegung
         .onComplete(() => {
-            if (!topArtCubeAnimating) { // Wenn keine andere Animation aktiv ist, führe Rückbewegung aus
-                new TWEEN.Tween(topArtistsCube.rotation)
-                    .to({ x: topArtistsCube.rotation.x + Math.PI / 10 }, 600)
-                    .easing(TWEEN.Easing.Cubic.InOut)
-                    .start();
-            }
+            initCubeAnimationPlayed = true;
         })
         .start();
-        initCubeAnimationPlayed = true;
-
 }
 
 /**
@@ -667,7 +612,7 @@ async function rotateCube(event) {
     if (topArtCubeAnimating || event.deltaY === 0) return;
     if(initialTween.isPlaying()){
         initialTween.stop();
-        let resetTween = new TWEEN.Tween(topArtistsCube.rotation)
+        const resetTween = new TWEEN.Tween(topArtistsCube.rotation)
         .to({ x: 0, y: Math.PI + (Math.PI / 2), z: 0 }, 300)
         .easing(TWEEN.Easing.Cubic.InOut)
         .start();
@@ -677,9 +622,7 @@ async function rotateCube(event) {
     if(topArtistsRotationIndex == 0) {
         trackControls.noZoom = false;
         window.removeEventListener('wheel', rotateCube);
-        // cleanupTopArtistsCube();
-        // clearAndRemoveObject(topArtistsRank);
-        // clearAndRemoveObject(topArtistsName);
+        return;
     }
     let steps = rotationSequence[topArtistsRotationIndex];
     let tween;
@@ -688,7 +631,7 @@ async function rotateCube(event) {
         let rotation = {};
         rotation[step.axis] = topArtistsCube.rotation[step.axis] + step.angle;
         tween = new TWEEN.Tween(topArtistsCube.rotation)
-            .to(rotation, 500)
+            .to(rotation, 650)
             .easing(TWEEN.Easing.Cubic.InOut)                
             .onComplete(() => {
                 setTimeout(() => {
@@ -764,6 +707,11 @@ async function cleanupTopArtistsCube() {
 }
 
 
+/**
+ * Funktion, die die Kamera zum angegebenen Bereich bewegt.
+ *
+ * @param {number} tp - Der Zielbereich, zu dem die Kamera bewegt werden soll.
+ */
 function bringeZumBereich(tp) {
     let target = tp + cameraTargetDistance;
     freeMovement = false;
@@ -789,17 +737,10 @@ function bringeZumBereich(tp) {
     .start();
 }
 
-const clock = new THREE.Clock();
-let previousTime = 0;
-
-
 /**
- * Funktion zum Steuern des Haupt-Animations-Loops.
- * @function tick
- * @returns {void}
+ * Funktion, die den Hauptanimationszyklus steuert.
  */
 const tick = () => {
-    stats.begin();
     const elapsedTime = clock.getElapsedTime();
     const deltaTime = elapsedTime - previousTime;
     previousTime = elapsedTime;
@@ -814,13 +755,12 @@ const tick = () => {
     camera.position.y += (parallaxY - camera.position.y) * 5 * deltaTime;
     
     if (lastCamPosition != Math.round(camera.position.z)) {
-        setProgressBar();
+        setNavBarProgress();
         checkCamPosition();
         lastCamPosition = Math.round(camera.position.z);
     }
 
     lastIntersected = updateRaycasterInteraction();
-    // lastIntersected = updateRaycasterInteraction(raycaster, mouse, camera, heavyRotCircleGroup, lastIntersected);
     
     // aktualiseren der TrackballControls und der TWEEN-Animationen
     trackControls.update();
@@ -831,9 +771,11 @@ const tick = () => {
     window.requestAnimationFrame(tick);
 }
 
+/**
+ * Animiert die Objekte in der Szene.
+ */
 function animateObjects() {
     for (const object of animationObjects) {
-        
         object.rotation.y += object.userData.movementFactorAchse * 0.01;
         object.rotation.x += object.userData.movementFactorAchse * 0.01;
         const movementSpeed = clock.getElapsedTime() * object.userData.movementFactorKreis;
@@ -842,22 +784,23 @@ function animateObjects() {
         object.position.z = object.userData.ogPosition.z + object.userData.radius * Math.sin(movementSpeed);
     }
 }
-
-
+  
 /**
- * Erstellt ein TextMesh mit dem angegebenen Text, Schriftgröße und Position.
- * 
- * @param {string} text - Der Text, der im TextMesh angezeigt werden soll.
+ * Erstellt ein TextMesh mit den angegebenen Parametern.
+ *
+ * @param {string} text - Der Text, der angezeigt werden soll.
  * @param {number} fontsize - Die Schriftgröße des Textes.
  * @param {number} x - Die x-Koordinate der Position des TextMeshes.
  * @param {number} y - Die y-Koordinate der Position des TextMeshes.
  * @param {number} z - Die z-Koordinate der Position des TextMeshes.
- * @param {number} rotationY - Der Winkel, um den das TextMesh um die Y-Achse gedreht werden soll (in Grad).
+ * @param {number} rotationX - Die Rotation um die x-Achse des TextMeshes in Grad.
+ * @param {number} rotationY - Die Rotation um die y-Achse des TextMeshes in Grad.
+ * @param {number} color - Die Farbe des Textes.
+ * @param {number} opacity - Die Transparenz des Textes.
+ * @param {string} fontName - Der Name der Schriftart.
  * @returns {Promise<THREE.Mesh>} Ein Promise, das das erstellte TextMesh enthält.
- * @throws {Error} Wenn ein Fehler beim Laden der Schriftart auftritt.
  */
-    
-export async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotationY, color, opacity, fontName) {
+async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotationY, color, opacity, fontName) {
     return new Promise((resolve, reject) => {
     const fontLoader = new FontLoader(loadingManager)
     fontLoader.load(
@@ -877,10 +820,9 @@ export async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotati
                 }
             )
             textGeometry.computeBoundingBox();
-            //const textMaterial = new THREE.MeshBasicMaterial();
             const textMaterial = [
-                new THREE.MeshPhongMaterial( { color: color, flatShading: true } ), // front
-                new THREE.MeshPhongMaterial( { color: color, flatShading: true } ) // side
+                new THREE.MeshPhongMaterial( { color: color, flatShading: true, emissiveIntensity: 0 } ), // front
+                new THREE.MeshPhongMaterial( { color: color, flatShading: true, emissiveIntensity: 0 } ) // side
             ];
             let textMesh = new THREE.Mesh(textGeometry, textMaterial);
             // Positionierung des TextMeshes
@@ -893,31 +835,28 @@ export async function createTextMesh(text, fontsize, x, y, z,  rotationX, rotati
             textMaterial.materialColor = color || new THREE.Color(0xffffff);
             textMaterial.opacity = opacity || 1;
 
-            // textGeometry.computeBoundingBox();
-            // textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
-            // textHeight = textGeometry.boundingBox.max.y - textGeometry.boundingBox.min.y;
-            // textDepth = textGeometry.boundingBox.max.z - textGeometry.boundingBox.min.z;
-
-            // Auflösen des Promises mit dem erstellten TextMesh
             textMesh.userData.name = text;
             resolve(textMesh);
         },
         undefined,
-        (error) => {  // onError Handler
+        (error) => {
             reject(error);
         }
     );
 });
 }
 
+
 /**
  * Erstellt ein Bild-Mesh mit den angegebenen Parametern.
- * @param {string} bildUrl - Die URL des Bildes, das geladen werden soll.
+ *
+ * @param {string} bildUrl - Die URL des Bildes.
  * @param {number} x - Die x-Koordinate der Position des Meshes.
  * @param {number} y - Die y-Koordinate der Position des Meshes.
  * @param {number} z - Die z-Koordinate der Position des Meshes.
  * @param {number} rotationY - Die Y-Rotation des Meshes in Grad.
- * @param {number} bildGroesse - Die Größe des Meshes.
+ * @param {number} bildGroesse - Die Größe des Bildes.
+ * @param {boolean} mitFrame - Gibt an, ob das Bild einen Rahmen haben soll.
  * @returns {Promise<THREE.Mesh>} Ein Promise, das das erstellte Bild-Mesh enthält.
  */
 async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse, mitFrame) {
@@ -926,8 +865,8 @@ async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse, mitFrame
             bildUrl,
             (texture) => {
                 const geometry = new THREE.PlaneGeometry(bildGroesse, bildGroesse);
-                const material = new THREE.MeshPhongMaterial({ map: texture, side: THREE.DoubleSide });
-
+                const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+                material.emissiveIntensity = 0.5;
                 const aspect = bildGroesse / bildGroesse;
                 var imageAspect = texture.image.width / texture.image.height;
                 texture.matrixAutoUpdate = false;
@@ -950,7 +889,7 @@ async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse, mitFrame
             }
         );
         if(mitFrame==true) {
-            // Create GLTF mesh
+            // Erstellt einen Rahmen um das Bild
             const gltfLoader = new GLTFLoader(loadingManager);
             gltfLoader.load(
                 `../models/DP_Frame_001.glb`,
@@ -972,11 +911,11 @@ async function createBildMesh(bildUrl, x, y, z, rotationY, bildGroesse, mitFrame
 }
 
 /**
- * Erstellt einen ThreeJS Würfel mit den angegebenen Optionen.
+ * Erstellt einen Würfel mit den angegebenen Optionen.
  *
  * @param {Object} options - Die Optionen für den Würfel.
- * @param {Array} options.materials - Ein Array von Materialien für die Seiten des Würfels.
- * @param {number} options.scale - Der Skalierungsfaktor des Würfels.
+ * @param {Array} options.materials - Ein Array von Materialien für den Würfel.
+ * @param {number} options.scale - Die Skalierung des Würfels.
  * @param {number} options.positionZ - Die Z-Position des Würfels.
  * @returns {THREE.Mesh} - Der erstellte Würfel.
  */
@@ -986,7 +925,7 @@ function createCube(options) {
         if (typeof material === 'string' && (material.startsWith('http') || material.match(/\.(jpeg|jpg|gif|png)$/))) {
             return new THREE.MeshPhongMaterial({ map: new THREE.TextureLoader(loadingManager).load(material) });
         } else {
-            return new THREE.MeshPhongMaterial({ color: material, transparent: true, opacity: 1 });
+            return new THREE.MeshBasicMaterial({ color: material, transparent: true, opacity: 1 });
         }
     });
 
@@ -997,94 +936,24 @@ function createCube(options) {
     cube.scale.set(options.scale, options.scale, options.scale);
     cube.position.z = options.positionZ;
     cube.userData.rotation = cube.rotation;
-    // console.log("Rotation: ", cube.rotation);
-    cube.name = "TopArtists Cube";
+    cube.name = options.name || "Cube";
 
     return cube;
 }
 
-function createRingMesh(x,y,z,rotationY,rotationX, farbe, inRad, outRad ){
-
-    const geometry = new THREE.RingGeometry( inRad, outRad, 90 ); 
-    const material = new THREE.MeshBasicMaterial( { color: 0xffffff, side: THREE.DoubleSide });
-    const ringMesh = new THREE.Mesh( geometry, material );
-    inhaltGroup.add(ringMesh);
-    ringMesh.position.x = x;
-    ringMesh.position.y = y;
-    ringMesh.position.z = z;
-    ringMesh.rotateY(rotationY * (Math.PI/180));
-    ringMesh.rotateX(rotationX * (Math.PI/180));
-    material.transparent = true;
-    material.color = farbe;
-
-    return ringMesh;
-}
-
-function createQuaderMesh(x,y,z,rotationX, rotationY, size, color){
-   // Square frame geometry 
-   const frameGeometry = new THREE.BufferGeometry();
-    let outSqu = size;
-    let inSqu = outSqu-(outSqu/10);
-   // Define vertices for an outer and inner square (counter-clockwise winding)
-   const vertices = new Float32Array([
-
-       // Outer square vertices
-       -outSqu, -outSqu, 0.0,  // bottom left
-       outSqu, -outSqu, 0.0,   // bottom right
-       outSqu, outSqu, 0.0,    // top right
-       -outSqu, outSqu, 0.0,   // top left
-       // Inner square vertices
-       -inSqu, -inSqu, 0.0,  // bottom left
-       inSqu, -inSqu, 0.0,   // bottom right
-       inSqu, inSqu, 0.0,    // top right
-       -inSqu, inSqu, 0.0    // top left
-   ]);
-
-   // Define the indices that make up the two square faces (two triangles per face)
-   const indices = new Uint16Array([
-       // Outer square triangle 1
-       0, 1, 4,
-       1, 5, 4,
-       // Outer square triangle 2
-       1, 2, 5,
-       2, 6, 5,
-       // Outer square triangle 3
-       2, 3, 6,
-       3, 7, 6,
-       // Outer square triangle 4
-       3, 0, 7,
-       0, 4, 7
-   ]);
-
-   // Create attribute and set geometry indices
-   frameGeometry.setIndex(new THREE.BufferAttribute(indices, 1));
-   frameGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-
-   const material = new THREE.MeshBasicMaterial({ color :color , side: THREE.DoubleSide, wireframe: false });
-   const frameMesh = new THREE.Mesh(frameGeometry, material);
-   inhaltGroup.add(frameMesh);
-
-   frameMesh.position.x = x;
-   frameMesh.position.y = y;
-   frameMesh.position.z = z;
-   frameMesh.rotateY(rotationY * (Math.PI/180));
-   frameMesh.rotateX(rotationX * (Math.PI/180));
-   material.transparent = true;
-    material.color = color;
-   return frameMesh;
-}
-
+/**
+ * Erstellt das Profil mit Informationen und den kürzlich gespielten Songs.
+ * @returns {Array} Ein Array mit den erstellten Inhalten des Profils.
+ */
 async function createProfil() {
     const profil = await getMe();
     const recentlyPlayed = await getRecentlyPlayed();
-    let winkel = 0;
     let contentProfil = [];
-
+    let winkel = 0;
 
     animationObjects.push(await createTextMesh(profil.name, textBigSize, 40, 100, targetPoints.profil-200,-5, 15, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color),0.3,'W95FA_Regular.typeface'));
 
     contentProfil.push(await createBildMesh(profil.imageUrl, 80, 0, targetPoints.profil, winkel, 50, true));
-    // contentProfil.push( await createGLTFMesh(80, -25, targetPoints.profil-23, 0, 0, 0, 25, 'DP_Frame_001'));
 
     contentProfil.push(await createTextMesh("Hey" , textBigSize, -80, 35, targetPoints.profil,0,0,0xffffff, 1,'Jersey 15_Regular'));
     contentProfil.push(await createTextMesh(profil.name + " !", textBigSize, -80, 15, targetPoints.profil,0,0,0xffffff, 1,'Jersey 15_Regular'));
@@ -1095,10 +964,6 @@ async function createProfil() {
     let recText = 2;
     let recBildG = 25;
     let recBildRot = 0;
-
-    // for (let i = 0; i < 4; i++) {
-    //     let x = recGroupX + (i % 2) * 30;
-    //     let y = recGroupY - Math.floor(i / 2) * 30;
 
     for(let i = 0; i < recentlyPlayed.length; i++){
         if(recentlyPlayed[i].name.length >= 20){
@@ -1129,7 +994,6 @@ async function createProfil() {
 
 /**
  * Erstellt die Top-Künstler-Seite.
- * 
  * @returns {Array} Ein Array mit den erstellten Inhalten der Top-Künstler-Seite.
  */
 async function createTopArtist() {
@@ -1139,15 +1003,12 @@ async function createTopArtist() {
     let topArtistZ = targetPoints.topArtist - 200;
     let headlineOne = await createTextMesh("Your", headlineSize, -300, -90, topArtistZ,0, 0, 0xffffff,1,'Jersey 15_Regular');
     let headlineTwo = await createTextMesh("\nTop 6 Artists", headlineSize, -300, -80, topArtistZ, 0, 0, 0xffffff,1,'Jersey 15_Regular');
-    // topArtistsRank = await createTextMesh("Top 1", 20, 100, 40, topArtistZ, 0, 0, 0xffffff,1,'Jersey 15_Regular');
-    // topArtistsName = await createTextMesh(topArtists[0].name, 15, 100, 10, topArtistZ, 0, 0, 0xffffff,1,'Jersey 15_Regular');
 
     const cubeOptions = {
         materials: [],
         positionZ: topArtistZ,
         scale: 100,
-        // rotationY: 2,
-        // rotationX: -8,
+        name: "TopArtists Cube"
     };
     for (let i = 0; i < topArtists.length; i++) {
         artistPics.push(topArtists[i].imageUrl);
@@ -1155,7 +1016,6 @@ async function createTopArtist() {
     }
     topArtistsCube = createCube(cubeOptions);
     topArtistsCube.userData.artistNames = topArtists.map(artist => artist.name); // Speichert die Namen im userData
-    // alle Elemente in die Gruppe hinzufügen
     contentTopArtist.push(headlineOne);
     contentTopArtist.push(headlineTwo);
     contentTopArtist.push(topArtistsRank);
@@ -1208,6 +1068,19 @@ async function createHeavyRotation() {
     return contentHeavyRotation;
 }
 
+/**
+ * Erstellt ein GLTF-Mesh mit den angegebenen Parametern.
+ *
+ * @param {number} x - Die X-Koordinate der Position des Meshes.
+ * @param {number} y - Die Y-Koordinate der Position des Meshes.
+ * @param {number} z - Die Z-Koordinate der Position des Meshes.
+ * @param {number} rotationX - Die Rotation um die X-Achse des Meshes in Grad.
+ * @param {number} rotationY - Die Rotation um die Y-Achse des Meshes in Grad.
+ * @param {number} rotationZ - Die Rotation um die Z-Achse des Meshes in Grad.
+ * @param {number} scale - Der Skalierungsfaktor des Meshes.
+ * @param {string} name - Der Name des GLB-Modells, das geladen werden soll.
+ * @returns {Promise<THREE.Group>} Ein Promise, das das geladene GLTF-Objekt enthält.
+ */
 async function createGLTFMesh(x, y, z, rotationX, rotationY, rotationZ, scale, name) {
     return new Promise((resolve, reject) => {
         const gltfloader = new GLTFLoader(loadingManager);
@@ -1231,19 +1104,18 @@ async function createGLTFMesh(x, y, z, rotationX, rotationY, rotationZ, scale, n
 }
 
 
-// Funktion zu Erstellen aller Hauptgruppen der Szene
+/**
+ * Erstellt die Top-Songs-Seite.
+ * @returns {Promise<Array>} Eine Promise, die ein Array mit den erstellten Inhalten der Top-Songs zurückgibt.
+ */
 async function createTopSongs() {
     const songs = await getTopSongs(timeRange);
-
+    let contentTopSongs = [];
     for (let i = 0; i < songs.length; i++) {
         if(songs[i].name.length >= 20){
             songs[i].name = songs[i].name.substring(0,20) + "...";
         }
     }
-
-    let contentTopSongs = [];
-    
-    //console.log(songs);
     contentTopSongs.push(await createTextMesh("Your Top Songs", headlineSize, -150, -100, targetPoints.topSong - 85 ,0, 0, 0xffffff,1,'Jersey 15_Regular'));
     
     contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 10, targetPoints.topSong - 200, 0, 70, true));
@@ -1261,6 +1133,9 @@ async function createTopSongs() {
     return contentTopSongs;
 }
 
+/**
+ * Handelt die Interaktion mit der Playlist-Seite.
+ */
 async function createPlaylistResponse() {
     document.getElementById("playlistButton").innerText = "Loading...";
     document.getElementById("playlistButton").disabled = true;
@@ -1271,6 +1146,10 @@ async function createPlaylistResponse() {
     inhaltGroup.add(await createTextMesh(playlistRes, textBigSize, 80, -120, targetPoints.playlist - 200 , 0, -15, 0xffffff,1,'W95FA_Regular.typeface'));
 }
 
+/**
+ * Erstellt die Playlist-Seite.
+ * @returns {Promise<Array>} Ein Array mit den erstellten Inhalten der Wiedergabeliste.
+ */
 async function createPlaylist(){
     let contentPlaylist = [];
     let cover = playlistCover;
@@ -1284,6 +1163,10 @@ async function createPlaylist(){
     return contentPlaylist;
 }
 
+/**
+ * Erstellt den Inhalt für das Ende.
+ * @returns {Promise<Array>} Ein Array mit den erstellten Inhalten für das Ende.
+ */
 async function createEND(){
     let contentEnd = [];
     contentEnd.push(await createTextMesh("THE END", headlineSize, -65, -100, 150, -20, 0, 0xffffff,1,'Jersey 15_Regular'));
@@ -1293,6 +1176,10 @@ async function createEND(){
     return contentEnd;
 }
 
+/**
+ * Erstellt den Startinhalt.
+ * @returns {Promise<Array>} Ein Array mit dem erstellten Inhalt.
+ */
 async function createStart(){
     let contentStart = [];
     arrowModel = await createGLTFMesh(0, -40, gesamtTiefe -100, -80, -10, -40, 4.0, '3d_mouse_cursor');
@@ -1302,6 +1189,10 @@ async function createStart(){
     return contentStart;
 }
 
+/**
+ * Erstellt Animationsobjekte.
+ * @returns {Promise<void>} Ein Promise, das gelöst wird, wenn die Animationsobjekte erstellt wurden.
+ */
 async function createAnimationObjects(){
     //Profil Objects
     animationObjects.push(await createTextMesh((dekoIconKeys[Math.floor(Math.random() * dekoIconKeys.length)]), textBigSize, 45, -35, targetPoints.profil+40,0, -25, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color),0.4,'Yarndings 12_Regular'));
@@ -1340,6 +1231,11 @@ async function createAnimationObjects(){
     }
 }
 
+/**
+ * Funktion, die die Startposition behandelt.
+ * 
+ * @returns {void}
+ */
 function handleStartPosition(){
     setTimeout(() => {
     new TWEEN.Tween(arrowModel.position)
@@ -1351,6 +1247,10 @@ function handleStartPosition(){
     }, 1250);
 }
 
+/**
+ * Erstellt alle Inhalte für die Anwendung.
+ * @returns {Promise<void>} Ein Promise, das keinen Wert zurückgibt.
+ */
 async function createAll() {
     let inhaltStart = await createStart();
     inhaltStart.forEach(element => inhaltGroup.add(element));
@@ -1378,6 +1278,9 @@ async function createAll() {
     progressBarContainer.style.display = 'none';
 }
 
+/**
+ * Löscht die Gruppe und leert den Inhalt.
+ */
 function deleteGroup() {
     clearGroup(inhaltGroup);
 }
@@ -1475,8 +1378,6 @@ function isMouseNearCenter(intersect, threshold = 1.5) {
     return distance <= maxDistance; // Prüft, ob die Distanz innerhalb des gewünschten Bereichs ist
 }
 
-let lastHovered = null;
-
 /**
  * Verarbeitet die Intersects und aktualisiert den letzten intersected  Zustand.
  * 
@@ -1525,6 +1426,12 @@ async function animateAndDisplayText(obj) {
     }
 }
 
+/**
+ * Zeigt den Namen des Songs an.
+ *
+ * @param {Object} obj - Das Objekt, das den Song repräsentiert.
+ * @returns {Promise<THREE.Mesh>} - Das Textmesh des Songnamens.
+ */
 async function displaySongName(obj) {
     let songNameTextMesh = await createTextMesh(obj.userData.name, 10, 0, 0, 0,0,0,0xffffff, 1,'W95FA_Regular.typeface');
     storeAndReturnMesh(obj, songNameTextMesh);
@@ -1532,6 +1439,12 @@ async function displaySongName(obj) {
     return songNameTextMesh;
 }
 
+/**
+ * Zeigt den Namen des Künstlers an.
+ * 
+ * @param {Object} obj - Das Objekt, das die Benutzerdaten enthält.
+ * @returns {Promise<THREE.Mesh>} - Das Textmesh-Objekt, das den Künstler und den Namen des Songs darstellt.
+ */
 async function displaySongArtist(obj) {
     const artistsArray = obj.userData.artists.map(artist => artist.name).join(", ");
     let songArtistTextMesh = await createTextMesh(artistsArray, 8, 0, -15,0,0,0,0xffffff, 1,'W95FA_Regular.typeface');
@@ -1540,6 +1453,11 @@ async function displaySongArtist(obj) {
     return songArtistTextMesh;
 }
 
+/**
+ * Zentriert den TextMesh und positioniert ihn relativ zur heavyRotCircleGroup.
+ * @param {THREE.Mesh} textMesh - Das TextMesh, das zentriert werden soll.
+ * @param {number} [yOffset=0] - Der optionale vertikale Versatz des TextMesh.
+ */
 function centerTextMesh(textMesh, yOffset = 0) {
     textMesh.geometry.computeBoundingBox();
     let size = new THREE.Vector3();
@@ -1551,6 +1469,11 @@ function centerTextMesh(textMesh, yOffset = 0) {
     );
 }
 
+/**
+ * Speichert das übergebene Mesh-Objekt in einer Map und gibt es zurück.
+ * @param {Object} obj - Das Objekt, zu dem das Mesh gehört.
+ * @param {Mesh} mesh - Das zu speichernde Mesh-Objekt.
+ */
 function storeAndReturnMesh(obj, mesh) {
     if (!textMeshMap.has(obj)) {
         textMeshMap.set(obj, []);
@@ -1571,21 +1494,11 @@ function moveObject(obj, duration) {
     obj.userData.isAnimating = true;
     // Holen der 3D-Mausposition
     const mouse3DPosition = getMouse3DPosition(mouse, camera);
-    // Berechnung des Richtungsvektors von der aktuellen Position des Objekts zur Mausposition
-    const directionVector = new THREE.Vector3(
-        mouse3DPosition.x - obj.position.x,
-        mouse3DPosition.y - obj.position.y,
-        mouse3DPosition.z - obj.position.z
-    );
-    // Normalisiert den Richtungsvektor, um die Bewegung in die Richtung der Mausposition zu ermöglichen
-    directionVector.normalize();
-    // Definiert die Entfernung, die das Objekt bewegt werden soll
     const moveDistance = 25;
-    // Berechnet die Zielposition basierend auf dem Richtungsvektor und der Bewegungsdistanz
     const targetPosition = {
-        x: obj.position.x,// + directionVector.x * moveDistance,
-        y: obj.position.y,// + directionVector.y * moveDistance,
-        z: obj.position.z + moveDistance //directionVector.z * moveDistance
+        x: obj.position.x,
+        y: obj.position.y,
+        z: obj.position.z + moveDistance
     };
     const tween = new TWEEN.Tween(obj.position)
         .to(targetPosition, duration)
@@ -1610,6 +1523,11 @@ function moveObject(obj, duration) {
     obj.userData.animation = tween;
 }
 
+/**
+ * Setzt ein Objekt auf seine ursprüngliche Position zurück.
+ * @param {Object3D} obj - Das Objekt, das zurückgesetzt werden soll.
+ * @param {number} duration - Die Dauer der Animation in Millisekunden.
+ */
 function resetObjectToOrigin(obj, duration) {
     obj.userData.isAnimating = true;
 
@@ -1627,6 +1545,10 @@ function resetObjectToOrigin(obj, duration) {
 
 }
 
+/**
+ * Setzt ein Objekt zurück, indem es verschiedene Eigenschaften zurücksetzt und Animationen stoppt.
+ * @param {Object} obj - Das Objekt, das zurückgesetzt werden soll.
+ */
 function resetObject(obj) {
     if(obj === undefined) return;
     if (obj && obj.userData.isHovered) {
@@ -1635,16 +1557,19 @@ function resetObject(obj) {
         if (obj.userData.animation) {
             obj.userData.animation.stop();
         }
-
         obj.userData.animationActive = true;
-
-        scaleObject(obj, 1.0); // Zurücksetzen auf die ursprüngliche Skalierung
-
+        scaleObject(obj, 1.0);
         removeTextMeshes(obj);
         moveObject(obj, 100);
     }
 }
 
+/**
+ * Skaliert ein Objekt um den angegebenen Faktor.
+ *
+ * @param {Object3D} obj - Das zu skalierende Objekt.
+ * @param {number} scale - Der Skalierungsfaktor.
+ */
 function scaleObject(obj, scale) {
     if (obj.userData.originalScale === undefined) {
         obj.userData.originalScale = obj.scale.clone(); // Speichert die ursprüngliche Skalierung des Objekts
@@ -1652,6 +1577,11 @@ function scaleObject(obj, scale) {
     obj.scale.set(obj.userData.originalScale.x * scale, obj.userData.originalScale.y * scale, obj.userData.originalScale.z * scale);
 }
 
+/**
+ * Entfernt alle TextMeshes, die mit dem übergebenen Objekt verknüpft sind.
+ *
+ * @param {Object} obj - Das Objekt, mit dem die TextMeshes verknüpft sind.
+ */
 function removeTextMeshes(obj) {
     const textMeshes = textMeshMap.get(obj);
     if (textMeshes) {
@@ -1665,4 +1595,8 @@ function removeTextMeshes(obj) {
     }
 }
 
+// Szene initialisieren
+await init();
+
+// Animationszyklus starten
 tick();
