@@ -1327,6 +1327,11 @@ function playStartupSound(){
 
 const textMeshMap = new Map(); 
 
+/**
+ * Aktualisiert die Raycaster-Interaktion.
+ * 
+ * @returns {Object} Das zuletzt durchdrungene Objekt.
+ */
 function updateRaycasterInteraction() {
     if (!isCameraInBounds(camera)) return lastIntersected;
     
@@ -1335,12 +1340,22 @@ function updateRaycasterInteraction() {
     return processIntersects(intersects, lastIntersected);
 }
 
+/**
+ * Überprüft, ob die Kamera innerhalb der bestimmten Grenzen für die Heavy Rotation liegt.
+ * @returns {boolean} Gibt true zurück, wenn die Kamera innerhalb der Grenzen liegt, ansonsten false.
+ */
 function isCameraInBounds() {
     let minCameraZ = targetPoints.onRepeat - 100;
     let maxCameraZ = targetPoints.onRepeat + cameraTargetDistance + 45;
     return camera.position.z >= minCameraZ && camera.position.z <= maxCameraZ;
 }
 
+/**
+ * Überprüft, ob die Maus in der Nähe des Zentrums eines Objekts ist.
+ * @param {Object} intersect - Das Intersect-Objekt, das Informationen über den Schnittpunkt enthält.
+ * @param {number} [threshold=1.5] - Der Schwellenwert, der den Bereich um das Zentrum definiert.
+ * @returns {boolean} - Gibt true zurück, wenn die Maus in der Nähe des Zentrums ist, andernfalls false.
+ */
 function isMouseNearCenter(intersect, threshold = 1.5) {
     const object = intersect.object;
     const bounds = new THREE.Box3().setFromObject(object); // Bounding Box des Objekts
@@ -1353,7 +1368,7 @@ function isMouseNearCenter(intersect, threshold = 1.5) {
 }
 
 /**
- * Verarbeitet die Intersects und aktualisiert den letzten intersected  Zustand.
+ * Verarbeitet die Aktion für berührte Objekte und aktualisiert den letzten intersected Zustand.
  * 
  * @param {Array} intersects - Ein Array von Schnittpunkten.
  * @param {Object} lastIntersected - Das zuletzt überlappende Objekt.

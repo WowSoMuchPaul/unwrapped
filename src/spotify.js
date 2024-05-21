@@ -1,4 +1,3 @@
-import { cos } from 'three/examples/jsm/nodes/Nodes.js';
 import coverUrl from '../static/images/playlistCover.jpg';
 
 const client_id = "b125b5d4ba6f4e619e84880fa7a9a74f";
