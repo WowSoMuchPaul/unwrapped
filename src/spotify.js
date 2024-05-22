@@ -371,30 +371,27 @@ export async function getRecentlyPlayed(){
  * Der Playlist wird außerdem ein Cover hinzugefügt.
  * @param {} timeRange 
  */
-export async function setFestivalPlaylist(timeRange){
+export async function setPlaylist(timeRange){
     const profil = await getMe();
     const topSongs = await getTopSongs(timeRange);
     const onRepeat = await getOnRepeat();
     let spotifyUserID = profil.id;
     let playlistName = profil.name + "s unwrapped";
-    let zeitInfo = "deiner Spotify Erfahrung";
+    zeitInfo = "the last year of your Spotify experience";
     let playlistCoverUrl = coverUrl;
-    if(timeRange == "long_term") {
-        zeitInfo = "deiner gesamten Spotify Erfahrung";
-    }
     if(timeRange == "medium_term") {
-        zeitInfo = "den letzten 6 Monaten deiner Spotify Erfahrung";
+        zeitInfo = "the last 6 months of your Spotify experience";
         playlistName += " (Mid Term)";
         playlistCoverUrl = coverUrlMid;
     }
     if(timeRange == "short_term") {
-        zeitInfo = "den letzten 4 Wochen deiner Spotify Erfahrung";
+        zeitInfo = "the last 4 weeks of your Spotify experience";
         playlistName += " (Short Term)";
         playlistCoverUrl = coverUrlShort;
     }
     let body = {
         "name": playlistName, 
-        "description": "Deine unwrapped Playlist basierend auf " + zeitInfo + ".", 
+        "description": "Your unwrapped playlist based on " + zeitInfo + ".", 
         "public": "false"
     };
 

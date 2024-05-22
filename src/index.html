@@ -10,7 +10,7 @@
   </head>
   <body>
     <canvas id="canvas" class="webgl"></canvas>
-    <!-- <script type="module" src="./heavyRotInteraction.js"></script> --> 
+    <!-- <script type="module" src="./heavyRotInteraction.js"></script>  -->
 
     <div class="progress-bar-container">
       <label for="progress-bar-blocks" id="progress-bar-label">Loading...</label>
@@ -65,7 +65,7 @@
     <div id="pageBlocker">
       <div id="overlay" class="windows95edges overlay"> 
         <div class="overlaybar">
-          spotify_unwrapped.info
+          unwrapped.info
           <!-- <button id="closebtn" class="closebtn">&times;</button> -->
           <button id="logoutButton">Logout</button>
         </div>
@@ -91,11 +91,11 @@
                 visualizations based on your data.
               </p>
               <div id="timeRangeDiv">
-                <label for="timeRange">Change the Time Range:</label>
+                <label for="timeRange">Change the time period over which your listening habits are to be analyzed :</label>
                 <select name="timeRange" id="timeRange">
-                  <option value="long_term">Long Term</option>
-                  <option value="medium_term">Medium Term</option>
-                  <option value="short_term">Short Term</option>
+                  <option value="long_term">Long Term (last year)</option>
+                  <option value="medium_term">Medium Term (last six months)</option>
+                  <option value="short_term">Short Term (last four weeks)</option>
                 </select>
               </div>
               <button id="spotifyConnectButton">

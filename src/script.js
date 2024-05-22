@@ -14,8 +14,9 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-import { onPageLoad, setFestivalPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
+import { onPageLoad, setlPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
 import fensterTutorialImg from '../static/images/startScreenImg.png';
+import fensterLandingImg from '../static/images/startScreenImgLanding.png';
 import playlistCover from '../static/images/playlistCover.jpg';
 import playlistCoverMid from '../static/images/playlistCoverMid.jpg';
 import playlistCoverShort from '../static/images/playlistCoverShort.jpg';
@@ -52,6 +53,7 @@ let bereichInfo = {
     ],
 };
 const gesamtTiefe = 5000;
+const maxTiefpunkt = 433;
 const bereichOffsetVorne = 400;
 const bereichDampingVorne = bereichOffsetVorne / 2;
 const bereichOffsetHinten = 100;
@@ -228,7 +230,7 @@ async function init() {
     trackControls.zoomSpeed = zoomSpeedNorm;
     trackControls.staticMoving = false;
     trackControls.dynamicDampingFactor = 0.04;
-    trackControls.minDistance = targetPoints.playlist - 400;
+    trackControls.minDistance = maxTiefpunkt;
     trackControls.maxDistance = gesamtTiefe + 10;
 
     //Help Button
@@ -240,15 +242,15 @@ async function init() {
      */
     document.getElementById("navProgress").style.bottom = progBarBottom + "%";
     document.getElementById("navBar").style.display = "none";
-    document.getElementById("navProfil").style.bottom = (1 - (targetPoints.profil + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
+    document.getElementById("navProfil").style.bottom = (1 - (targetPoints.profil + cameraTargetDistance - maxTiefpunkt) / (gesamtTiefe - maxTiefpunkt)) * 100 + "%";
     document.getElementById("navProfilImg").src = navProfilIcon;
-    document.getElementById("navArtists").style.bottom = (1 - (targetPoints.topArtist + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
+    document.getElementById("navArtists").style.bottom = (1 - (targetPoints.topArtist + cameraTargetDistance - maxTiefpunkt) / (gesamtTiefe - maxTiefpunkt)) * 100 + "%";
     document.getElementById("navArtistsImg").src = navArtistsIcon;
-    document.getElementById("navSongs").style.bottom = (1 - (targetPoints.topSong + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
+    document.getElementById("navSongs").style.bottom = (1 - (targetPoints.topSong + cameraTargetDistance - maxTiefpunkt) / (gesamtTiefe - maxTiefpunkt)) * 100 + "%";
     document.getElementById("navSongsImg").src = navSongsIcon;
-    document.getElementById("navOnRepeat").style.bottom = (1 - (targetPoints.onRepeat + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
+    document.getElementById("navOnRepeat").style.bottom = (1 - (targetPoints.onRepeat + cameraTargetDistance - maxTiefpunkt) / (gesamtTiefe - maxTiefpunkt)) * 100 + "%";
     document.getElementById("navOnRepeatImg").src = navRotationIcon;
-    document.getElementById("navPlaylist").style.bottom = (1 - (targetPoints.playlist + cameraTargetDistance) / gesamtTiefe) * 100 + "%";
+    document.getElementById("navPlaylist").style.bottom = (1 - (targetPoints.playlist + cameraTargetDistance - maxTiefpunkt) / (gesamtTiefe - maxTiefpunkt)) * 100 + "%";
     document.getElementById("navPlaylistImg").src = navPlaylistIcon;
 
     //Erstelle alle Geometrien, wenn Nutzer bereits authentifiziert ist
@@ -298,7 +300,7 @@ async function init() {
         await createAll();
         await createAnimationObjects();
     }else{
-       document.getElementById("fensterTutorialImg").src = fensterTutorialImg;
+       document.getElementById("fensterTutorialImg").src = fensterLandingImg;
        document.getElementById("profilImage").src = profilPlaceholder;
        document.getElementById("loginStatusImage").src = offlineImage;
        document.getElementById("loginStatusLabel").innerText = "offline";
@@ -413,7 +415,7 @@ function onWindowResize() {
 function setNavBarProgress() {
     var barProgress = 0;
     const progBarMaxH = 100 - 2 * progBarBottom;
-    const camProgress = (1 - (Math.round(camera.position.z) / gesamtTiefe)) * 100;
+    const camProgress = (1 - ((Math.round(camera.position.z) - maxTiefpunkt) / (gesamtTiefe - maxTiefpunkt))) * 100;
     barProgress = camProgress * (progBarMaxH / 100);
     document.getElementById("navProgress").style.height = barProgress + "%";
 }
@@ -774,7 +776,7 @@ const tick = () => {
 /**
  * Animiert die Objekte in der Szene.
  */
-function animateObjects() {
+async function animateObjects() {
     for (const object of animationObjects) {
         object.rotation.y += object.userData.movementFactorAchse * 0.01;
         object.rotation.x += object.userData.movementFactorAchse * 0.01;
@@ -951,7 +953,7 @@ async function createProfil() {
     let contentProfil = [];
     let winkel = 0;
 
-    animationObjects.push(await createTextMesh(profil.name, textBigSize, 40, 100, targetPoints.profil-200,-5, 15, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color),0.3,'W95FA_Regular.typeface'));
+    //animationObjects.push(await createTextMesh(profil.name, textBigSize, 40, 100, targetPoints.profil-200,-5, 15, (colorPalette[Math.floor(Math.random() * colorPalette.length)].color),0.3,'W95FA_Regular.typeface'));
 
     contentProfil.push(await createBildMesh(profil.imageUrl, 80, 0, targetPoints.profil, winkel, 50, true));
 
@@ -1139,7 +1141,7 @@ async function createTopSongs() {
 async function createPlaylistResponse() {
     document.getElementById("playlistButton").innerText = "Loading...";
     document.getElementById("playlistButton").disabled = true;
-    const playlistRes = await setFestivalPlaylist(timeRange);
+    const playlistRes = await setPlaylist(timeRange);
     console.log(playlistRes);
     playlistButtonAktiviert = false;
     document.getElementById("playlistButton").style.display = "none";
