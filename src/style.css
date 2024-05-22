@@ -29,6 +29,7 @@
     font-weight: regular;
 }
 
+
 @keyframes WindowsBlurr {
   0% {
     background-position: 0% 28%;
@@ -56,9 +57,8 @@ body {
   min-height: 100%;
   margin: 0;
 
-  /* background: linear-gradient(144deg, #6209BD, #8043E2, #720098, #0207AA); */
-  background: linear-gradient(144deg, var(--blue), var(--green), var(--yellow), var(--pink));
-  background-size: 800% 800%;
+  background: linear-gradient(144deg, var(--yellow), var(--pink), var(--green), var(--blue));
+  background-size: 600% 600%;
 
   animation: WindowsBlurr 30s ease infinite;
 }
@@ -84,10 +84,11 @@ canvas {
   transform: translate(-50%, -50%);
   width: 100%;
   height: 100%;
-  background-color: #1a0094;
+  background-color: var(--grey);
   flex-direction: column;
   justify-content: center;
-  color: #fff;
+  color: #000000;
+  accent-color: var(--blue);
   text-align: center;
   transition: width .6s ease-in-out;
 }
@@ -98,7 +99,7 @@ canvas {
 }
 
 .progress-bar-container label{
-  color: #ffffff;
+  color: #000000;
   font-size: 2rem;
   margin: 1%;
 }
@@ -146,7 +147,7 @@ button:hover {
 
 .overlay {
   /* height: 70%; */
-  width: 60%;
+  /* width: 60%; */
   position: fixed;
   /* display: none; */
   z-index: 2;

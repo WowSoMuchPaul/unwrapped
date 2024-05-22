@@ -1,4 +1,6 @@
 import coverUrl from '../static/images/playlistCover.jpg';
+import coverUrlMid from '../static/images/playlistCoverMid.jpg';
+import coverUrlShort from '../static/images/playlistCoverShort.jpg';
 
 const client_id = "b125b5d4ba6f4e619e84880fa7a9a74f";
 const redirect_uri = "http://localhost:8000/";
@@ -368,25 +370,27 @@ export async function getRecentlyPlayed(){
  * Der Playlist wird außerdem ein Cover hinzugefügt.
  * @param {} timeRange 
  */
-export async function setFestivalPlaylist(timeRange){
+export async function setPlaylist(timeRange){
     const profil = await getMe();
     const topSongs = await getTopSongs(timeRange);
     const onRepeat = await getOnRepeat();
     let spotifyUserID = profil.id;
     let playlistName = profil.name + "s unwrapped";
-    let zeitInfo = "deiner Spotify Erfahrung";
-    if(timeRange == "long_term") {
-        zeitInfo = "deiner gesamten Spotify Erfahrung";
-    }
+    zeitInfo = "the last year of your Spotify experience";
+    let playlistCoverUrl = coverUrl;
     if(timeRange == "medium_term") {
-        zeitInfo = "den letzten 6 Monaten deiner Spotify Erfahrung";
+        zeitInfo = "the last 6 months of your Spotify experience";
+        playlistName += " (Mid Term)";
+        playlistCoverUrl = coverUrlMid;
     }
     if(timeRange == "short_term") {
-        zeitInfo = "den letzten 4 Wochen deiner Spotify Erfahrung";
+        zeitInfo = "the last 4 weeks of your Spotify experience";
+        playlistName += " (Short Term)";
+        playlistCoverUrl = coverUrlShort;
     }
     let body = {
         "name": playlistName, 
-        "description": "Deine Playlist zum unwrapped 2024 basierend auf " + zeitInfo + ".", 
+        "description": "Your unwrapped playlist based on " + zeitInfo + ".", 
         "public": "false"
     };
 
@@ -434,7 +438,7 @@ export async function setFestivalPlaylist(timeRange){
     console.log(setplaylistRes);
     //Cover der Playlist setzen
     if(!playlistExists){
-        let base64Cover = await (getBase64Image(coverUrl));
+        let base64Cover = await (getBase64Image(playlistCoverUrl));
         let coverRes = await (callApi("PUT", "https://api.spotify.com/v1/playlists/" + playlistId + "/images", base64Cover));
         //Beim Cover setzten scheint Spotify etwas unzuverlässig zu sein, daher wird der Request so lange wiederholt, bis er erfolgreich ist.
         //Kein 100% sauberer Weg, aber zunächst ein ausreichender Workaround.
