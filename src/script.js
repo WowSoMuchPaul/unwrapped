@@ -14,7 +14,8 @@ import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-import { onPageLoad, setlPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
+import { onPageLoad, setPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
+import favicon from '../static/images/favicon.ico';
 import fensterTutorialImg from '../static/images/startScreenImg.png';
 import fensterLandingImg from '../static/images/startScreenImgLanding.png';
 import playlistCover from '../static/images/playlistCover.jpg';
@@ -143,6 +144,12 @@ progressBarContainer.style.display = 'none';
  * @returns {Promise<void>}
  */
 async function init() {
+
+    /**
+     * Favicon
+     */
+    document.getElementById("favicon").href = favicon;
+
     /**
      * Loading Manager
      */
@@ -280,6 +287,7 @@ async function init() {
         document.getElementById("timeRange").addEventListener("change", function() {
             progressBarContainer.style.zIndex = 10;
             progressBarContainer.style.display = 'flex';
+            freeMovement = false;
             let backToStartTween = new TWEEN.Tween(camera.position)
                 .to({z: gesamtTiefe}, 2000)
                 .easing(TWEEN.Easing.Quadratic.InOut)
@@ -293,6 +301,7 @@ async function init() {
                     document.getElementById("playlistButton").disabled = false;
                     playlistButtonAktiviert = true;
                     checkCamPosition();
+                    freeMovement = true;
                 })
                 .start();
         });

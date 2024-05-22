@@ -345,7 +345,7 @@ button:hover {
 }
 
 #fensterTutorialImg {
-  aspect-ratio: 4/3;
+  aspect-ratio: 1/1;
   max-width: 50%;
   object-fit: cover;
 }
