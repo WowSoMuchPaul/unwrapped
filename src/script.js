@@ -1104,7 +1104,7 @@ async function createTopSongs() {
             songs[i].name = songs[i].name.substring(0,20) + "...";
         }
     }
-    contentTopSongs.push(await createTextMesh("Your Top Songs", headlineSize, -150, -100, targetPoints.topSong - 85 ,-10, 0, 0xffffff,1,'Jersey 15_Regular'));
+    contentTopSongs.push(await createTextMesh("Your Top Songs", headlineSize, -160, -100, targetPoints.topSong - 85 ,-10, 0, 0xffffff,1,'Jersey 15_Regular'));
     
     contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 60, targetPoints.topSong - 200, 0, 70, true));
     contentTopSongs.push(await createTextMesh("1: " + songs[0].name, textSize, -40, 105, targetPoints.topSong - 200,0,0,0xffffff, 1,'W95FA_Regular.typeface'));
@@ -1157,10 +1157,10 @@ async function createPlaylist(){
  */
 async function createEND(){
     let contentEnd = [];
-    contentEnd.push(await createTextMesh("THE END", headlineSize, -65, -100, 150, -20, 0, 0xffffff,1,'Jersey 15_Regular'));
+    contentEnd.push(await createTextMesh("THE END", headlineSize, -82, -100, 150, -20, 0, 0xffffff,1,'Jersey 15_Regular'));
     // contentEnd.push(await createRingMesh(15,0,targetPoints.playlist-500,-35,15,0x42887E,150,160));
     // contentEnd.push(await createQuaderMesh(0,0,targetPoints.playlist-500,20,10, 120, 0xffffff));
-    contentEnd.push(await createTextMesh("v", 150, -75, -25, 40,0,0,0xffffff,0.1,'Yarndings 12_Regular'));
+    contentEnd.push(await createTextMesh("v", 150, -100, -25, 40,0,0,0xffffff,0.1,'Yarndings 12_Regular'));
     return contentEnd;
 }
 
