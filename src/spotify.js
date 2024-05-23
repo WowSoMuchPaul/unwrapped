@@ -1,6 +1,9 @@
-import coverUrl from '../static/images/playlistCover.jpg';
-import coverUrlMid from '../static/images/playlistCoverMid.jpg';
-import coverUrlShort from '../static/images/playlistCoverShort.jpg';
+/**
+ * Stellt Funktionen zur Verfügung, um mit der Spotify API zu interagieren.
+ * @module spotify
+ */
+
+import {playlistCover, playlistCoverMid, playlistCoverShort} from './imports.js';
 
 const client_id = "b125b5d4ba6f4e619e84880fa7a9a74f";
 const redirect_uri = "http://localhost:8000/";
@@ -15,7 +18,7 @@ const topArtistsEndpoint = "https://api.spotify.com/v1/me/top/artists";
 const onRepeatEndpoint = "https://api.spotify.com/v1/search?q=On%20Repeat&type=playlist";
 const recentlyPlayedEndpoint = "https://api.spotify.com/v1/me/player/recently-played";
 
-// Data structure that manages the current active token, caching it in localStorage
+// Struktur um aktive Token zu verwalten, die im lokalen Speicher des Browsers gespeichert werden
 const currentToken = {
     get access_token() { return localStorage.getItem('access_token') || null; },
     get refresh_token() { return localStorage.getItem('refresh_token') || null; },
@@ -34,19 +37,27 @@ const currentToken = {
     }
 };
 
+/**
+ * Funktion, die beim Laden der Seite aufgerufen wird.
+ * Versucht, den Autorisierungscode aus der aktuellen Browser-Such-URL abzurufen.
+ * Wenn ein Code gefunden wird, wird ein Token-Austausch durchgeführt.
+ * Entfernt den Code aus der URL, um eine korrekte Weiterleitung zu gewährleisten.
+ * Prüft, ob der Nutzer eingeloggt ist.
+ * 
+ * @returns {boolean} Gibt zurück, ob der Nutzer eingeloggt ist.
+ */
 export async function onPageLoad(){
-    
    
-    // On page load, try to fetch auth code from current browser search URL
+    // Beim Laden der Seite versuchen, den Autorisierungscode aus der aktuellen Browser-Such-URL abzurufen
     const args = new URLSearchParams(window.location.search);
     const code = args.get('code');
 
-    // If we find a code, we're in a callback, do a token exchange
+    // Wenn wir einen Code finden, sind wir in einem Callback und es wird ein Token-Austausch durchgeführt
     if (code) {
         console.log("Code found in URL, exchanging for token");
         await getToken(code);
 
-        // Remove code from URL so we can refresh correctly.
+        // Code aus der URL entfernen, damit korrekt weitergeleitet wird
         const url = new URL(window.location.href);
         url.searchParams.delete("code");
 
@@ -58,6 +69,12 @@ export async function onPageLoad(){
     return (currentToken.access_token && currentToken.access_token != "undefined");
 }
 
+/**
+ * Leitet den Benutzer zur Spotify-Autorisierung weiter.
+ * Generiert einen zufälligen Code-Verifier, erstellt einen Code-Challenge-Hash und leitet den Benutzer zur Autorisierungsseite von Spotify weiter.
+ * Der generierte Code-Verifier wird im lokalen Speicher des Browsers gespeichert.
+ * 
+ */
 export async function redirectToSpotifyAuthorize() {
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const randomValues = crypto.getRandomValues(new Uint8Array(64));
@@ -84,11 +101,16 @@ export async function redirectToSpotifyAuthorize() {
       redirect_uri: redirect_uri,
     };
   
+    // User zum authorization server weiterleiten
     authUrl.search = new URLSearchParams(params).toString();
-    window.location.href = authUrl.toString(); // Redirect the user to the authorization server for login
+    window.location.href = authUrl.toString();
 }
 
-// Soptify API Calls
+/**
+ * Holt einen Token für die Autorisierung.
+ * 
+ * @param {string} code - Der Autorisierungscode.
+ */
 async function getToken(code) {
     const code_verifier = localStorage.getItem('code_verifier');
   
@@ -112,6 +134,9 @@ async function getToken(code) {
     }
 }
 
+/**
+ * Erneuert den Access Token mithilfe des Refresh Tokens.
+ */
 export async function refreshToken() {
     const response = await fetch(tokenEndpoint, {
       method: 'POST',
@@ -132,19 +157,21 @@ export async function refreshToken() {
     }
 }
 
-// Click handlers
-
+/**
+ * Funktion zum Auslösen des Spotify-Anmeldevorgangs.
+ */
 export async function loginWithSpotifyClick() {
     await redirectToSpotifyAuthorize();
 }
-  
+
+/**
+ * Funktion zum Auslösen des Spotify-Abmeldevorgangs.
+ * Aktuelle Token werden gelöscht und der Nutzer wird auf die Startseite weitergeleitet.
+ */
 export async function logoutClick() {
     localStorage.clear();
     window.location.href = redirect_uri;
 }
-  
-
-
 
 // DATEN ABRUFEN
 
@@ -169,11 +196,11 @@ async function getBase64Image(path) {
 }
 
 /**
- * Schickt HTTP-Requests an die Spotify API und verarbeitet die Antworten.
+ * Schickt die gewünschten HTTP-Requests an die Spotify API und verarbeitet die Antworten.
  * @param {*} method 
  * @param {*} url 
  * @param {*} body 
- * @returns 
+ * @returns - die Antwort der Spotify API je nach Anfrage in Form von JSON-Daten oder einem Response-Objekt
  */
 async function callApi(method, url, body) {
     let response;
@@ -183,6 +210,7 @@ async function callApi(method, url, body) {
         await refreshToken();
         console.log("Token refreshed");
     }
+
     if(method == "GET") {
         //API call ohne Body
         response = await fetch(url, {
@@ -212,22 +240,22 @@ async function callApi(method, url, body) {
             body: JSON.stringify(body)
         }) 
     }
+
     //Response Status abfragen
     const status = await response.status;
     if (status == 200 || status == 201){
         //Bei erfolgreichem call die erfragten Daten returnen
         return response.json();
     }else if (status == 401 ){
-        console.log("Token expired, please refresh token");
+        //Tritt nur ein, wenn beim vorherigen versuch den Token zu erneuern ein Fehler aufgetreten ist. Es muss sich daher neu angemeldet werden.
+        console.log("Token expired, please sign in again.");
         logoutClick();
         return response;
-        //await refreshToken();
-        //callApi(method, url, body);
     }else if (status == 202){
-        //Erfolgreicher Request, Cover wurde gesetzt
+        //Nur für Rquest das Playlist Cover zu setzen. Erfolgreicher Request, Cover wurde gesetzt
         return response;
     }else{
-        //Bei Fehlern den Response loggen und zurückgeben
+        //Bei Fehlern die Response loggen und zurückgeben
         console.log(response);
         return response;
     }
@@ -366,7 +394,7 @@ export async function getRecentlyPlayed(){
 }
 
 /**
- * Erstellt eine neue Playlist mit einer Mischung aus Top Songs und on Repeat Songs des Nutzers.
+ * Erstellt eine neue Playlist mit einer Mischung aus Top Songs und on Repeat Songs des Nutzers je nach gewähltem Zeitraum.
  * Der Playlist wird außerdem ein Cover hinzugefügt.
  * @param {} timeRange 
  */
@@ -376,17 +404,17 @@ export async function setPlaylist(timeRange){
     const onRepeat = await getOnRepeat();
     let spotifyUserID = profil.id;
     let playlistName = profil.name + "s unwrapped";
-    zeitInfo = "the last year of your Spotify experience";
-    let playlistCoverUrl = coverUrl;
+    let zeitInfo = "the last year of your Spotify experience";
+    let playlistCoverUrl = playlistCover;
     if(timeRange == "medium_term") {
         zeitInfo = "the last 6 months of your Spotify experience";
         playlistName += " (Mid Term)";
-        playlistCoverUrl = coverUrlMid;
+        playlistCoverUrl = playlistCoverMid;
     }
     if(timeRange == "short_term") {
         zeitInfo = "the last 4 weeks of your Spotify experience";
         playlistName += " (Short Term)";
-        playlistCoverUrl = coverUrlShort;
+        playlistCoverUrl = playlistCoverShort;
     }
     let body = {
         "name": playlistName, 

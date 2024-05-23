@@ -6,20 +6,14 @@
  */
 
 /**
- * Importis der benötigten Module.
+ * Importe der benötigten Module.
  */
-import { THREE, TWEEN } from './imports.js';
-import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
-import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
-import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-
-import { onPageLoad, setlPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
+import { THREE, TWEEN, FontLoader, TextGeometry, TrackballControls, GLTFLoader, playlistCover, playlistCoverMid, playlistCoverShort} from './imports.js';
+import { onPageLoad, setPlaylist, getMe, getTopSongs, getTopArtists, getOnRepeat, getRecentlyPlayed, loginWithSpotifyClick, refreshToken ,logoutClick } from "./spotify.js";
+//Importe der Pfade aller statischen Bilder
+import favicon from '../static/images/favicon.ico';
 import fensterTutorialImg from '../static/images/startScreenImg.png';
 import fensterLandingImg from '../static/images/startScreenImgLanding.png';
-import playlistCover from '../static/images/playlistCover.jpg';
-import playlistCoverMid from '../static/images/playlistCoverMid.jpg';
-import playlistCoverShort from '../static/images/playlistCoverShort.jpg';
 import profilPlaceholder from '../static/images/profil_placeholder.png';
 import offlineImage from '../static/images/offline.png';
 import onlineImage from '../static/images/online.png';
@@ -30,16 +24,19 @@ import navSongsIcon from '../static/images/nav_songs_icon.png';
 import navRotationIcon from '../static/images/nav_rotation_icon.png';
 import navPlaylistIcon from '../static/images/nav_playlist_icon.png';
 
-let sizes, canvas, scene, camera, renderer, trackControls, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, arrowModel;
-const targetPoints = {};
-const loadingManager = new THREE.LoadingManager();
+let sizes, canvas, scene, camera, renderer, trackControls, lastCamPosition, inhaltGroup, heavyRotCircleGroup, lastIntersected, topArtistsCube, arrowModel, topArtistsRotationIndex, initialTween, topArtCubeAnimating;
 let inEinemBereich = false;
 let tweenAktiviert = false; 
 let freeMovement = true;
-let timeRange = document.getElementById("timeRange").value;
-let topArtistsRotationIndex;
 let initCubeAnimationPlayed = false;
 let playlistButtonAktiviert = true;
+let topArtistBereichInitialized = false;
+let startupSoundPlayed = false;
+let previousTime = 0;
+let lastHovered = null;
+let timeRange = document.getElementById("timeRange").value;
+let topArtistsRank = new THREE.Mesh;
+let topArtistsName = new THREE.Mesh;
 let animationObjects = [];
 let bereichInfo = {
     currentIndex : 0,
@@ -52,13 +49,14 @@ let bereichInfo = {
         {name: "Playlist", text: "This is your chance to create your personal unwrapped playlist. <br><u>Press the button</u> to save the playlist to your profile. Enjoy the music!"}
     ],
 };
+
 const gesamtTiefe = 5000;
 const maxTiefpunkt = 433;
 const bereichOffsetVorne = 400;
 const bereichDampingVorne = bereichOffsetVorne / 2;
 const bereichOffsetHinten = 100;
 const bereichDampingHinten = bereichOffsetHinten / 1.2;
-const zoomSpeedNorm = 0.3;
+const zoomSpeedNorm = 0.06;
 const zoomSpeedBereich = 0.02;
 const tweenStartDistance = 10;
 const cameraTargetDistance = 100;
@@ -70,18 +68,31 @@ const colorPalette = [
     {name: "pink", color: 0xEB43A3}
 ];
 const dekoIconKeys = ["w","x","j","k","y"];
-
-let topArtistBereichInitialized = false;
-let topArtistsRank = new THREE.Mesh;
-let topArtistsName = new THREE.Mesh;
-let lastHovered = null;
-
-let initialTween;
-let topArtCubeAnimating;
-
+const rotationSequence = [
+    [ //Auf 1
+        { axis: 'y', angle: Math.PI / 2 }    
+    ],
+    [ // Von 1 auf 2
+        { axis: 'y', angle: -Math.PI }
+    ],
+    [ // Von 2 auf 3
+        { axis: 'y', angle: -Math.PI / 2 },
+        { axis: 'x', angle: Math.PI / 2 }
+    ],
+    [ // Von 3 auf 4
+        { axis: 'x', angle: Math.PI}
+    ],
+    [ // Von 4 auf 5
+        { axis: 'x', angle: Math.PI / 2}   
+    ],
+    [ // Von 5 auf 6
+        { axis: 'y', angle: Math.PI },
+    ]
+];
+const targetPoints = {};
+const loadingManager = new THREE.LoadingManager();
 const clock = new THREE.Clock();
-let previousTime = 0;
-
+const textMeshMap = new Map();
 
 // Textgrößen Konstanten
 const headlineSize = 40;
@@ -93,38 +104,11 @@ const textHeight = 0;
 const textWidth = 0;
 const textDepth = 0;
 
-let startupSoundPlayed = false;
-
 /** Raycaster */
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-// Event-Listener für Mausbewegungen, der die Mauskoordinaten normalisiert
-window.addEventListener('mousemove', (event) => {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-}, false);
-
-/**
- * Berechnet die Position der Maus im 3D-Raum auf der z=0 Ebene.
- * @param {THREE.Vector2} mouse - Der Mausvektor, normalisiert (-1 bis 1 in beiden Achsen).
- * @param {THREE.PerspectiveCamera} camera - Die verwendete Kamera in der Szene.
- * @returns {THREE.Vector3} Die berechnete Position der Maus auf der z=0 Ebene.
- */
-function getMouse3DPosition(mouse, camera) {
-    // Projiziert den normalisierten Gerätekoordinatenvektor (mouse.x, mouse.y) auf die z=0 Ebene
-    const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, camera);
-
-    // Finde den Schnittpunkt des Strahls mit der z=0 Ebene
-    const intersects = new THREE.Vector3();
-    raycaster.ray.intersectPlane(planeZ, intersects);
-    // console.log("Maus aus 3D: ", intersects);
-    return intersects; // Gibt die berechnete 3D-Position der Maus zurück
-}
-
-/**cursor */
+/** cursor */
 const cursor = {};
 
 /**
@@ -138,11 +122,14 @@ progressBarContainer.style.display = 'none';
 /**
  * Initialisiert die Anwendung.
  * Erstellt alle nötigen Elemente und fügt sie der Szene hinzu.
- * @async
- * @function init
- * @returns {Promise<void>}
  */
 async function init() {
+
+    /**
+     * Favicon setzen
+     */
+    document.getElementById("favicon").href = favicon;
+
     /**
      * Loading Manager
      */
@@ -172,13 +159,6 @@ async function init() {
     scene = new THREE.Scene();
 
     /**
-     * Inhalt-Gruppe für alle Elemente in der Szene
-     */
-    inhaltGroup = new THREE.Group();
-    inhaltGroup.name = "inhaltGroup";
-    scene.add(inhaltGroup);
-
-    /**
      * Camera
      */
     camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 10, 550 );
@@ -187,18 +167,8 @@ async function init() {
     lastCamPosition = camera.position.z;
 
     /**
-     * Lichter
+     * Seiten Target Points setzen
      */
-    let directionalLight = new THREE.DirectionalLight(0xffffff, 1.3);
-    directionalLight.position.set(0,1,1);
-    scene.add(directionalLight);
-
-    //Hemisphären Licht
-    const hemiLight = new THREE.HemisphereLight(0xB6D8DE, 0x382F2B, 1);
-    hemiLight.position.set(0, 1, 0);
-    // scene.add(hemiLight);
-
-    // Seiten Targets
     targetPoints.profil = camera.position.z - (camera.position.z / 6);
     targetPoints.topArtist = camera.position.z - (2 * (camera.position.z / 6));
     targetPoints.topSong = camera.position.z - (3 * (camera.position.z / 6));
@@ -206,7 +176,47 @@ async function init() {
     targetPoints.playlist = camera.position.z - (5 * (camera.position.z / 6));
 
     /**
-     * Cursor auf NULL
+     * Inhalt-Gruppe für alle Elemente in der Szene
+     */
+    inhaltGroup = new THREE.Group();
+    inhaltGroup.name = "inhaltGroup";
+    scene.add(inhaltGroup);
+
+    /**
+     * Lichter
+     */
+    let directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    directionalLight.position.set(0.5,0.5,1);
+    scene.add(directionalLight);
+
+    let directionalLightSupport = new THREE.DirectionalLight(colorPalette[3].color, 0.8);
+    directionalLightSupport.position.set(-0.5,-0.5,-0.5);
+    scene.add(directionalLightSupport);
+
+    let directionalLightSupportTwo = new THREE.DirectionalLight(colorPalette[0].color, 0.8);
+    directionalLightSupportTwo.position.set(-0.5,0.25,-0.5);
+    scene.add(directionalLightSupportTwo);
+
+    const light = new THREE.SpotLight( 0xffffff, 2, 500, 0.6 );
+    light.position.set( -150, 100, targetPoints.topSong);
+    light.target.position.set( -100, 40, targetPoints.topSong -150 );
+    scene.add( light );
+    scene.add( light.target );
+    // const sphereSize = 10;
+    // const spotLightHelper = new THREE.SpotLightHelper( light, sphereSize );
+    // scene.add( spotLightHelper );
+
+    const lightTwo = new THREE.SpotLight( 0xffffff, 4, 500, 0.6 );
+    lightTwo.position.set( 150, 100, targetPoints.topSong + 100);
+    lightTwo.target.position.set( 150, 50, targetPoints.topSong - 50);
+    scene.add( lightTwo );
+    scene.add( lightTwo.target );
+    // const sphereSizeTwo = 10;
+    // const spotLightHelperTwo = new THREE.SpotLightHelper( lightTwo, sphereSizeTwo );
+    // scene.add( spotLightHelperTwo );
+
+    /**
+     * Cursor auf NULL setzen
      * */
     cursor.x = 0;
     cursor.y = 0;
@@ -238,7 +248,7 @@ async function init() {
     document.getElementById("help").style.display = "none";
 
     /**
-     * Nav Bar mit den Icons der einzelnen Bereiche
+     * Nav Bar mit den Icons der einzelnen Bereiche in Position bringen
      */
     document.getElementById("navProgress").style.bottom = progBarBottom + "%";
     document.getElementById("navBar").style.display = "none";
@@ -280,6 +290,7 @@ async function init() {
         document.getElementById("timeRange").addEventListener("change", function() {
             progressBarContainer.style.zIndex = 10;
             progressBarContainer.style.display = 'flex';
+            freeMovement = false;
             let backToStartTween = new TWEEN.Tween(camera.position)
                 .to({z: gesamtTiefe}, 2000)
                 .easing(TWEEN.Easing.Quadratic.InOut)
@@ -293,6 +304,7 @@ async function init() {
                     document.getElementById("playlistButton").disabled = false;
                     playlistButtonAktiviert = true;
                     checkCamPosition();
+                    freeMovement = true;
                 })
                 .start();
         });
@@ -300,21 +312,36 @@ async function init() {
         await createAll();
         await createAnimationObjects();
     }else{
+        //Wenn Nutzer nicht authentifiziert ist
        document.getElementById("fensterTutorialImg").src = fensterLandingImg;
        document.getElementById("profilImage").src = profilPlaceholder;
        document.getElementById("loginStatusImage").src = offlineImage;
        document.getElementById("loginStatusLabel").innerText = "offline";
        document.getElementById("spotifyConnectButton").addEventListener("click", 
        () => {
-        loginWithSpotifyClick();
-        playButtonSound();
+            loginWithSpotifyClick();
+            playButtonSound();
        });
        document.getElementById("timeRangeDiv").style.display = "none";
        document.getElementById("logoutButton").style.display = "none";
     }
 
-    //Listener setzen
+    /**
+     * Listener setzen
+     */
     window.addEventListener('resize', onWindowResize);
+
+    // Event-Listener für Mausbewegungen, der die Mauskoordinaten normalisiert
+    window.addEventListener('mousemove', (event) => {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    }, false);
+    //Event-Listener für Mausbewegungen, der das Maus-Kamera verhältnis lenkt
+    window.addEventListener('mousemove', (event) => {
+        cursor.x = event.clientX / sizes.width - 0.5;
+        cursor.y = event.clientY / sizes.height - 0.5;
+    })
+
     document.getElementById("help").addEventListener("click", openHelp);
     document.getElementById("closeHelpButton").addEventListener("click", closeHelp);
     document.getElementById("helpToStartButton").addEventListener("click", switchHelpToStart);
@@ -338,10 +365,6 @@ async function init() {
         bringeZumBereich(targetPoints.profil);
     });
     
-    window.addEventListener('mousemove', (event) => {
-        cursor.x = event.clientX / sizes.width - 0.5;
-        cursor.y = event.clientY / sizes.height - 0.5;
-    })
 }
 
 /**
@@ -418,6 +441,25 @@ function setNavBarProgress() {
     const camProgress = (1 - ((Math.round(camera.position.z) - maxTiefpunkt) / (gesamtTiefe - maxTiefpunkt))) * 100;
     barProgress = camProgress * (progBarMaxH / 100);
     document.getElementById("navProgress").style.height = barProgress + "%";
+}
+
+/**
+ * Berechnet die Position der Maus im 3D-Raum auf der z=0 Ebene.
+ * @param {THREE.Vector2} mouse - Der Mausvektor, normalisiert (-1 bis 1 in beiden Achsen).
+ * @param {THREE.PerspectiveCamera} camera - Die verwendete Kamera in der Szene.
+ * @returns {THREE.Vector3} Die berechnete Position der Maus auf der z=0 Ebene.
+ */
+function getMouse3DPosition(mouse, camera) {
+    // Projiziert den normalisierten Gerätekoordinatenvektor (mouse.x, mouse.y) auf die z=0 Ebene
+    const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+
+    // Finde den Schnittpunkt des Strahls mit der z=0 Ebene
+    const intersects = new THREE.Vector3();
+    raycaster.ray.intersectPlane(planeZ, intersects);
+    // console.log("Maus aus 3D: ", intersects);
+    return intersects; // Gibt die berechnete 3D-Position der Maus zurück
 }
 
 /**
@@ -542,28 +584,6 @@ function handleBereich(pos, tp) {
     }
 }
 
-let rotationSequence = [
-    [ //Auf 1
-        { axis: 'y', angle: Math.PI / 2 }    
-    ],
-    [ // Von 1 auf 2
-        { axis: 'y', angle: -Math.PI }
-    ],
-    [ // Von 2 auf 3
-        { axis: 'y', angle: -Math.PI / 2 },
-        { axis: 'x', angle: Math.PI / 2 }
-    ],
-    [ // Von 3 auf 4
-        { axis: 'x', angle: Math.PI}
-    ],
-    [ // Von 4 auf 5
-        { axis: 'x', angle: Math.PI / 2}   
-    ],
-    [ // Von 5 auf 6
-        { axis: 'y', angle: Math.PI },
-    ]
-];
-
 /**
  * Behandelt den Bereich der Top-Künstler.
  * Wird aufgerufen wenn die Kamera in den Bereich der Top-Künstler eintritt.
@@ -590,8 +610,8 @@ async function handleTopArtistBereich() {
 }
 
 /**
-     * Initiale Würfel-Animation beim ersten Betreten des Top-Artists-Bereichs.
-     */
+ * Initiale Würfel-Animation beim ersten Betreten des Top-Artists-Bereichs.
+ */
 function initialAnimation() {
     initialTween  = new TWEEN.Tween(topArtistsCube.rotation)
         .to({ x: topArtistsCube.rotation.x - Math.PI / 10 }, 600)
@@ -737,40 +757,6 @@ function bringeZumBereich(tp) {
         }
     })
     .start();
-}
-
-/**
- * Funktion, die den Hauptanimationszyklus steuert.
- */
-const tick = () => {
-    const elapsedTime = clock.getElapsedTime();
-    const deltaTime = elapsedTime - previousTime;
-    previousTime = elapsedTime;
-
-    //Animate objects
-    animateObjects();
-
-    //Animate camera
-    const parallaxX = cursor.x * 50;
-    const parallaxY = - cursor.y * 50;
-    camera.position.x += (parallaxX - camera.position.x) * 5 * deltaTime;
-    camera.position.y += (parallaxY - camera.position.y) * 5 * deltaTime;
-    
-    if (lastCamPosition != Math.round(camera.position.z)) {
-        setNavBarProgress();
-        checkCamPosition();
-        lastCamPosition = Math.round(camera.position.z);
-    }
-
-    lastIntersected = updateRaycasterInteraction();
-    
-    // aktualiseren der TrackballControls und der TWEEN-Animationen
-    trackControls.update();
-    TWEEN.update();
-
-    // Rendern der Szene und anfordern einer neuen Animation
-    renderer.render(scene, camera);
-    window.requestAnimationFrame(tick);
 }
 
 /**
@@ -1118,19 +1104,19 @@ async function createTopSongs() {
             songs[i].name = songs[i].name.substring(0,20) + "...";
         }
     }
-    contentTopSongs.push(await createTextMesh("Your Top Songs", headlineSize, -150, -100, targetPoints.topSong - 85 ,0, 0, 0xffffff,1,'Jersey 15_Regular'));
+    contentTopSongs.push(await createTextMesh("Your Top Songs", headlineSize, -150, -100, targetPoints.topSong - 85 ,-10, 0, 0xffffff,1,'Jersey 15_Regular'));
     
-    contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 10, targetPoints.topSong - 200, 0, 70, true));
-    contentTopSongs.push(await createTextMesh("1: " + songs[0].name, textSize, -40, 55, targetPoints.topSong - 200,0,0,0xffffff, 1,'W95FA_Regular.typeface'));
-    contentTopSongs.push(await createGLTFMesh(0, -90, targetPoints.topSong - 200, 0, 0, 0, 50.0, 'pedestal'));
+    contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 60, targetPoints.topSong - 200, 0, 70, true));
+    contentTopSongs.push(await createTextMesh("1: " + songs[0].name, textSize, -40, 105, targetPoints.topSong - 200,0,0,0xffffff, 1,'W95FA_Regular.typeface'));
+    contentTopSongs.push(await createGLTFMesh(0, -40, targetPoints.topSong - 200, 0, 0, 0, 50.0, 'pedestal'));
 
-    contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -120, -5, targetPoints.topSong - 155, 20, 70, true));
-    contentTopSongs.push(await createTextMesh("2: " + songs[1].name, textSize, -155, 40, targetPoints.topSong - 135 ,0,20,0xffffff, 1,'W95FA_Regular.typeface'));
-    contentTopSongs.push(await createGLTFMesh(-120, -110, targetPoints.topSong - 155, 0,20, 0, 50, 'pedestal'));
+    contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -120, 35, targetPoints.topSong - 155, 20, 70, true));
+    contentTopSongs.push(await createTextMesh("2: " + songs[1].name, textSize, -155, 80, targetPoints.topSong - 135 ,0,20,0xffffff, 1,'W95FA_Regular.typeface'));
+    contentTopSongs.push(await createGLTFMesh(-120, -65, targetPoints.topSong - 155, 0,20, 0, 50, 'pedestal'));
 
-    contentTopSongs.push(await createBildMesh(songs[2].imageUrl, 110, -15, targetPoints.topSong - 135, -20, 70, true));
-    contentTopSongs.push(await createTextMesh("3: " + songs[2].name, textSize, 70,30, targetPoints.topSong - 145, 0,-20,0xffffff, 1,'W95FA_Regular.typeface'));
-    contentTopSongs.push(await createGLTFMesh(110, -120, targetPoints.topSong - 135, 0, -20, 0, 50 , 'pedestal'));
+    contentTopSongs.push(await createBildMesh(songs[2].imageUrl, 110, 35, targetPoints.topSong - 135, -20, 70, true));
+    contentTopSongs.push(await createTextMesh("3: " + songs[2].name, textSize, 70,80, targetPoints.topSong - 145, 0,-20,0xffffff, 1,'W95FA_Regular.typeface'));
+    contentTopSongs.push(await createGLTFMesh(110, -65, targetPoints.topSong - 135, 0, -20, 0, 50 , 'pedestal'));
     
     return contentTopSongs;
 }
@@ -1145,7 +1131,7 @@ async function createPlaylistResponse() {
     console.log(playlistRes);
     playlistButtonAktiviert = false;
     document.getElementById("playlistButton").style.display = "none";
-    inhaltGroup.add(await createTextMesh(playlistRes, textBigSize, 80, -120, targetPoints.playlist - 200 , 0, -15, 0xffffff,1,'W95FA_Regular.typeface'));
+    inhaltGroup.add(await createTextMesh(playlistRes, textBigSize, 110, -120, targetPoints.playlist - 250 , 0, -15, 0xffffff,1,'W95FA_Regular.typeface'));
 }
 
 /**
@@ -1351,9 +1337,7 @@ function playStartupSound(){
     startupSoundPlayed = true;
 }
 
-// ---------------------------- Interaktionen aus der alten heavyRotInteraction ----------------------------
-
-const textMeshMap = new Map(); 
+// ---------------------------- Interaktionen aus der alten heavyRotInteraction ---------------------------- 
 
 /**
  * Aktualisiert die Raycaster-Interaktion.
@@ -1380,8 +1364,9 @@ function isCameraInBounds() {
 
 /**
  * Überprüft, ob die Maus in der Nähe des Zentrums eines Objekts ist.
+ * 
  * @param {Object} intersect - Das Intersect-Objekt, das Informationen über den Schnittpunkt enthält.
- * @param {number} [threshold=1.5] - Der Schwellenwert, der den Bereich um das Zentrum definiert.
+ * @param {number} [threshold=1.5] - Der Schwellenwert, der angibt, wie nah die Maus am Zentrum sein muss.
  * @returns {boolean} - Gibt true zurück, wenn die Maus in der Nähe des Zentrums ist, andernfalls false.
  */
 function isMouseNearCenter(intersect, threshold = 1.5) {
@@ -1610,6 +1595,40 @@ function removeTextMeshes(obj) {
         });
         textMeshMap.delete(obj);
     }
+}
+
+/**
+ * Funktion, die den Hauptanimationszyklus steuert.
+ */
+const tick = () => {
+    const elapsedTime = clock.getElapsedTime();
+    const deltaTime = elapsedTime - previousTime;
+    previousTime = elapsedTime;
+
+    //Animate objects
+    animateObjects();
+
+    //Animate camera
+    const parallaxX = cursor.x * 50;
+    const parallaxY = - cursor.y * 50;
+    camera.position.x += (parallaxX - camera.position.x) * 5 * deltaTime;
+    camera.position.y += (parallaxY - camera.position.y) * 5 * deltaTime;
+    
+    if (lastCamPosition != Math.round(camera.position.z)) {
+        setNavBarProgress();
+        checkCamPosition();
+        lastCamPosition = Math.round(camera.position.z);
+    }
+
+    lastIntersected = updateRaycasterInteraction();
+    
+    // aktualiseren der TrackballControls und der TWEEN-Animationen
+    trackControls.update();
+    TWEEN.update();
+
+    // Rendern der Szene und anfordern einer neuen Animation
+    renderer.render(scene, camera);
+    window.requestAnimationFrame(tick);
 }
 
 // Szene initialisieren
