@@ -190,7 +190,7 @@ async function init() {
     scene.add(directionalLight);
 
     let directionalLightSupport = new THREE.DirectionalLight(colorPalette[3].color, 0.8);
-    directionalLightSupport.position.set(-0.5,-0.5,-0.5);
+    directionalLightSupport.position.set(0.5,0.5,-0.5);
     scene.add(directionalLightSupport);
 
     let directionalLightSupportTwo = new THREE.DirectionalLight(colorPalette[0].color, 0.8);
