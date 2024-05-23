@@ -31,8 +31,8 @@ This will start the application on http://localhost:8000.
 - Make sure to use the specified port (8080) to avoid conflicts with other applications on your machine.
 - For any issues or questions, please contact us via mail below.
 
-*Dieses Repository ist für akademische Zwecke gedacht und enthält möglicherweise nicht alle Funktionen oder Konfigurationen der bereitgestellten Version.
-Stellen Sie sicher, dass Sie den angegebenen Port (8080) verwenden, um Konflikte mit anderen Anwendungen auf Ihrem Rechner zu vermeiden.
+*Dieses Repository ist für akademische Zwecke gedacht und enthält nicht alle Funktionen oder Konfigurationen der bereitgestellten Version.
+Stellen Sie sicher, dass Sie den angegebenen Port (8000) verwenden, um Konflikte mit anderen Anwendungen auf Ihrem Computer zu vermeiden.
 Bei Problemen oder Fragen wenden Sie sich bitte an uns über unten folgenden Kontakten.*
 
 ## Students
