@@ -1172,8 +1172,9 @@ async function createStart(){
     let contentStart = [];
     arrowModel = await createGLTFMesh(0, -40, gesamtTiefe -100, -80, -10, -40, 4.0, '3d_mouse_cursor');
     contentStart.push(await createTextMesh("scroll to start", textSize, -35, -60, gesamtTiefe - 90,-20, 0, 0xffffff, 1, 'Jersey 15_Regular'));
+    contentStart.push(await createTextMesh("unwrapped", textBigSize + 30, -150, 20, gesamtTiefe - 200, 0, 0, 0xffffff, 1, 'W95FA_Regular.typeface'));
     contentStart.push(arrowModel);
-    console.log("Content Start: ", contentStart);
+    //console.log("Content Start: ", contentStart);
     return contentStart;
 }
 
