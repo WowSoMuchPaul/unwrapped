@@ -210,7 +210,7 @@ async function init() {
      * */
     cursor.x = 0;
     cursor.y = 0;
-
+    
     /**
      * Renderer
      */
