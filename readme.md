@@ -15,11 +15,13 @@ This repository contains the submission version of the Unwrapped project for stu
 4. Run the following commands:
 
 
+```bash
 # Install dependencies
 npm install
 
 # Run the local server at localhost:8000
  npm run dev -- --port 8000
+```
 
 
 This will start the application on http://localhost:8000.
