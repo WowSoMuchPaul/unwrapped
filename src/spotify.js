@@ -473,9 +473,9 @@ export async function setPlaylist(timeRange){
         while(coverRes.status != 202){
             coverRes = await (callApi("PUT", "https://api.spotify.com/v1/playlists/" + playlistId + "/images", base64Cover));
         }
-        if ((coverRes.status == 202) && (setplaylistRes.snapshot_id)) return "Playlist erstellt!";
+        if ((coverRes.status == 202) && (setplaylistRes.snapshot_id)) return "Playlist created!";
     }else{
-        if (setplaylistRes.snapshot_id) return "Playlist aktualisiert!";
+        if (setplaylistRes.snapshot_id) return "Playlist updated!";
     }
 
 }
