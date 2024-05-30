@@ -3,7 +3,7 @@
  * @module spotify
  */
 
-import {playlistCover, playlistCoverMid, playlistCoverShort} from './imports.js';
+import {playlistCover, playlistCoverMid, playlistCoverShort, profilBackup} from './imports.js';
 
 const client_id = "b125b5d4ba6f4e619e84880fa7a9a74f";
 const redirect_uri = "http://localhost:8000/";
@@ -270,7 +270,8 @@ export async function getMe(){
 
     let myProfil = {};
     myProfil.name = data.display_name;
-    myProfil.imageUrl = data.images[1].url;
+    myProfil.imageUrl = data.images?.[1]?.url ?? profilBackup; //Falls kein Bild vorhanden ist, wird das Backup-Profilbild verwendet.
+    // console.log(profilBackup);
     myProfil.id = data.id;
     myProfil.follower = data.followers.total;
     myProfil.country = data.country;

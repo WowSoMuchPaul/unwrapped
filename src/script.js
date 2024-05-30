@@ -265,6 +265,7 @@ async function init() {
 
     //Erstelle alle Geometrien, wenn Nutzer bereits authentifiziert ist
     if (await (onPageLoad())) {
+        console.log("Nutzer ist authentifiziert");
         progressBarContainer.style.zIndex = 10;
         progressBarContainer.style.display = 'flex';
         const profil = await getMe();
