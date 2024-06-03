@@ -418,9 +418,9 @@ export async function setPlaylist(timeRange){
         playlistCoverUrl = playlistCoverShort;
     }
     let body = {
-        "name": playlistName, 
-        "description": "Your unwrapped playlist based on " + zeitInfo + ".", 
-        "public": "false"
+        "name": playlistName,
+        "description": "Your unwrapped playlist based on " + zeitInfo + ".",
+        "public": false
     };
 
     //In den Playlists des Users nach der Playlist suchen, falls vorhanden.
@@ -436,7 +436,9 @@ export async function setPlaylist(timeRange){
         }
     }
     if(!playlistExists) {
-        playlistId = (await callApi("POST", "https://api.spotify.com/v1/users/" + spotifyUserID + "/playlists", body)).id;
+        //Playlist erstellen
+        const createPlaylistAnswer = await callApi("POST", "https://api.spotify.com/v1/users/" + spotifyUserID + "/playlists", body);
+        playlistId = createPlaylistAnswer.id;
     }
 
     //Liste mit allen Track-Uris füllen, die zur Playlist hinzugefuegt werden sollen.
