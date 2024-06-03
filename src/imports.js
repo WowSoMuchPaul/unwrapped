@@ -11,6 +11,6 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import playlistCover from '../static/images/playlistCover.jpg';
 import playlistCoverMid from '../static/images/playlistCoverMid.jpg';
 import playlistCoverShort from '../static/images/playlistCoverShort.jpg';
-import profilBackup from '../static/images/profil_placeholder.png';
+import profilBackup from '../static/images/profilIconDummyPixel.png';
 
 export { THREE, TWEEN, FontLoader, TextGeometry, TrackballControls, GLTFLoader, playlistCover, playlistCoverMid, playlistCoverShort, profilBackup};
