@@ -1038,7 +1038,7 @@ async function createHeavyRotation() {
 
     const baseRadius = 150;
     const radialOffset = 30; // Zusätzliche Radialverschiebung für jedes zweite Element
-    const numElements = heavyRotation.length; 
+    const numElements = 30; 
 
     for (let e = 0; e < numElements; e++) {
         let theta = (2 * Math.PI / numElements) * e;
