@@ -276,6 +276,8 @@ export async function getMe(){
     myProfil.follower = data.followers.total;
     myProfil.country = data.country;
 
+    console.log(data);
+    console.log(myProfil);
     return myProfil;
 }
 
@@ -308,6 +310,8 @@ export async function getTopSongs(timeRange){
         topSongs.push(songObject);
     }
 
+    console.log(data);
+    console.log(topSongs);
     return topSongs
 }
 
@@ -318,9 +322,11 @@ export async function getTopSongs(timeRange){
  */
 export async function getTopArtists(timeRange){
     const data = await callApi("GET", topArtistsEndpoint + "?time_range=" + timeRange, null);
+    console.log(data);
     let topArtists = [];
     //Fuer jede*n Artist ein Object mit allen benötigten Daten anlegen.
     for (let i = 0; i < 6; i++) {
+        if (!data.items[i]) return topArtists;
         let artistData = data.items[i];
         let artistObject = {};
         artistObject.id = artistData.id;
@@ -329,6 +335,7 @@ export async function getTopArtists(timeRange){
         topArtists.push(artistObject);
     }
 
+    console.log(topArtists);
     return topArtists
 }
 
@@ -361,6 +368,8 @@ export async function getOnRepeat(){
         onRepeat.push(track);
     }
 
+    console.log(onRepeatPlaylist);
+    console.log(onRepeat);
     return onRepeat;    
 }
 
@@ -391,6 +400,8 @@ export async function getRecentlyPlayed(){
         recentlyPlayed.push(track);
     }
 
+    console.log(data);
+    console.log(recentlyPlayed);
     return recentlyPlayed;
 }
 

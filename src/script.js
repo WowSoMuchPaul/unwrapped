@@ -914,7 +914,7 @@ function createCube(options) {
         if (typeof material === 'string' && (material.startsWith('http') || material.match(/\.(jpeg|jpg|gif|png)$/))) {
             return new THREE.MeshPhongMaterial({ map: new THREE.TextureLoader(loadingManager).load(material) });
         } else {
-            return new THREE.MeshBasicMaterial({ color: material, transparent: true, opacity: 1 });
+            return new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: false});
         }
     });
 
@@ -954,6 +954,8 @@ async function createProfil() {
     let recBildG = 25;
     let recBildRot = 0;
 
+    if (recentlyPlayed.length < 1) return contentProfil;
+
     for(let i = 0; i < recentlyPlayed.length; i++){
         if(recentlyPlayed[i].name.length >= 20){
             recentlyPlayed[i].name = recentlyPlayed[i].name.substring(0,20) + "...";
@@ -966,14 +968,17 @@ async function createProfil() {
     contentProfil.push(await createTextMesh(recentlyPlayed[0].name, recText, recGroupX + 1, recGroupY - 35, targetPoints.profil, recBildRot,0,0xffffff, 1,'W95FA_Regular.typeface'));
     contentProfil.push(await createTextMesh(recentlyPlayed[0].artists[0].name + ".jpg", recText-1, recGroupX+1 + 1, recGroupY -6.5, targetPoints.profil+0.5, recBildRot,0,0xffffff, 1,'W95FA_Regular.typeface'));
     
+    if (recentlyPlayed.length < 2) return contentProfil;
     contentProfil.push(await createBildMesh(recentlyPlayed[1].image, recGroupX + 43, recGroupY - 19, targetPoints.profil, recBildRot, recBildG, true));
     contentProfil.push(await createTextMesh(recentlyPlayed[1].name, recText, recGroupX + 31, recGroupY - 35, targetPoints.profil, recBildRot,0,0xffffff, 1,'W95FA_Regular.typeface'));
     contentProfil.push(await createTextMesh(recentlyPlayed[1].artists[0].name + ".jpg", recText-1, recGroupX+32, recGroupY -6.5, targetPoints.profil+0.5, recBildRot,0,0xffffff, 1,'W95FA_Regular.typeface'));
 
+    if (recentlyPlayed.length < 3) return contentProfil;
     contentProfil.push(await createBildMesh(recentlyPlayed[2].image, recGroupX + 13, recGroupY - 53, targetPoints.profil, recBildRot, recBildG, true));
     contentProfil.push(await createTextMesh(recentlyPlayed[2].name, recText, recGroupX + 1, recGroupY - 69, targetPoints.profil, recBildRot,0,0xffffff, 1,'W95FA_Regular.typeface'));
     contentProfil.push(await createTextMesh(recentlyPlayed[2].artists[0].name + ".jpg", recText-1, recGroupX+2, recGroupY -40.3, targetPoints.profil+0.5, recBildRot,0,0xffffff, 1,'W95FA_Regular.typeface'));
 
+    if (recentlyPlayed.length < 4) return contentProfil;
     contentProfil.push(await createBildMesh(recentlyPlayed[3].image, recGroupX + 43, recGroupY - 53, targetPoints.profil, recBildRot, recBildG, true));
     contentProfil.push(await createTextMesh(recentlyPlayed[3].name, recText, recGroupX + 31, recGroupY - 69, targetPoints.profil, recBildRot,0,0xffffff, 1,'W95FA_Regular.typeface'));
     contentProfil.push(await createTextMesh(recentlyPlayed[3].artists[0].name + ".jpg", recText-1, recGroupX+32, recGroupY -40.3, targetPoints.profil+0.5, recBildRot,0,0xffffff, 1,'W95FA_Regular.typeface'));
@@ -1254,8 +1259,8 @@ async function createAll() {
     let inhaltTopArtist = await createTopArtist();
     inhaltTopArtist.forEach(element => inhaltGroup.add(element));
 
-    let inhaltTopSongs = await createTopSongs();
-    inhaltTopSongs.forEach(element => inhaltGroup.add(element));
+    // let inhaltTopSongs = await createTopSongs();
+    // inhaltTopSongs.forEach(element => inhaltGroup.add(element));
 
     let heavyRotation = await createHeavyRotation();
     heavyRotation.forEach(element => inhaltGroup.add(element));
