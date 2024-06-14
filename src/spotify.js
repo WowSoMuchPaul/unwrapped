@@ -15,7 +15,7 @@ const tokenEndpoint = "https://accounts.spotify.com/api/token";
 const profilEndpoint = "https://api.spotify.com/v1/me";
 const topSongsEndpoint = "https://api.spotify.com/v1/me/top/tracks";
 const topArtistsEndpoint = "https://api.spotify.com/v1/me/top/artists";
-const onRepeatEndpoint = "https://api.spotify.com/v1/search?q=On%20Repeat&type=playlist";
+const onRepeatEndpoint = "https://api.spotify.com/v1/search?q=OnRepeat&type=playlist";
 const recentlyPlayedEndpoint = "https://api.spotify.com/v1/me/player/recently-played";
 
 // Struktur um aktive Token zu verwalten, die im lokalen Speicher des Browsers gespeichert werden
@@ -339,6 +339,7 @@ export async function getTopArtists(timeRange){
  */
 export async function getOnRepeat(){
     const idData = await callApi("GET", onRepeatEndpoint, null);
+    console.log(idData);
     const onRepeatId = idData.playlists.items[0].id;
     const onRepeatPlaylist = await callApi("GET", "https://api.spotify.com/v1/playlists/" + onRepeatId, null);
     const data = onRepeatPlaylist.tracks.items;
