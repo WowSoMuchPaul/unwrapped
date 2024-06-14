@@ -29,12 +29,12 @@ let inEinemBereich = false;
 let tweenAktiviert = false; 
 let freeMovement = true;
 let initCubeAnimationPlayed = false;
-let playlistButtonAktiviert = true;
+let timeRange = document.getElementById("timeRange").value;
+let playlistButtonAktiviert;
 let topArtistBereichInitialized = false;
 let startupSoundPlayed = false;
 let previousTime = 0;
 let lastHovered = null;
-let timeRange = document.getElementById("timeRange").value;
 let topArtistsRank = new THREE.Mesh;
 let topArtistsName = new THREE.Mesh;
 let animationObjects = [];
@@ -303,7 +303,6 @@ async function init() {
                     //Playlist Button restetten
                     document.getElementById("playlistButton").innerText = "Create Playlist";
                     document.getElementById("playlistButton").disabled = false;
-                    playlistButtonAktiviert = true;
                     checkCamPosition();
                     freeMovement = true;
                 })
@@ -594,7 +593,7 @@ function handleBereich(pos, tp) {
  * @returns {Promise<void>}
  */
 async function handleTopArtistBereich() {
-    if (topArtistBereichInitialized) {
+    if (topArtistBereichInitialized || (topArtistsCube == undefined)) {
         return; // Beende die Funktion, wenn sie bereits ausgeführt wurde
     }
     topArtistBereichInitialized = true;
@@ -708,6 +707,7 @@ async function initTopArtistsCube() {
  * @function cleanupTopArtistsCube
  */
 async function cleanupTopArtistsCube() {
+    if (topArtistsCube == undefined) return;
     console.log("Cleanup wurde aufgerufen");
     window.removeEventListener('wheel', rotateCube);
     // clearAndRemoveObject(topArtistsRank);
@@ -995,6 +995,12 @@ async function createTopArtist() {
     let artistPics = [];
     let contentTopArtist = [];
     let topArtistZ = targetPoints.topArtist - 200;
+
+    if(topArtists.length < 1) {
+        contentTopArtist.push(await createTextMesh("No Top Artists found", headlineSize, -300, -90, topArtistZ,0, 0, 0xffffff,1,'Jersey 15_Regular'));
+        return contentTopArtist;
+    }
+
     let headlineOne = await createTextMesh("Your", headlineSize, -300, -90, topArtistZ,0, 0, 0xffffff,1,'Jersey 15_Regular');
     let headlineTwo = await createTextMesh("\nTop 6 Artists", headlineSize, -300, -80, topArtistZ, 0, 0, 0xffffff,1,'Jersey 15_Regular');
 
@@ -1110,16 +1116,23 @@ async function createTopSongs() {
             songs[i].name = songs[i].name.substring(0,20) + "...";
         }
     }
+
+    if (songs.length < 1) {
+        contentTopSongs.push(await createTextMesh("Not enough data :(", headlineSize, -160, -100, targetPoints.topSong - 85 ,-10, 0, 0xffffff,1,'Jersey 15_Regular'));
+        return contentTopSongs;
+    }
     contentTopSongs.push(await createTextMesh("Your Top Songs", headlineSize, -160, -100, targetPoints.topSong - 85 ,-10, 0, 0xffffff,1,'Jersey 15_Regular'));
     
     contentTopSongs.push(await createBildMesh(songs[0].imageUrl, 0, 60, targetPoints.topSong - 200, 0, 70, true));
     contentTopSongs.push(await createTextMesh("1: " + songs[0].name, textSize, -40, 105, targetPoints.topSong - 200,0,0,0xffffff, 1,'W95FA_Regular.typeface'));
     contentTopSongs.push(await createGLTFMesh(0, -40, targetPoints.topSong - 200, 0, 0, 0, 50.0, 'pedestal'));
 
+    if (songs.length < 2) return contentTopSongs;
     contentTopSongs.push(await createBildMesh(songs[1].imageUrl, -120, 35, targetPoints.topSong - 155, 20, 70, true));
     contentTopSongs.push(await createTextMesh("2: " + songs[1].name, textSize, -155, 80, targetPoints.topSong - 135 ,0,20,0xffffff, 1,'W95FA_Regular.typeface'));
     contentTopSongs.push(await createGLTFMesh(-120, -65, targetPoints.topSong - 155, 0,20, 0, 50, 'pedestal'));
 
+    if (songs.length < 3) return contentTopSongs;
     contentTopSongs.push(await createBildMesh(songs[2].imageUrl, 110, 35, targetPoints.topSong - 135, -20, 70, true));
     contentTopSongs.push(await createTextMesh("3: " + songs[2].name, textSize, 70,80, targetPoints.topSong - 145, 0,-20,0xffffff, 1,'W95FA_Regular.typeface'));
     contentTopSongs.push(await createGLTFMesh(110, -65, targetPoints.topSong - 135, 0, -20, 0, 50 , 'pedestal'));
@@ -1145,9 +1158,16 @@ async function createPlaylistResponse() {
  * @returns {Promise<Array>} Ein Array mit den erstellten Inhalten der Wiedergabeliste.
  */
 async function createPlaylist(){
+    playlistButtonAktiviert = (((await getTopSongs(timeRange)).length > 0) && ((await getTopArtists(timeRange)).length > 0));
+    let messageText;
+    if (playlistButtonAktiviert) {
+        messageText = "Your \nunwrapped \nPlaylist";
+    }else{
+        messageText = "Not \nenough \ndata :(";
+    }
     let contentPlaylist = [];
     let cover = playlistCover;
-    contentPlaylist.push(await createTextMesh("Your \nunwrapped \nPlaylist", headlineSize, -230, 70, targetPoints.playlist-80,0,35,0xffffff, 1,'Jersey 15_Regular'));
+    contentPlaylist.push(await createTextMesh(messageText, headlineSize, -230, 70, targetPoints.playlist-80,0,35,0xffffff, 1,'Jersey 15_Regular'));
     if (timeRange === "short_term") cover = playlistCoverShort;
     if (timeRange === "medium_term") cover = playlistCoverMid;
     contentPlaylist.push(await createBildMesh(cover, 200, 30, targetPoints.playlist-200, -15, 200, true));
@@ -1259,8 +1279,8 @@ async function createAll() {
     let inhaltTopArtist = await createTopArtist();
     inhaltTopArtist.forEach(element => inhaltGroup.add(element));
 
-    // let inhaltTopSongs = await createTopSongs();
-    // inhaltTopSongs.forEach(element => inhaltGroup.add(element));
+    let inhaltTopSongs = await createTopSongs();
+    inhaltTopSongs.forEach(element => inhaltGroup.add(element));
 
     let heavyRotation = await createHeavyRotation();
     heavyRotation.forEach(element => inhaltGroup.add(element));
